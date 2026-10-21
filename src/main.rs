@@ -764,12 +764,21 @@ fn paint_info(painter: &egui::Painter, r: Rect, i: &Info, s: &Stats) {
 /// 中文字型：直接 mmap 系統的 Noto Sans CJK（.ttc 一份檔案兩個字面：TC＝index 3、Mono TC＝index 8），不複製進記憶體
 fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
-    let path = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".into());
+    // Linux：Noto Sans CJK（TC＝index 3、Mono TC＝index 8）；Windows：系統內建微軟正黑體 msjh.ttc（index 0，等寬也用它）
+    #[cfg(windows)]
+    let (default_path, ui_ix, mono_ix) = (
+        format!("{}\\Fonts\\msjh.ttc", std::env::var("WINDIR").unwrap_or_else(|_| "C:\\Windows".into())),
+        0,
+        0,
+    );
+    #[cfg(not(windows))]
+    let (default_path, ui_ix, mono_ix) = ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".to_string(), 3, 8);
+    let path = std::env::var("XQ_CJK_FONT").unwrap_or(default_path);
     match std::fs::File::open(&path).and_then(|f| unsafe { memmap2::Mmap::map(&f) }) {
         Ok(mm) => {
             let blob: egui::epaint::text::Blob = Arc::new(mm);
-            defs.font_data.insert("noto-tc".into(), Arc::new(egui::FontData::from_blob(blob.clone(), 3)));
-            defs.font_data.insert("noto-mono-tc".into(), Arc::new(egui::FontData::from_blob(blob, 8)));
+            defs.font_data.insert("noto-tc".into(), Arc::new(egui::FontData::from_blob(blob.clone(), ui_ix)));
+            defs.font_data.insert("noto-mono-tc".into(), Arc::new(egui::FontData::from_blob(blob, mono_ix)));
             defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "noto-tc".into());
             defs.families.entry(egui::FontFamily::Monospace).or_default().insert(0, "noto-mono-tc".into());
         }
@@ -778,6 +787,23 @@ fn setup_fonts(ctx: &egui::Context) {
     ctx.set_fonts(defs);
 }
 
+/// Windows：目前程序的工作集（Working Set，相當於 RSS）
+#[cfg(windows)]
+pub fn rss_mb() -> f64 {
+    use windows_sys::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+    use windows_sys::Win32::System::Threading::GetCurrentProcess;
+    unsafe {
+        let mut c: PROCESS_MEMORY_COUNTERS = std::mem::zeroed();
+        c.cb = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+        if GetProcessMemoryInfo(GetCurrentProcess(), &mut c, c.cb) != 0 {
+            c.WorkingSetSize as f64 / (1024.0 * 1024.0)
+        } else {
+            0.0
+        }
+    }
+}
+
+#[cfg(not(windows))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -800,4 +826,14 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native("XQ 風格測試（egui）", opts, Box::new(|cc| Ok(Box::new(Terminal::new(cc)))))
+}
+
+/// 設定檔根目錄：Windows %APPDATA%；其他 $XDG_DATA_HOME 或 ~/.local/share
+pub fn data_dir() -> Option<std::path::PathBuf> {
+    let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(std::path::PathBuf::from);
+    #[cfg(windows)]
+    let base = env("APPDATA").or_else(|| env("LOCALAPPDATA"));
+    #[cfg(not(windows))]
+    let base = env("XDG_DATA_HOME").or_else(|| env("HOME").map(|h| h.join(".local/share")));
+    base
 }
