@@ -9,6 +9,8 @@ use xq_feed::{unix_us, Stamp};
 
 #[derive(Default)]
 pub struct TickBench {
+    /// 多視窗（XQ_WINDOWS）時的視窗編號；印在 TICKBENCH 行的 "win"
+    pub win: usize,
     /// [seq_first, sent_first, seq_last, sent_last, recv_last, applied_us, present_us]
     samples: Vec<[u64; 7]>,
     switches: Vec<(String, u64, u64)>,
@@ -22,6 +24,10 @@ pub struct TickBench {
 }
 
 impl TickBench {
+    pub fn for_window(win: usize) -> Self {
+        TickBench { win, ..Default::default() }
+    }
+
     pub fn on_apply(&mut self, first: Option<Stamp>, stamp: Option<Stamp>, inbox_rows: usize, changed: usize, apply_us: u64) {
         self.inbox_rows += inbox_rows as u64;
         self.applied_rows += changed as u64;
@@ -61,7 +67,8 @@ impl TickBench {
             .collect();
         let sw: Vec<String> = self.switches.drain(..).map(|(s, h, p)| format!("[\"{s}\",{h},{p}]")).collect();
         eprintln!(
-            "TICKBENCH|{{\"now\":{},\"fps\":{fps},\"rssMb\":{rss_mb:.1},\"rowsIn\":{rows_in},\"framesIn\":{frames_in},\"inboxRows\":{},\"applied\":{},\"applies\":{},\"applyUs\":{},\"lat\":[{}],\"sw\":[{}]}}",
+            "TICKBENCH|{{\"win\":{},\"now\":{},\"fps\":{fps},\"rssMb\":{rss_mb:.1},\"rowsIn\":{rows_in},\"framesIn\":{frames_in},\"inboxRows\":{},\"applied\":{},\"applies\":{},\"applyUs\":{},\"lat\":[{}],\"sw\":[{}]}}",
+            self.win,
             unix_us(),
             self.inbox_rows,
             self.applied_rows,

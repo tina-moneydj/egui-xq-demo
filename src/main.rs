@@ -76,7 +76,47 @@ struct GroupCfg {
     rng: u64,
 }
 
+/// XQ_WINDOWS=N 的其他視窗：只有自己的走勢圖／資訊格／分隔線位置；報價表、行情連線、合併都共用主視窗的
+struct Peer {
+    id: egui::ViewportId,
+    title: String,
+    chart: ChartView,
+    info: Info,
+    top_frac: f32,
+    left_w: f32,
+    frames: u32,
+    tick: Option<tickbench::TickBench>,
+}
+
+impl Peer {
+    fn apply(&mut self, ib: &bridge::Inbox, table: &QuoteTable) {
+        let sym = self.chart.symbol();
+        if let Some(q) = ib.quotes.get(&sym) {
+            let name = if q.name.is_empty() || q.name == q.symbol {
+                table.row(&sym).map(|r| r.name.clone()).unwrap_or_default()
+            } else {
+                q.name.clone()
+            };
+            self.chart.apply_quote(q.price, q.change, q.volume, &name);
+            self.info.price = q.price;
+            self.info.change = q.change;
+            self.info.volume = q.volume;
+        }
+        if let Some((sym, prev, bars)) = &ib.intraday {
+            self.chart.set_intraday(sym, *prev, bars);
+        }
+        for (sym, bar) in &ib.minutes {
+            self.chart.apply_minute(sym, bar);
+        }
+    }
+}
+
+fn window_count() -> usize {
+    std::env::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
+}
+
 struct Terminal {
+    peers: Vec<Peer>,
     debug_repaint: bool,
     /// XQ_DEBUG：印滑鼠按下（與 gpui 版 on_any_mouse_down 相同）
     debug: bool,
@@ -145,7 +185,23 @@ impl Terminal {
                 Group::Wait(Instant::now()),
             )
         });
+        let peers = (1..window_count())
+            .map(|k| {
+                let (sym, name) = names::WATCH[k % names::WATCH.len()];
+                Peer {
+                    id: egui::ViewportId::from_hash_of(("xq-window", k)),
+                    title: format!("XQ 風格測試（egui） #{}", k + 1),
+                    chart: ChartView::new(sym, name, period),
+                    info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
+                    top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
+                    left_w: 470.0,
+                    frames: 0,
+                    tick: xq_feed::tick_bench_enabled().then(|| tickbench::TickBench::for_window(k)),
+                }
+            })
+            .collect();
         let mut t = Terminal {
+            peers,
             debug_repaint: std::env::var("XQ_DEBUG_REPAINT").is_ok_and(|v| v == "1"),
             debug: std::env::var_os("XQ_DEBUG").is_some(),
             bridge,
@@ -241,6 +297,14 @@ impl Terminal {
         if let Some(tb) = self.tick.as_mut() {
             tb.on_apply(ib.stamp_first, ib.stamp, ib.quotes.len(), changed, us);
         }
+        for p in self.peers.iter_mut() {
+            let t1 = Instant::now();
+            p.apply(&ib, &self.table);
+            let us = us + t1.elapsed().as_micros() as u64;
+            if let Some(tb) = p.tick.as_mut() {
+                tb.on_apply(ib.stamp_first, ib.stamp, ib.quotes.len(), changed, us);
+            }
+        }
     }
 
     fn sample(&mut self) {
@@ -267,6 +331,12 @@ impl Terminal {
         }
         if let Some(tb) = self.tick.as_mut() {
             tb.report(rows_in, frames_in, self.stats.fps, self.stats.rss_mb);
+        }
+        for p in self.peers.iter_mut() {
+            if let Some(tb) = p.tick.as_mut() {
+                tb.report(rows_in, frames_in, p.frames, self.stats.rss_mb);
+            }
+            p.frames = 0;
         }
         self.last_frames_in = frames_in;
         self.last_rows_in = rows_in;
@@ -428,66 +498,24 @@ impl eframe::App for Terminal {
         want(Duration::from_secs(1).saturating_sub(now.duration_since(self.last_sample)));
 
         // ── 版面 ──
-        let full = ui.max_rect();
-        let painter = ui.painter().clone();
-        painter.rect_filled(full, 0.0, BG);
-        let title = Rect::from_min_size(full.min, vec2(full.width(), TITLE_H));
-        let status = Rect::from_min_max(pos2(full.min.x, full.max.y - STATUS_H), full.max);
-        let avail = full.height() - TITLE_H - STATUS_H - SPLIT;
-        let top_h = (avail * self.top_frac).floor();
-        let chart_r = Rect::from_min_size(pos2(full.min.x, title.max.y), vec2(full.width(), top_h));
-        let hsplit = Rect::from_min_size(pos2(full.min.x, chart_r.max.y), vec2(full.width(), SPLIT));
-        let bottom = Rect::from_min_max(pos2(full.min.x, hsplit.max.y), pos2(full.max.x, status.min.y));
-        let left_w = self.left_w.min(full.width() - 200.0).max(200.0);
-        let table_r = Rect::from_min_size(bottom.min, vec2(left_w, bottom.height()));
-        let vsplit = Rect::from_min_size(pos2(table_r.max.x, bottom.min.y), vec2(SPLIT, bottom.height()));
-        let mut info_r = Rect::from_min_max(pos2(vsplit.max.x, bottom.min.y), bottom.max);
-        // 成交明細：右下多一欄（分隔線 + 276px），與 gpui 版相同
-        let tape_r = self.tape.as_ref().map(|_| {
-            let tr = Rect::from_min_max(pos2(bottom.max.x - tick_tape::PANEL_W, bottom.min.y), bottom.max);
-            info_r.max.x = tr.min.x - SPLIT;
-            tr
-        });
-
-        // 標題列
-        painter.rect_filled(title, 0.0, HEADER);
-        painter.hline(title.x_range(), title.max.y - 0.5, (1.0, BORDER));
-        let f12 = FontId::proportional(12.0);
-        let mut x = title.min.x + 12.0;
-        for (s, c) in [("XQ", UP), ("風格測試 · egui 立即模式版", TEXT), ("同一個 WryFeedHost 行情（demo-ticks 為合成測試資料）", DIM)] {
-            x += painter.text(pos2(x, title.center().y), Align2::LEFT_CENTER, s, f12.clone(), c).width() + 12.0;
-        }
-
-        // 走勢圖
-        if let Some(ChartEvent::Period(p)) = self.chart.show(ui, chart_r) {
+        let (period, pick) = draw(
+            ui,
+            View {
+                chart: &mut self.chart,
+                info: &self.info,
+                table: &mut self.table,
+                tape: self.tape.as_mut(),
+                stats: &self.stats,
+                conn: self.conn,
+                top_frac: &mut self.top_frac,
+                left_w: &mut self.left_w,
+            },
+        );
+        if let Some(p) = period {
             let sym = self.chart.symbol();
             self.switch_chart(sym, Some(p));
         }
-
-        // 分隔線（可拖曳）
-        let hs = ui.interact(hsplit, ui.scope_id().with("hsplit"), Sense::drag());
-        let vs = ui.interact(vsplit, ui.scope_id().with("vsplit"), Sense::drag());
-        if hs.hovered() || hs.dragged() {
-            ctx.set_cursor_icon(egui::CursorIcon::ResizeVertical);
-        }
-        if vs.hovered() || vs.dragged() {
-            ctx.set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
-        }
-        if hs.dragged() {
-            if let Some(q) = hs.interact_pointer_pos() {
-                self.top_frac = ((q.y - full.min.y - TITLE_H) / avail).clamp(0.15, 0.85);
-            }
-        }
-        if vs.dragged() {
-            if let Some(q) = vs.interact_pointer_pos() {
-                self.left_w = (q.x - full.min.x).clamp(200.0, full.width() - 200.0);
-            }
-        }
-        painter.rect_filled(hsplit, 0.0, if hs.hovered() || hs.dragged() { ACCENT } else { BORDER });
-        painter.rect_filled(vsplit, 0.0, if vs.hovered() || vs.dragged() { ACCENT } else { BORDER });
-
-        // 報價表
-        if let Some(sym) = self.table.show(ui, table_r) {
+        if let Some(sym) = pick {
             if let Some(tb) = self.tick.as_mut() {
                 tb.on_switch(&sym);
             }
@@ -495,33 +523,9 @@ impl eframe::App for Terminal {
             ctx.request_repaint_after(ONE_US);
         }
 
-        // 資訊格
-        self.paint_info(&painter, info_r);
-        if let (Some(t), Some(tr)) = (self.tape.as_mut(), tape_r) {
-            painter.rect_filled(Rect::from_min_max(pos2(info_r.max.x, tr.min.y), pos2(tr.min.x, tr.max.y)), 0.0, BORDER);
-            t.show(ui, tr);
-        }
-
-        // 狀態列
-        painter.rect_filled(status, 0.0, HEADER);
-        painter.hline(status.x_range(), status.min.y + 0.5, (1.0, BORDER));
-        let (conn_text, conn_color) = match self.conn {
-            Conn::Connecting => ("連線中…", DIM),
-            Conn::Up => ("已連線，等待行情", ACCENT),
-            Conn::Ready => ("行情連線", DOWN),
-            Conn::Down => ("行情中斷，重連中", UP),
-        };
-        let f11 = FontId::proportional(11.0);
-        let m11 = FontId::monospace(11.0);
-        painter.text(pos2(status.min.x + 12.0, status.center().y), Align2::LEFT_CENTER, format!("● {conn_text} {}", xq_feed::feed_addr()), f11, conn_color);
-        let s = &self.stats;
-        let mut rx = status.max.x - 12.0;
-        for (t, c) in [
-            (format!("封包 {}/s → 套用 {}/s", s.frames_in, s.applies), DIM),
-            (format!("RSS {:.1} MB", s.rss_mb), TEXT),
-            (format!("FPS {}", s.fps), TEXT),
-        ] {
-            rx -= painter.text(pos2(rx, status.center().y), Align2::RIGHT_CENTER, t, m11.clone(), c).width() + 16.0;
+        // ── XQ_WINDOWS 的其他視窗（immediate viewport：跟主視窗同一幀、同一份報價表）──
+        if !self.peers.is_empty() {
+            self.show_peers(&ctx);
         }
 
         // ── 量測與排程 ──
@@ -535,7 +539,9 @@ impl eframe::App for Terminal {
                 ctx.request_repaint_after(ONE_US);
             }
         }
-        if self.tick.as_ref().is_some_and(|t| t.has_pending()) {
+        if self.tick.as_ref().is_some_and(|t| t.has_pending())
+            || self.peers.iter().any(|p| p.tick.as_ref().is_some_and(|t| t.has_pending()))
+        {
             want(bridge::APPLY_EVERY);
         }
         if self.chart.stress_on() {
@@ -549,7 +555,162 @@ impl eframe::App for Terminal {
 }
 
 impl Terminal {
-    fn paint_info(&self, painter: &egui::Painter, r: Rect) {
+    fn show_peers(&mut self, ctx: &egui::Context) {
+        let Terminal { peers, table, stats, conn, .. } = self;
+        let (stats, conn) = (&*stats, *conn);
+        for p in peers.iter_mut() {
+            let builder = egui::ViewportBuilder::default().with_inner_size([1240.0, 760.0]).with_title(p.title.clone());
+            ctx.show_viewport_immediate(p.id, builder, |ui, _class| {
+                p.frames += 1;
+                if let Some(tb) = p.tick.as_mut() {
+                    tb.on_frame_start();
+                }
+                if ui.ctx().input(|i| i.viewport().close_requested()) {
+                    ui.ctx().send_viewport_cmd_to(egui::ViewportId::ROOT, egui::ViewportCommand::Close);
+                }
+                // 每個視窗自己的 id 範圍（選單、子圖層等 egui id 不和主視窗撞）
+                let (period, pick) = ui.push_id(p.id, |ui| draw(
+                    ui,
+                    View {
+                        chart: &mut p.chart,
+                        info: &p.info,
+                        table,
+                        tape: None,
+                        stats,
+                        conn,
+                        top_frac: &mut p.top_frac,
+                        left_w: &mut p.left_w,
+                    },
+                )).inner;
+                if let Some(sym) = pick.clone() {
+                    if let Some(tb) = p.tick.as_mut() {
+                        tb.on_switch(&sym);
+                    }
+                }
+                let sym = pick.or_else(|| period.map(|_| p.chart.symbol()));
+                if let Some(sym) = sym {
+                    let (name, quote) = match table.row(&sym) {
+                        Some(r) => (r.name.clone(), (r.price > 0.0).then_some((r.price, r.change, r.volume))),
+                        None => (sym.clone(), None),
+                    };
+                    let per = period.unwrap_or_else(|| p.chart.period());
+                    p.chart.load(&sym, &name, per, quote);
+                    let (pr, c, v) = quote.unwrap_or((0.0, 0.0, 0));
+                    p.info = Info { symbol: sym, name, price: pr, change: c, volume: v };
+                }
+            });
+        }
+    }
+}
+
+struct View<'a> {
+    chart: &'a mut ChartView,
+    info: &'a Info,
+    table: &'a mut QuoteTable,
+    tape: Option<&'a mut TickTape>,
+    stats: &'a Stats,
+    conn: Conn,
+    top_frac: &'a mut f32,
+    left_w: &'a mut f32,
+}
+
+/// 一個看盤視窗的版面（主視窗與 XQ_WINDOWS 的其他視窗共用）。回傳（切週期, 點選代號）
+fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
+    let View { chart, info, table, tape, stats, conn, top_frac, left_w } = v;
+    let ctx = ui.ctx().clone();
+    let full = ui.max_rect();
+    let painter = ui.painter().clone();
+    painter.rect_filled(full, 0.0, BG);
+    let title = Rect::from_min_size(full.min, vec2(full.width(), TITLE_H));
+    let status = Rect::from_min_max(pos2(full.min.x, full.max.y - STATUS_H), full.max);
+    let avail = full.height() - TITLE_H - STATUS_H - SPLIT;
+    let top_h = (avail * *top_frac).floor();
+    let chart_r = Rect::from_min_size(pos2(full.min.x, title.max.y), vec2(full.width(), top_h));
+    let hsplit = Rect::from_min_size(pos2(full.min.x, chart_r.max.y), vec2(full.width(), SPLIT));
+    let bottom = Rect::from_min_max(pos2(full.min.x, hsplit.max.y), pos2(full.max.x, status.min.y));
+    let lw = left_w.min(full.width() - 200.0).max(200.0);
+    let table_r = Rect::from_min_size(bottom.min, vec2(lw, bottom.height()));
+    let vsplit = Rect::from_min_size(pos2(table_r.max.x, bottom.min.y), vec2(SPLIT, bottom.height()));
+    let mut info_r = Rect::from_min_max(pos2(vsplit.max.x, bottom.min.y), bottom.max);
+    // 成交明細：右下多一欄（分隔線 + 276px），與 gpui 版相同
+    let tape_r = tape.as_ref().map(|_| {
+        let tr = Rect::from_min_max(pos2(bottom.max.x - tick_tape::PANEL_W, bottom.min.y), bottom.max);
+        info_r.max.x = tr.min.x - SPLIT;
+        tr
+    });
+
+    // 標題列
+    painter.rect_filled(title, 0.0, HEADER);
+    painter.hline(title.x_range(), title.max.y - 0.5, (1.0, BORDER));
+    let f12 = FontId::proportional(12.0);
+    let mut x = title.min.x + 12.0;
+    for (s, c) in [("XQ", UP), ("風格測試 · egui 立即模式版", TEXT), ("同一個 WryFeedHost 行情（demo-ticks 為合成測試資料）", DIM)] {
+        x += painter.text(pos2(x, title.center().y), Align2::LEFT_CENTER, s, f12.clone(), c).width() + 12.0;
+    }
+
+    // 走勢圖
+    let period = match chart.show(ui, chart_r) {
+        Some(ChartEvent::Period(p)) => Some(p),
+        None => None,
+    };
+
+    // 分隔線（可拖曳）
+    let hs = ui.interact(hsplit, ui.scope_id().with("hsplit"), Sense::drag());
+    let vs = ui.interact(vsplit, ui.scope_id().with("vsplit"), Sense::drag());
+    if hs.hovered() || hs.dragged() {
+        ctx.set_cursor_icon(egui::CursorIcon::ResizeVertical);
+    }
+    if vs.hovered() || vs.dragged() {
+        ctx.set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+    }
+    if hs.dragged() {
+        if let Some(q) = hs.interact_pointer_pos() {
+            *top_frac = ((q.y - full.min.y - TITLE_H) / avail).clamp(0.15, 0.85);
+        }
+    }
+    if vs.dragged() {
+        if let Some(q) = vs.interact_pointer_pos() {
+            *left_w = (q.x - full.min.x).clamp(200.0, full.width() - 200.0);
+        }
+    }
+    painter.rect_filled(hsplit, 0.0, if hs.hovered() || hs.dragged() { ACCENT } else { BORDER });
+    painter.rect_filled(vsplit, 0.0, if vs.hovered() || vs.dragged() { ACCENT } else { BORDER });
+
+    // 報價表
+    let pick = table.show(ui, table_r);
+
+    // 資訊格
+    paint_info(&painter, info_r, info, stats);
+    if let (Some(t), Some(tr)) = (tape, tape_r) {
+        painter.rect_filled(Rect::from_min_max(pos2(info_r.max.x, tr.min.y), pos2(tr.min.x, tr.max.y)), 0.0, BORDER);
+        t.show(ui, tr);
+    }
+
+    // 狀態列
+    painter.rect_filled(status, 0.0, HEADER);
+    painter.hline(status.x_range(), status.min.y + 0.5, (1.0, BORDER));
+    let (conn_text, conn_color) = match conn {
+        Conn::Connecting => ("連線中…", DIM),
+        Conn::Up => ("已連線，等待行情", ACCENT),
+        Conn::Ready => ("行情連線", DOWN),
+        Conn::Down => ("行情中斷，重連中", UP),
+    };
+    let f11 = FontId::proportional(11.0);
+    let m11 = FontId::monospace(11.0);
+    painter.text(pos2(status.min.x + 12.0, status.center().y), Align2::LEFT_CENTER, format!("● {conn_text} {}", xq_feed::feed_addr()), f11, conn_color);
+    let s = stats;
+    let mut rx = status.max.x - 12.0;
+    for (t, c) in [
+        (format!("封包 {}/s → 套用 {}/s", s.frames_in, s.applies), DIM),
+        (format!("RSS {:.1} MB", s.rss_mb), TEXT),
+        (format!("FPS {}", s.fps), TEXT),
+    ] {
+        rx -= painter.text(pos2(rx, status.center().y), Align2::RIGHT_CENTER, t, m11.clone(), c).width() + 16.0;
+    }
+    (period, pick)
+}
+
+fn paint_info(painter: &egui::Painter, r: Rect, i: &Info, s: &Stats) {
         let painter = painter.with_clip_rect(r);
         painter.rect_filled(r, 0.0, PANEL);
         let hr = Rect::from_min_size(r.min, vec2(r.width(), 26.0));
@@ -558,7 +719,6 @@ impl Terminal {
         let f12 = FontId::proportional(12.0);
         let m12 = FontId::monospace(12.0);
         painter.text(pos2(hr.min.x + 8.0, hr.center().y), Align2::LEFT_CENTER, "資訊", f12.clone(), TEXT);
-        let i = &self.info;
         let has = i.price > 0.0;
         let color = dir_color(i.change);
         let x0 = r.min.x + 12.0;
@@ -579,7 +739,6 @@ impl Terminal {
         for (k, (a, b, c)) in rows.into_iter().enumerate() {
             kv(y + k as f32 * 20.0, x0, 220.0, a, b, c);
         }
-        let s = &self.stats;
         let x1 = x0 + 236.0;
         let y1 = hr.max.y + 12.0;
         painter.text(pos2(x1, y1 + 8.0), Align2::LEFT_CENTER, "效能（每秒取樣）", FontId::proportional(13.0), DIM);
@@ -600,7 +759,6 @@ impl Terminal {
             FontId::proportional(11.0),
             DIM,
         );
-    }
 }
 
 /// 中文字型：直接 mmap 系統的 Noto Sans CJK（.ttc 一份檔案兩個字面：TC＝index 3、Mono TC＝index 8），不複製進記憶體
