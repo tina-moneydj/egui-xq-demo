@@ -9,6 +9,8 @@ description = "XQ 風格看盤 demo（Rust + egui/eframe 立即模式），與 w
 [dependencies]
 # 共用行情協議（WryFeedHost 二進位封包＋壓測時間戳），固定在 gpui-xq-demo 的版本
 xq-feed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
+# 成交明細純邏輯（推導成交、Ring、格式化），與 gpui 版同一份
+xq-tape = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
 # 兩種 renderer 都編進去，執行時用 XQ_RENDERER=glow|wgpu 選（預設見 README）
 eframe = { version = "0.37", default-features = false, features = ["glow", "wgpu", "x11", "default_fonts"] }
 egui = "0.37"

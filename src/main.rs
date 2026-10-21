@@ -17,6 +17,7 @@ mod series;
 mod store;
 mod table;
 mod theme;
+mod tick_tape;
 mod tickbench;
 
 use std::sync::Arc;
@@ -28,6 +29,7 @@ use bridge::{Conn, FeedBridge};
 use chart::{ChartEvent, ChartView};
 use series::Period;
 use table::QuoteTable;
+use tick_tape::{TapeFeed, TickTape};
 use theme::*;
 
 /// egui 的 request_repaint()（delay=0）會多排一幀「讓東西穩定」；我們的狀態是自己管的，用 1µs 避開那一幀
@@ -76,10 +78,14 @@ struct GroupCfg {
 
 struct Terminal {
     debug_repaint: bool,
+    /// XQ_DEBUG：印滑鼠按下（與 gpui 版 on_any_mouse_down 相同）
+    debug: bool,
     bridge: FeedBridge,
     table: QuoteTable,
     chart: ChartView,
     info: Info,
+    /// 成交明細範例面板（XQ_TAPE=1 才開；預設 None，版面與壓測不變）
+    tape: Option<TickTape>,
     conn: Conn,
     top_frac: f32,
     left_w: f32,
@@ -115,7 +121,9 @@ impl Terminal {
         vis.window_fill = PANEL;
         cc.egui_ctx.set_visuals(vis);
         let (sym, name) = names::WATCH[0];
-        let bridge = FeedBridge::start(cc.egui_ctx.clone());
+        let tape_feed = std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
+        let tape = tape_feed.clone().map(|f| TickTape::new(f, sym, &cc.egui_ctx));
+        let bridge = FeedBridge::start(cc.egui_ctx.clone(), tape_feed);
         let mut table = QuoteTable::new(names::WATCH);
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = ChartView::new(sym, name, period);
@@ -139,10 +147,12 @@ impl Terminal {
         });
         let mut t = Terminal {
             debug_repaint: std::env::var("XQ_DEBUG_REPAINT").is_ok_and(|v| v == "1"),
+            debug: std::env::var_os("XQ_DEBUG").is_some(),
             bridge,
             table,
             chart,
             info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
+            tape,
             conn: Conn::Connecting,
             top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
             left_w: 470.0,
@@ -184,6 +194,9 @@ impl Terminal {
         };
         let period = period.unwrap_or_else(|| self.chart.period());
         self.chart.load(&symbol, &name, period, quote);
+        if let Some(t) = self.tape.as_mut() {
+            t.set_symbol(&symbol);
+        }
         let (p, c, v) = quote.unwrap_or((0.0, 0.0, 0));
         self.info = Info { symbol: symbol.clone(), name, price: p, change: c, volume: v };
         self.resubscribe();
@@ -217,6 +230,10 @@ impl Terminal {
         }
         for (sym, bar) in &ib.minutes {
             self.chart.apply_minute(sym, bar);
+        }
+        if let Some(t) = self.tape.as_mut() {
+            // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不讓快取失效
+            t.apply();
         }
         self.applies += 1;
         let us = t0.elapsed().as_micros() as u64;
@@ -354,6 +371,15 @@ impl eframe::App for Terminal {
             }
         }
         let ctx = ui.ctx().clone();
+        if self.debug {
+            ctx.input(|i| {
+                for e in &i.events {
+                    if let egui::Event::PointerButton { pos, button, pressed: true, .. } = e {
+                        eprintln!("[debug] mouse down {button:?} at {pos:?}");
+                    }
+                }
+            });
+        }
         let now = Instant::now();
         self.frame_t = now;
         self.frames += 1;
@@ -415,7 +441,13 @@ impl eframe::App for Terminal {
         let left_w = self.left_w.min(full.width() - 200.0).max(200.0);
         let table_r = Rect::from_min_size(bottom.min, vec2(left_w, bottom.height()));
         let vsplit = Rect::from_min_size(pos2(table_r.max.x, bottom.min.y), vec2(SPLIT, bottom.height()));
-        let info_r = Rect::from_min_max(pos2(vsplit.max.x, bottom.min.y), bottom.max);
+        let mut info_r = Rect::from_min_max(pos2(vsplit.max.x, bottom.min.y), bottom.max);
+        // 成交明細：右下多一欄（分隔線 + 276px），與 gpui 版相同
+        let tape_r = self.tape.as_ref().map(|_| {
+            let tr = Rect::from_min_max(pos2(bottom.max.x - tick_tape::PANEL_W, bottom.min.y), bottom.max);
+            info_r.max.x = tr.min.x - SPLIT;
+            tr
+        });
 
         // 標題列
         painter.rect_filled(title, 0.0, HEADER);
@@ -465,6 +497,10 @@ impl eframe::App for Terminal {
 
         // 資訊格
         self.paint_info(&painter, info_r);
+        if let (Some(t), Some(tr)) = (self.tape.as_mut(), tape_r) {
+            painter.rect_filled(Rect::from_min_max(pos2(info_r.max.x, tr.min.y), pos2(tr.min.x, tr.max.y)), 0.0, BORDER);
+            t.show(ui, tr);
+        }
 
         // 狀態列
         painter.rect_filled(status, 0.0, HEADER);

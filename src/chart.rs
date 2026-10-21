@@ -839,7 +839,15 @@ impl ChartView {
                 let f = self.m.reset_view();
                 self.refresh(f);
             }
-            if small_btn(ui, "指標 ▾", self.menu_open).clicked() {
+            // Noto Sans CJK 沒有 ▾（U+25BE）字形，會畫成缺字方塊：字後留空，三角形自己畫（與 gpui 版外觀一致）
+            let mb = small_btn(ui, "指標    ", self.menu_open);
+            let c = mb.rect.right_center() + vec2(-10.0, 0.0);
+            ui.painter().add(Shape::convex_polygon(
+                vec![c + vec2(-3.5, -2.0), c + vec2(3.5, -2.0), c + vec2(0.0, 2.5)],
+                if self.menu_open { TEXT } else { DIM },
+                egui::Stroke::NONE,
+            ));
+            if mb.clicked() {
                 self.menu_open = !self.menu_open;
             }
             for &pd in Period::ALL.iter().rev() {
@@ -864,7 +872,19 @@ impl ChartView {
         // ── 三層 ──
         let font = gfx::font_key(&ctx);
         let key = LayerKey { rect: stage, font };
-        let sp = ui.painter_at(stage);
+        if gfx::no_view_cache() {
+            self.dirty |= PLOT | LIVE;
+        }
+        let layer_painter = |n: u8| {
+            if gfx::split_layers() {
+                let id = egui::LayerId::new(ui.layer_id().order, ui.scope_id().with(("chart-layer", n)));
+                ctx.set_sublayer(ui.layer_id(), id);
+                ctx.layer_painter(id).with_clip_rect(stage)
+            } else {
+                ui.painter_at(stage)
+            }
+        };
+        let sp = layer_painter(0);
         if self.dirty & PLOT != 0 || !matches!(&self.plot, Some((k, _)) if *k == key) {
             let t = Instant::now();
             let layer = build_plot(&mut self.m, stage, &ctx);
@@ -877,7 +897,8 @@ impl ChartView {
         for (clip, mesh) in &self.plot.as_ref().unwrap().1 {
             sp.with_clip_rect(*clip).add(Shape::Mesh(mesh.clone()));
         }
-        self.paint_draw(&ctx, &sp, stage);
+        self.paint_draw(&ctx, &layer_painter(1), stage);
+        let sp = layer_painter(2);
         if self.dirty & LIVE != 0 || !matches!(&self.live, Some((k, _)) if *k == key) {
             let t = Instant::now();
             let layer = build_live(&mut self.m, stage, &ctx);
@@ -1078,7 +1099,7 @@ impl ChartView {
                     ui.label(egui::RichText::new(format!("主圖疊加（{}/{MAX_OVERLAYS}）", cfg.overlays.len())).color(DIM));
                     for (k, o) in cfg.overlays.iter().enumerate() {
                         ui.horizontal(|ui| {
-                            ui.add_sized([110.0, 16.0], egui::Label::new(egui::RichText::new(o.label()).color(rgb(OV_COLORS[k % 20]))));
+                            fixed_w(ui, 110.0, |ui| ui.label(egui::RichText::new(o.label()).color(rgb(OV_COLORS[k % 20]))));
                             if ui.small_button("−").clicked() {
                                 change = Some(Box::new(move |c| step_ov(&mut c.overlays[k], -1.0)));
                             }
@@ -1110,7 +1131,7 @@ impl ChartView {
                     for (k, s) in cfg.subs.iter().enumerate() {
                         ui.horizontal(|ui| {
                             let mut on = s.on;
-                            if ui.add_sized([130.0, 16.0], egui::Checkbox::new(&mut on, s.kind.label())).changed() {
+                            if fixed_w(ui, 130.0, |ui| ui.checkbox(&mut on, s.kind.label())).changed() {
                                 change = Some(Box::new(move |c| {
                                     let on_now = c.subs.iter().filter(|s| s.on).count();
                                     if c.subs[k].on || on_now < MAX_SUBS {
@@ -1146,6 +1167,15 @@ impl ChartView {
         }
         Some(r.response.rect)
     }
+}
+
+/// 固定寬度、靠左（`add_sized` 會置中，和 gpui 版的靠左欄位對不齊）
+fn fixed_w(ui: &mut Ui, w: f32, add: impl FnOnce(&mut Ui) -> egui::Response) -> egui::Response {
+    ui.allocate_ui_with_layout(vec2(w, 16.0), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+        ui.set_min_width(w);
+        add(ui)
+    })
+    .inner
 }
 
 fn small_btn(ui: &mut Ui, label: &str, on: bool) -> egui::Response {

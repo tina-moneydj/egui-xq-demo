@@ -264,7 +264,7 @@ impl QuoteTable {
                 }
             }
             let key = Key { clip, origin_y: origin.y, i0, i1, gen: self.gen, selected: self.selected, hover, font: gfx::font_key(&ctx) };
-            if !matches!(&self.cache, Some((k, _)) if *k == key) {
+            if gfx::no_view_cache() || !matches!(&self.cache, Some((k, _)) if *k == key) {
                 let t0 = std::time::Instant::now();
                 let mesh = self.build_rows(&ctx, origin.x, origin.y, w, i0, i1, hover);
                 if i1 > i0 {

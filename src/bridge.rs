@@ -14,6 +14,8 @@ use std::time::{Duration, Instant};
 use parking_lot::Mutex;
 use xq_feed::{Bar, Event, Msg, Quote, Stamp, Subscribe};
 
+use crate::tick_tape::TapeFeed;
+
 /// 兩次套用之間至少間隔（≈ 一幀）
 pub const APPLY_EVERY: Duration = Duration::from_millis(16);
 
@@ -55,7 +57,8 @@ pub struct FeedBridge {
 }
 
 impl FeedBridge {
-    pub fn start(ctx: egui::Context) -> Self {
+    /// `tape`：有開成交明細面板（`XQ_TAPE=1`）才給；None 時熱路徑完全不多做事。
+    pub fn start(ctx: egui::Context, tape: Option<TapeFeed>) -> Self {
         let inbox = Arc::new(Mutex::new(Inbox::default()));
         let pending = Arc::new(AtomicBool::new(false));
         let last_apply = Arc::new(AtomicU64::new(0));
@@ -68,7 +71,7 @@ impl FeedBridge {
             let counters = counters.clone();
             let last_apply = last_apply.clone();
             xq_feed::spawn_client(xq_feed::feed_addr(), cmd_rx, move |ev| {
-                merge(&inbox, &counters, ev);
+                merge(&inbox, &counters, tape.as_ref(), ev);
                 if !pending.swap(true, Ordering::AcqRel) {
                     let now = epoch.elapsed().as_micros() as u64;
                     let due = last_apply.load(Ordering::Acquire) + APPLY_EVERY.as_micros() as u64;
@@ -107,7 +110,7 @@ impl FeedBridge {
     }
 }
 
-fn merge(inbox: &Mutex<Inbox>, counters: &Counters, ev: Event) {
+fn merge(inbox: &Mutex<Inbox>, counters: &Counters, tape: Option<&TapeFeed>, ev: Event) {
     let mut ib = inbox.lock();
     match ev {
         Event::Connected => ib.conn = Some(Conn::Up),
@@ -130,6 +133,10 @@ fn merge(inbox: &Mutex<Inbox>, counters: &Counters, ev: Event) {
                 }
                 Msg::Quotes(quotes) => {
                     counters.quote_rows.fetch_add(quotes.len() as u64, Ordering::Relaxed);
+                    // 成交明細要「每一筆」，所以在合併（同代號只留最新）之前先看一眼
+                    if let Some(t) = tape {
+                        t.on_quotes(&quotes);
+                    }
                     for q in quotes {
                         if !ib.quotes.contains_key(&q.symbol) {
                             ib.order.push(q.symbol.clone());
