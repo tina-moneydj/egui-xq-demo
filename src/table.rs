@@ -54,6 +54,15 @@ pub struct QuoteTable {
     pub paints: u64,
     pub paint_us: u64,
     pub cells: u64,
+    /// 股名／代號搜尋（IME 測試）
+    query: String,
+    last_query: String,
+    matches: Vec<usize>,
+    match_sel: usize,
+    /// IME 組字中（收到非空 Preedit、還沒 Commit）：組字中不搜尋
+    composing: bool,
+    /// 自動化測試用：XQ_IME_LOG=1 時把 IME 事件印到 stderr
+    ime_log: bool,
 }
 
 impl QuoteTable {
@@ -76,6 +85,12 @@ impl QuoteTable {
             paints: 0,
             paint_us: 0,
             cells: 0,
+            query: String::new(),
+            last_query: String::new(),
+            matches: Vec::new(),
+            match_sel: 0,
+            composing: false,
+            ime_log: std::env::var("XQ_IME_LOG").is_ok_and(|v| v == "1"),
         }
     }
 
@@ -182,6 +197,86 @@ impl QuoteTable {
         self.scroll_to = Some(ix as f32 * ROW_H);
     }
 
+    fn show_search(&mut self, ui: &mut Ui, sr: Rect) -> Option<String> {
+        let id = ui.scope_id().with("quote-search");
+        // 先看這一幀的 IME 事件，決定是否在組字中
+        let log = self.ime_log;
+        ui.input(|i| {
+            for e in &i.events {
+                if let egui::Event::Ime(ime) = e {
+                    if log {
+                        eprintln!("[ime] {ime:?}");
+                    }
+                    match ime {
+                        egui::ImeEvent::Preedit { text: t, .. } => self.composing = !t.is_empty(),
+                        egui::ImeEvent::Commit(_) => self.composing = false,
+                        _ => {}
+                    }
+                }
+            }
+        });
+        let te = egui::TextEdit::singleline(&mut self.query)
+            .id(id)
+            .hint_text("股名／代號 搜尋")
+            .font(egui::FontId::proportional(12.0))
+            .text_color(TEXT)
+            .background_color(BG)
+            .margin(egui::vec2(4.0, 1.0));
+        let resp = ui.put(sr, te);
+        if log && resp.changed() {
+            eprintln!("[search] text={:?} composing={}", self.query, self.composing);
+        }
+        if !self.composing && self.query != self.last_query {
+            self.last_query = self.query.clone();
+            self.matches = find_matches(self.rows.iter().enumerate().map(|(i, r)| (i, r.symbol.as_str(), r.name.as_str())), &self.query, 8);
+            self.match_sel = 0;
+            if log {
+                eprintln!("[search] query={:?} matches={:?}", self.query, self.matches.iter().map(|&i| &self.rows[i].symbol).collect::<Vec<_>>());
+            }
+        }
+        let focused = resp.has_focus();
+        let (down, up, enter, esc) = ui.input(|i| {
+            (i.key_pressed(egui::Key::ArrowDown), i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::Enter), i.key_pressed(egui::Key::Escape))
+        });
+        let mut pick = None;
+        if focused || resp.lost_focus() {
+            let n = self.matches.len();
+            if n > 0 && down {
+                self.match_sel = (self.match_sel + 1) % n;
+            }
+            if n > 0 && up {
+                self.match_sel = (self.match_sel + n - 1) % n;
+            }
+            if enter && !self.composing {
+                pick = self.matches.get(self.match_sel).copied();
+            }
+            if esc {
+                self.query.clear();
+            }
+        }
+        // 建議清單（浮在最上層）
+        if !self.matches.is_empty() && !self.query.is_empty() {
+            let area = egui::Area::new(id.with("list")).fixed_pos(pos2(sr.min.x, sr.max.y + 2.0)).order(egui::Order::Foreground);
+            area.show(ui.ctx(), |ui| {
+                egui::Frame::popup(ui.style()).fill(HEADER).stroke((1.0, ACCENT)).inner_margin(2.0).show(ui, |ui| {
+                    ui.set_width(220.0);
+                    for (k, &ix) in self.matches.iter().enumerate() {
+                        let r = &self.rows[ix];
+                        let text = egui::RichText::new(format!("{:<8} {}", r.symbol, r.name)).font(egui::FontId::monospace(12.0)).color(TEXT);
+                        if ui.add(egui::Button::selectable(k == self.match_sel, text).min_size(egui::vec2(216.0, 18.0))).clicked() {
+                            pick = Some(ix);
+                        }
+                    }
+                });
+            });
+        }
+        let ix = pick?;
+        self.query.clear();
+        self.last_query.clear();
+        self.matches.clear();
+        self.select(ix)
+    }
+
     fn select(&mut self, ix: usize) -> Option<String> {
         if ix >= self.rows.len() {
             return None;
@@ -216,6 +311,13 @@ impl QuoteTable {
         painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { ACCENT } else { DIM });
         if bresp.clicked() {
             self.toggle_stress();
+        }
+        // 搜尋框（egui 內建 TextEdit；IME 由 egui-winit 處理）
+        let sx = hr.min.x + 24.0 + tw + 60.0;
+        let sr = Rect::from_min_max(pos2(sx, hr.min.y + 3.0), pos2((sx + 150.0).min(br.min.x - 8.0), hr.max.y - 3.0));
+        let mut search_pick = None;
+        if sr.width() > 40.0 {
+            search_pick = self.show_search(ui, sr);
         }
         // 欄位標頭
         let cr = Rect::from_min_size(pos2(rect.min.x, hr.max.y), vec2(rect.width(), COLHEAD_H));
@@ -276,7 +378,7 @@ impl QuoteTable {
             }
             ui.painter().add(Shape::Mesh(self.cache.as_ref().unwrap().1.clone()));
         });
-        picked
+        picked.or(search_pick)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -332,4 +434,28 @@ impl QuoteTable {
         }
         s.finish(ctx)
     }
+}
+
+/// 搜尋比對（與 gpui 版相同）：代號前綴（不分大小寫）或名稱包含；完全相符的排前面。最多 `limit` 筆。
+pub fn find_matches<'a>(rows: impl Iterator<Item = (usize, &'a str, &'a str)>, q: &str, limit: usize) -> Vec<usize> {
+    let q = q.trim();
+    if q.is_empty() {
+        return Vec::new();
+    }
+    let qu = q.to_ascii_uppercase();
+    let mut exact = Vec::new();
+    let mut out = Vec::new();
+    for (i, sym, name) in rows {
+        if sym.eq_ignore_ascii_case(q) || name == q {
+            exact.push(i);
+        } else if (sym.to_ascii_uppercase().starts_with(&qu) || name.contains(q)) && out.len() < limit {
+            out.push(i);
+        }
+        if exact.len() >= limit {
+            break;
+        }
+    }
+    exact.extend(out);
+    exact.truncate(limit);
+    exact
 }
