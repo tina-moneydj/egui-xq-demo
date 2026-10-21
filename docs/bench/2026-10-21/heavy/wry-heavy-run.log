@@ -1,0 +1,156 @@
+   0.186 
+   0.186 (wry-xq-demo:29791): dbind-WARNING **: 20:52:37.769: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.609 [engine] 已連上 XQNext 127.0.0.1:47631
+   2.638 [ui] BENCH first-quote
+   2.758 [ui] BENCH fps 8.0
+   2.776 [ui] BENCH first-frame
+   3.276 [ui] BENCH heavy-frame
+   3.276 [ui] CHARTPERF|{"phase":"setup","sinceStartMs":1524,"overlays":20,"overlayTypes":{"ma":11,"ema":5,"bb":2,"sar":2},"subsEnabled":8,"subIds":["vol","kd","macd","rsi","wr","dmi","atr","obv"],"subLayout":{"left":1,"right":3},"panesExpected":9,"drawings":1000,"period":"D","symbol":"2330","bars":1200,"cssW":1166,"cssH":512}
+   3.276 [ui] CHARTPHASE|warm|start
+   3.782 [ui] BENCH fps 23.4
+   4.788 [ui] BENCH fps 30.8
+   5.794 [ui] BENCH fps 31.8
+   6.286 [ui] CHARTPHASE|ticks|start
+   6.812 [ui] BENCH fps 31.4
+   7.834 [ui] BENCH fps 33.3
+   8.852 [ui] BENCH fps 34.4
+   9.874 [ui] BENCH fps 33.3
+  10.881 [ui] BENCH fps 34.7
+  11.897 [ui] BENCH fps 32.5
+  12.909 [ui] BENCH fps 32.6
+  13.938 [ui] BENCH fps 33.1
+  14.952 [ui] BENCH fps 34.5
+  15.982 [ui] BENCH fps 33.0
+  16.297 [ui] CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":334,"fps":33.4,"avgPaintMs":6.743,"tickHz":33.4}
+  16.297 [ui] CHARTPHASE|ticks|end
+  16.297 [ui] CHARTPHASE|crosshair|start
+  16.994 [ui] BENCH fps 33.6
+  17.999 [ui] BENCH fps 32.9
+  19.025 [ui] BENCH fps 32.2
+  20.055 [ui] BENCH fps 33.2
+  21.082 [ui] BENCH fps 30.0
+  22.098 [ui] BENCH fps 34.4
+  23.121 [ui] BENCH fps 35.2
+  24.151 [ui] BENCH fps 32.0
+  25.176 [ui] BENCH fps 34.2
+  26.207 [ui] BENCH fps 31.9
+  26.308 [ui] CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":330,"fps":33,"avgPaintMs":7.212,"tickHz":33}
+  26.308 [ui] CHARTPHASE|crosshair|end
+  26.308 [ui] CHARTPHASE|pan|start
+  27.251 [ui] BENCH fps 19.2
+  28.299 [ui] BENCH fps 25.8
+  29.324 [ui] BENCH fps 22.4
+  30.354 [ui] BENCH fps 23.3
+  31.367 [ui] BENCH fps 25.7
+  32.407 [ui] BENCH fps 25.0
+  33.433 [ui] BENCH fps 23.4
+  34.448 [ui] BENCH fps 29.6
+  35.452 [ui] BENCH fps 25.9
+  36.326 [ui] CHARTPERF|{"phase":"pan","seconds":10.02,"frames":244,"fps":24.4,"avgPaintMs":8.193,"tickHz":24.4}
+  36.326 [ui] CHARTPHASE|pan|end
+  36.326 [ui] CHARTPERF|{"phase":"done","sinceStartMs":34574}
+----
+   0.109 
+   0.109 (wry-xq-demo:30972): dbind-WARNING **: 20:54:35.421: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.121 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.963 [ui] BENCH first-quote
+   1.079 [ui] BENCH first-frame
+   1.356 [ui] BENCH heavy-frame
+   1.356 [ui] CHARTPERF|{"phase":"setup","sinceStartMs":642,"overlays":20,"overlayTypes":{"ma":11,"ema":5,"bb":2,"sar":2},"subsEnabled":8,"subIds":["vol","kd","macd","rsi","wr","dmi","atr","obv"],"subLayout":{"left":1,"right":3},"panesExpected":9,"drawings":1000,"period":"D","symbol":"2330","bars":1200,"cssW":1166,"cssH":512}
+   1.356 [ui] CHARTPHASE|warm|start
+   1.733 [ui] BENCH fps 28.5
+   2.739 [ui] BENCH fps 30.8
+   3.748 [ui] BENCH fps 31.7
+   4.366 [ui] CHARTPHASE|ticks|start
+   4.751 [ui] BENCH fps 31.9
+   5.758 [ui] BENCH fps 29.8
+   6.781 [ui] BENCH fps 32.3
+   7.791 [ui] BENCH fps 36.6
+   8.827 [ui] BENCH fps 34.7
+   9.849 [ui] BENCH fps 32.3
+  10.868 [ui] BENCH fps 31.4
+  11.903 [ui] BENCH fps 32.9
+  12.926 [ui] BENCH fps 32.2
+  13.951 [ui] BENCH fps 36.1
+  14.366 [ui] CHARTPERF|{"phase":"ticks","seconds":10,"frames":331,"fps":33.1,"avgPaintMs":6.326,"tickHz":33.1}
+  14.367 [ui] CHARTPHASE|ticks|end
+  14.367 [ui] CHARTPHASE|crosshair|start
+  14.974 [ui] BENCH fps 32.3
+  15.983 [ui] BENCH fps 29.7
+  16.994 [ui] BENCH fps 30.7
+  18.005 [ui] BENCH fps 29.7
+  19.020 [ui] BENCH fps 31.6
+  20.062 [ui] BENCH fps 31.7
+  21.080 [ui] BENCH fps 30.4
+  22.102 [ui] BENCH fps 32.3
+  23.116 [ui] BENCH fps 34.5
+  24.134 [ui] BENCH fps 32.4
+  24.381 [ui] CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":314,"fps":31.4,"avgPaintMs":7.115,"tickHz":31.4}
+  24.381 [ui] CHARTPHASE|crosshair|end
+  24.381 [ui] CHARTPHASE|pan|start
+  25.151 [ui] BENCH fps 22.6
+  26.184 [ui] BENCH fps 26.2
+  27.207 [ui] BENCH fps 20.5
+  28.222 [ui] BENCH fps 23.6
+  29.260 [ui] BENCH fps 28.0
+  30.290 [ui] BENCH fps 23.3
+  31.297 [ui] BENCH fps 24.9
+  32.303 [ui] BENCH fps 28.8
+  33.309 [ui] BENCH fps 23.9
+  34.341 [ui] BENCH fps 24.2
+  34.390 [ui] CHARTPERF|{"phase":"pan","seconds":10.01,"frames":245,"fps":24.5,"avgPaintMs":8.041,"tickHz":24.5}
+  34.390 [ui] CHARTPHASE|pan|end
+  34.390 [ui] CHARTPERF|{"phase":"done","sinceStartMs":33677}
+----
+   0.094 
+   0.094 (wry-xq-demo:31820): dbind-WARNING **: 20:56:29.879: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.105 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.912 [ui] BENCH first-quote
+   1.039 [ui] BENCH first-frame
+   1.304 [ui] BENCH heavy-frame
+   1.304 [ui] CHARTPERF|{"phase":"setup","sinceStartMs":620,"overlays":20,"overlayTypes":{"ma":11,"ema":5,"bb":2,"sar":2},"subsEnabled":8,"subIds":["vol","kd","macd","rsi","wr","dmi","atr","obv"],"subLayout":{"left":1,"right":3},"panesExpected":9,"drawings":1000,"period":"D","symbol":"2330","bars":1200,"cssW":1166,"cssH":512}
+   1.304 [ui] CHARTPHASE|warm|start
+   1.715 [ui] BENCH fps 31.0
+   2.735 [ui] BENCH fps 34.3
+   3.751 [ui] BENCH fps 33.5
+   4.329 [ui] CHARTPHASE|ticks|start
+   4.759 [ui] BENCH fps 33.7
+   5.761 [ui] BENCH fps 37.0
+   6.767 [ui] BENCH fps 35.8
+   7.796 [ui] BENCH fps 36.0
+   8.821 [ui] BENCH fps 35.1
+   9.856 [ui] BENCH fps 33.8
+  10.875 [ui] BENCH fps 36.3
+  11.898 [ui] BENCH fps 35.2
+  12.908 [ui] BENCH fps 37.6
+  13.939 [ui] BENCH fps 36.9
+  14.333 [ui] CHARTPERF|{"phase":"ticks","seconds":10,"frames":360,"fps":36,"avgPaintMs":6.15,"tickHz":36}
+  14.333 [ui] CHARTPHASE|ticks|end
+  14.333 [ui] CHARTPHASE|crosshair|start
+  14.940 [ui] BENCH fps 37.9
+  15.951 [ui] BENCH fps 32.7
+  16.968 [ui] BENCH fps 34.4
+  17.996 [ui] BENCH fps 34.1
+  19.001 [ui] BENCH fps 30.8
+  20.009 [ui] BENCH fps 33.8
+  21.022 [ui] BENCH fps 34.5
+  22.030 [ui] BENCH fps 34.7
+  23.065 [ui] BENCH fps 33.8
+  24.097 [ui] BENCH fps 33.0
+  24.335 [ui] CHARTPERF|{"phase":"crosshair","seconds":10,"frames":338,"fps":33.8,"avgPaintMs":6.896,"tickHz":33.8}
+  24.335 [ui] CHARTPHASE|crosshair|end
+  24.335 [ui] CHARTPHASE|pan|start
+  25.100 [ui] BENCH fps 23.9
+  26.137 [ui] BENCH fps 29.0
+  27.170 [ui] BENCH fps 25.2
+  28.182 [ui] BENCH fps 26.7
+  29.219 [ui] BENCH fps 27.9
+  30.254 [ui] BENCH fps 27.1
+  31.275 [ui] BENCH fps 23.5
+  32.279 [ui] BENCH fps 24.9
+  33.310 [ui] BENCH fps 29.1
+  34.337 [ui] BENCH fps 26.3
+  34.352 [ui] CHARTPERF|{"phase":"pan","seconds":10.02,"frames":262,"fps":26.2,"avgPaintMs":7.592,"tickHz":26.2}
+  34.352 [ui] CHARTPHASE|pan|end
+  34.352 [ui] CHARTPERF|{"phase":"done","sinceStartMs":33668}
+----
