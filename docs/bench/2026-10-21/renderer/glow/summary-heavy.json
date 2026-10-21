@@ -1,0 +1,64 @@
+{
+ "date": "2026-10-21 19:18 +0800",
+ "runs": 2,
+ "mode": "heavy",
+ "apps": [
+  "egui"
+ ],
+ "feed": "WryFeedHost --demo-ticks（每輪重啟）",
+ "egui": {
+  "binary_mb": 12.994468688964844,
+  "heavy": {
+   "heavy_frame_ms": 481.3361244996486,
+   "first_quote_ms": 145.96692449958937,
+   "canvas": "1166x505",
+   "overlays": 20,
+   "drawings": 1000,
+   "bars": 1200,
+   "ticks": {
+    "fps": 56.099999999999994,
+    "paint_ms": 0.8485,
+    "cpu_pct": 260.6555226305418,
+    "cpu_nollvm_pct": 49.63178502000156,
+    "rss_mb": 133.90625,
+    "pss_mb": 128.16943359375,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 212.5,
+     "egui-xq-demo/egui-xq-demo": 49.0
+    }
+   },
+   "crosshair": {
+    "fps": 55.2,
+    "paint_ms": 0.94,
+    "cpu_pct": 263.6007412206649,
+    "cpu_nollvm_pct": 49.971741365874095,
+    "rss_mb": 141.734375,
+    "pss_mb": 135.86669921875,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 212.4,
+     "egui-xq-demo/egui-xq-demo": 49.5
+    }
+   },
+   "pan": {
+    "fps": 55.55,
+    "paint_ms": 0.6325000000000001,
+    "cpu_pct": 261.7644748412556,
+    "cpu_nollvm_pct": 49.36511983421584,
+    "rss_mb": 141.251953125,
+    "pss_mb": 135.3837890625,
+    "threads_last": {
+     "egui-xq-demo/llvmpipe": 213.6,
+     "egui-xq-demo/egui-xq-demo": 50.0
+    }
+   },
+   "procs_last": [
+    {
+     "comm": "egui-xq-demo",
+     "rss_mb": 141.9,
+     "pss_mb": 136.0,
+     "threads": 19
+    }
+   ]
+  }
+ }
+}

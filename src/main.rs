@@ -1,0 +1,609 @@
+//! XQ 風格看盤 demo（Rust + egui／eframe 立即模式），接 WryFeedHost（127.0.0.1:47631）行情。
+//!
+//! 版面與 gpui-xq-demo 相同：上＝走勢圖、左下＝報價表、右下＝資訊格（不嵌 WebView），分隔線可拖曳。
+//! 效能：行情在背景執行緒解碼＋合併（xq-feed / bridge），UI 每幀最多套用一次（≥16ms 一次）；
+//! 沒有行情、沒有輸入時不重畫（只有每秒一次的狀態列取樣）。走勢圖三層與報價表可見列都快取成 Mesh，
+//! 沒變就沿用；但 egui 每次重畫都是整個視窗重新送給 GPU（立即模式、沒有局部重畫）。
+
+#![allow(dead_code)] // series/indicators/model 由 GPUI 版原樣移植，保留未用的 API
+mod bridge;
+mod chart;
+mod drawings;
+mod gfx;
+mod indicators;
+mod model;
+mod names;
+mod series;
+mod store;
+mod table;
+mod theme;
+mod tickbench;
+
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+
+use egui::{pos2, vec2, Align2, Color32, FontId, Rect, Sense};
+
+use bridge::{Conn, FeedBridge};
+use chart::{ChartEvent, ChartView};
+use series::Period;
+use table::QuoteTable;
+use theme::*;
+
+/// egui 的 request_repaint()（delay=0）會多排一幀「讓東西穩定」；我們的狀態是自己管的，用 1µs 避開那一幀
+const ONE_US: Duration = Duration::from_micros(1);
+const TITLE_H: f32 = 26.0;
+const STATUS_H: f32 = 22.0;
+const SPLIT: f32 = 5.0;
+
+#[derive(Default, Clone)]
+struct Stats {
+    fps: u32,
+    rss_mb: f64,
+    frames_in: u64,
+    quote_rows_in: u64,
+    applies: u32,
+    apply_us_avg: u64,
+    chart_paints: u64,
+    chart_paint_us_avg: u64,
+}
+
+struct Info {
+    symbol: String,
+    name: String,
+    price: f64,
+    change: f64,
+    volume: i64,
+}
+
+/// XQ_GROUP_STRESS：與 gpui 版 spawn_stress 同流程（1.2 秒後開 5 萬列 → 只跳價 → 邊跳價邊正弦捲動）
+enum Group {
+    Wait(Instant),
+    Settle(Instant),
+    Tick { t0: Instant, a: GSnap, next: Instant },
+    Scroll { s0: Instant, b: GSnap, a: GSnap, last_tick: Instant, next: Instant },
+    Done,
+}
+type GSnap = (u64, u64, u64, u64, usize);
+
+struct GroupCfg {
+    tick_ms: u64,
+    scroll_ms: u64,
+    hz: u64,
+    batch: usize,
+    rng: u64,
+}
+
+struct Terminal {
+    debug_repaint: bool,
+    bridge: FeedBridge,
+    table: QuoteTable,
+    chart: ChartView,
+    info: Info,
+    conn: Conn,
+    top_frac: f32,
+    left_w: f32,
+    frames: u32,
+    total_frames: u64,
+    applies: u32,
+    apply_us: u64,
+    last_frames_in: u64,
+    last_rows_in: u64,
+    last_paints: u64,
+    last_paint_us: u64,
+    last_sample: Instant,
+    stats: Stats,
+    metrics_log: bool,
+    bench: bool,
+    /// 0 = 還沒畫、1 = 這幀畫了（下一幀開始時印）、2 = 已印
+    bench_frame: u8,
+    bench_quote: u8,
+    track_jank: bool,
+    last_frame: Option<Instant>,
+    jank_n: u64,
+    jank_ms: f64,
+    tick: Option<tickbench::TickBench>,
+    group: Option<(GroupCfg, Group)>,
+    frame_t: Instant,
+}
+
+impl Terminal {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        setup_fonts(&cc.egui_ctx);
+        let mut vis = egui::Visuals::dark();
+        vis.panel_fill = BG;
+        vis.window_fill = PANEL;
+        cc.egui_ctx.set_visuals(vis);
+        let (sym, name) = names::WATCH[0];
+        let bridge = FeedBridge::start(cc.egui_ctx.clone());
+        let mut table = QuoteTable::new(names::WATCH);
+        let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
+        let chart = ChartView::new(sym, name, period);
+        let tick = xq_feed::tick_bench_enabled().then(tickbench::TickBench::default);
+        if tick.is_some() {
+            table.enable_stress_indexed();
+        }
+        let group = std::env::var_os("XQ_GROUP_STRESS").is_some_and(|v| v != "0").then(|| {
+            let num = |k: &str, d: u64| std::env::var(k).ok().and_then(|v| v.parse::<u64>().ok()).filter(|v| *v > 0).unwrap_or(d);
+            let hz = num("XQ_STRESS_TICK_HZ", 3000);
+            (
+                GroupCfg {
+                    tick_ms: num("XQ_STRESS_TICK_MS", 2000),
+                    scroll_ms: num("XQ_STRESS_SCROLL_MS", 2000),
+                    hz,
+                    batch: ((hz as f64) / 30.0).round().max(1.0) as usize,
+                    rng: 0x9E37_79B9_7F4A_7C15,
+                },
+                Group::Wait(Instant::now()),
+            )
+        });
+        let mut t = Terminal {
+            debug_repaint: std::env::var("XQ_DEBUG_REPAINT").is_ok_and(|v| v == "1"),
+            bridge,
+            table,
+            chart,
+            info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
+            conn: Conn::Connecting,
+            top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
+            left_w: 470.0,
+            frames: 0,
+            total_frames: 0,
+            applies: 0,
+            apply_us: 0,
+            last_frames_in: 0,
+            last_rows_in: 0,
+            last_paints: 0,
+            last_paint_us: 0,
+            last_sample: Instant::now(),
+            stats: Stats::default(),
+            metrics_log: std::env::var_os("XQ_METRICS").is_some(),
+            bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
+            bench_frame: 0,
+            bench_quote: 0,
+            track_jank: false,
+            last_frame: None,
+            jank_n: 0,
+            jank_ms: 0.0,
+            tick,
+            group,
+            frame_t: Instant::now(),
+        };
+        t.resubscribe();
+        t
+    }
+
+    fn resubscribe(&mut self) {
+        let sub = xq_feed::Subscribe { symbols: self.table.symbols(), chart: self.chart.symbol(), period: self.chart.period().feed_code().into() };
+        self.bridge.subscribe(sub);
+    }
+
+    fn switch_chart(&mut self, symbol: String, period: Option<Period>) {
+        let (name, quote) = match self.table.row(&symbol) {
+            Some(r) => (r.name.clone(), (r.price > 0.0).then_some((r.price, r.change, r.volume))),
+            None => (symbol.clone(), None),
+        };
+        let period = period.unwrap_or_else(|| self.chart.period());
+        self.chart.load(&symbol, &name, period, quote);
+        let (p, c, v) = quote.unwrap_or((0.0, 0.0, 0));
+        self.info = Info { symbol: symbol.clone(), name, price: p, change: c, volume: v };
+        self.resubscribe();
+    }
+
+    fn apply_feed(&mut self) {
+        let t0 = Instant::now();
+        let ib = self.bridge.take();
+        if let Some(c) = ib.conn {
+            self.conn = c;
+        }
+        let mut changed = 0;
+        if !ib.quotes.is_empty() {
+            self.conn = Conn::Ready;
+            changed = self.table.apply(&ib.order, &ib.quotes);
+            let sym = self.chart.symbol();
+            if let Some(q) = ib.quotes.get(&sym) {
+                let name = if q.name.is_empty() || q.name == q.symbol {
+                    self.table.row(&sym).map(|r| r.name.clone()).unwrap_or_default()
+                } else {
+                    q.name.clone()
+                };
+                self.chart.apply_quote(q.price, q.change, q.volume, &name);
+                self.info.price = q.price;
+                self.info.change = q.change;
+                self.info.volume = q.volume;
+            }
+        }
+        if let Some((sym, prev, bars)) = &ib.intraday {
+            self.chart.set_intraday(sym, *prev, bars);
+        }
+        for (sym, bar) in &ib.minutes {
+            self.chart.apply_minute(sym, bar);
+        }
+        self.applies += 1;
+        let us = t0.elapsed().as_micros() as u64;
+        self.apply_us += us;
+        if let Some(tb) = self.tick.as_mut() {
+            tb.on_apply(ib.stamp_first, ib.stamp, ib.quotes.len(), changed, us);
+        }
+    }
+
+    fn sample(&mut self) {
+        let frames_in = self.bridge.counters.frames.load(std::sync::atomic::Ordering::Relaxed);
+        let rows_in = self.bridge.counters.quote_rows.load(std::sync::atomic::Ordering::Relaxed);
+        let (paints, paint_us) = self.chart.paint_totals();
+        let dp = paints - self.last_paints;
+        self.stats = Stats {
+            fps: self.frames,
+            rss_mb: rss_mb(),
+            frames_in: frames_in - self.last_frames_in,
+            quote_rows_in: rows_in - self.last_rows_in,
+            applies: self.applies,
+            apply_us_avg: if self.applies > 0 { self.apply_us / self.applies as u64 } else { 0 },
+            chart_paints: dp,
+            chart_paint_us_avg: if dp > 0 { (paint_us - self.last_paint_us) / dp } else { 0 },
+        };
+        if self.metrics_log {
+            let s = &self.stats;
+            eprintln!(
+                "[metrics] fps={} rss_mb={:.1} feed_frames/s={} quote_rows/s={} applies/s={} apply_us_avg={} chart_paints/s={} chart_paint_us_avg={} conn={:?}",
+                s.fps, s.rss_mb, s.frames_in, s.quote_rows_in, s.applies, s.apply_us_avg, s.chart_paints, s.chart_paint_us_avg, self.conn
+            );
+        }
+        if let Some(tb) = self.tick.as_mut() {
+            tb.report(rows_in, frames_in, self.stats.fps, self.stats.rss_mb);
+        }
+        self.last_frames_in = frames_in;
+        self.last_rows_in = rows_in;
+        self.last_paints = paints;
+        self.last_paint_us = paint_us;
+        self.frames = 0;
+        self.applies = 0;
+        self.apply_us = 0;
+    }
+
+    fn gsnap(&self) -> GSnap {
+        (self.total_frames, self.table.paints, self.table.paint_us, self.table.cells, self.table.len())
+    }
+
+    /// 回傳下一次要在多久後被叫醒
+    fn group_step(&mut self, now: Instant) -> Option<Duration> {
+        let (mut cfg, st) = self.group.take()?;
+        fn stats(a: GSnap, b: GSnap, secs: f64) -> String {
+            let paints = b.1 - a.1;
+            let avg_ms = if paints > 0 { (b.2 - a.2) as f64 / paints as f64 / 1000.0 } else { 0.0 };
+            let cells = if paints > 0 { (b.3 - a.3) / paints } else { 0 };
+            format!(
+                "\"fps\":{:.1},\"paints\":{},\"avgPaintMs\":{:.3},\"avgCellsPerPaint\":{},\"cellUpdates\":{}",
+                (b.0 - a.0) as f64 / secs, paints, avg_ms, cells, b.3 - a.3
+            )
+        }
+        let (next, wake) = match st {
+            Group::Wait(t) if now.duration_since(t) >= Duration::from_millis(1200) => {
+                if !self.table.stress {
+                    self.table.toggle_stress();
+                }
+                (Group::Settle(now), Some(Duration::from_millis(150)))
+            }
+            s @ Group::Wait(t) => (s, Some(Duration::from_millis(1200).saturating_sub(now.duration_since(t)))),
+            Group::Settle(t) if now.duration_since(t) >= Duration::from_millis(150) => {
+                let a = self.gsnap();
+                eprintln!("GROUPPERF|{{\"phase\":\"tick-start\",\"rows\":{},\"cols\":6,\"tickHz\":{}}}", a.4, cfg.hz);
+                (Group::Tick { t0: now, a, next: now }, Some(Duration::ZERO))
+            }
+            s @ Group::Settle(_) => (s, Some(Duration::from_millis(5))),
+            Group::Tick { t0, a, next } => {
+                if now.duration_since(t0) >= Duration::from_millis(cfg.tick_ms) {
+                    let secs = now.duration_since(t0).as_secs_f64();
+                    let b = self.gsnap();
+                    eprintln!("GROUPPERF|{{\"phase\":\"tick-end\",\"elapsedMs\":{:.0},{}}}", secs * 1000.0, stats(a, b, secs));
+                    self.track_jank = true;
+                    self.last_frame = None;
+                    self.jank_n = 0;
+                    self.jank_ms = 0.0;
+                    (Group::Scroll { s0: now, b, a, last_tick: now, next: now }, Some(Duration::ZERO))
+                } else if now >= next {
+                    self.table.synth_ticks(cfg.batch, &mut cfg.rng);
+                    let n = now + Duration::from_millis(33);
+                    (Group::Tick { t0, a, next: n }, Some(Duration::from_millis(33)))
+                } else {
+                    (Group::Tick { t0, a, next }, Some(next - now))
+                }
+            }
+            Group::Scroll { s0, b, a, mut last_tick, next } => {
+                let el = now.duration_since(s0);
+                if el >= Duration::from_millis(cfg.scroll_ms) {
+                    let secs = el.as_secs_f64();
+                    self.track_jank = false;
+                    let c = self.gsnap();
+                    let (jn, jms) = (self.jank_n, self.jank_ms);
+                    eprintln!(
+                        "GROUPPERF|{{\"phase\":\"done\",\"rows\":{},\"cols\":6,\"tickFps\":{:.1},\"scrollFps\":{:.1},\"scrollJankCount\":{jn},\"scrollJankAvgMs\":{:.1},{}}}",
+                        c.4,
+                        (b.0 - a.0) as f64 / (cfg.tick_ms as f64 / 1000.0),
+                        (c.0 - b.0) as f64 / secs,
+                        if jn > 0 { jms / jn as f64 } else { 0.0 },
+                        stats(b, c, secs)
+                    );
+                    (Group::Done, None)
+                } else if now >= next {
+                    let f = el.as_secs_f64() / (cfg.scroll_ms as f64 / 1000.0);
+                    let frac = (f * std::f64::consts::PI * 4.0).sin() * 0.5 + 0.5;
+                    self.table.scroll_frac(frac);
+                    if now.duration_since(last_tick) >= Duration::from_millis(33) {
+                        last_tick = now;
+                        self.table.synth_ticks(cfg.batch, &mut cfg.rng);
+                    }
+                    (Group::Scroll { s0, b, a, last_tick, next: now + Duration::from_millis(16) }, Some(Duration::from_millis(16)))
+                } else {
+                    (Group::Scroll { s0, b, a, last_tick, next }, Some(next - now))
+                }
+            }
+            Group::Done => (Group::Done, None),
+        };
+        self.group = Some((cfg, next));
+        wake
+    }
+}
+
+impl eframe::App for Terminal {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        if self.debug_repaint {
+            // XQ_DEBUG_REPAINT=1：印這一幀是被誰叫醒的（找多餘重畫用）
+            let c = ui.ctx().repaint_causes();
+            if !c.is_empty() {
+                eprintln!("[repaint] {:?}", c.iter().map(|c| format!("{c}")).collect::<Vec<_>>());
+            }
+        }
+        let ctx = ui.ctx().clone();
+        let now = Instant::now();
+        self.frame_t = now;
+        self.frames += 1;
+        self.total_frames += 1;
+        if self.track_jank {
+            if let Some(prev) = self.last_frame.replace(now) {
+                let dt = now.duration_since(prev).as_secs_f64() * 1000.0;
+                if dt > 32.0 {
+                    self.jank_n += 1;
+                    self.jank_ms += dt;
+                }
+            }
+        }
+        // 上一幀已經畫上螢幕：記 present
+        if let Some(tb) = self.tick.as_mut() {
+            tb.on_frame_start();
+        }
+        if self.bench_frame == 1 {
+            self.bench_frame = 2;
+            eprintln!("BENCH first-frame");
+        }
+        if self.bench_quote == 1 {
+            self.bench_quote = 2;
+            eprintln!("BENCH first-quote");
+        }
+        let mut wake: Option<Duration> = None;
+        let mut want = |d: Duration| wake = Some(wake.map_or(d, |w: Duration| w.min(d)));
+        if self.chart.stress_on() {
+            self.chart.stress_frame(self.total_frames);
+        }
+        if let Some(d) = self.group_step(now) {
+            want(d);
+        }
+        if self.bridge.pending() {
+            let left = self.bridge.wait_left();
+            if left.is_zero() {
+                self.apply_feed();
+            } else {
+                want(left);
+            }
+        }
+        if now.duration_since(self.last_sample) >= Duration::from_secs(1) {
+            self.last_sample = now;
+            self.sample();
+        }
+        want(Duration::from_secs(1).saturating_sub(now.duration_since(self.last_sample)));
+
+        // ── 版面 ──
+        let full = ui.max_rect();
+        let painter = ui.painter().clone();
+        painter.rect_filled(full, 0.0, BG);
+        let title = Rect::from_min_size(full.min, vec2(full.width(), TITLE_H));
+        let status = Rect::from_min_max(pos2(full.min.x, full.max.y - STATUS_H), full.max);
+        let avail = full.height() - TITLE_H - STATUS_H - SPLIT;
+        let top_h = (avail * self.top_frac).floor();
+        let chart_r = Rect::from_min_size(pos2(full.min.x, title.max.y), vec2(full.width(), top_h));
+        let hsplit = Rect::from_min_size(pos2(full.min.x, chart_r.max.y), vec2(full.width(), SPLIT));
+        let bottom = Rect::from_min_max(pos2(full.min.x, hsplit.max.y), pos2(full.max.x, status.min.y));
+        let left_w = self.left_w.min(full.width() - 200.0).max(200.0);
+        let table_r = Rect::from_min_size(bottom.min, vec2(left_w, bottom.height()));
+        let vsplit = Rect::from_min_size(pos2(table_r.max.x, bottom.min.y), vec2(SPLIT, bottom.height()));
+        let info_r = Rect::from_min_max(pos2(vsplit.max.x, bottom.min.y), bottom.max);
+
+        // 標題列
+        painter.rect_filled(title, 0.0, HEADER);
+        painter.hline(title.x_range(), title.max.y - 0.5, (1.0, BORDER));
+        let f12 = FontId::proportional(12.0);
+        let mut x = title.min.x + 12.0;
+        for (s, c) in [("XQ", UP), ("風格測試 · egui 立即模式版", TEXT), ("同一個 WryFeedHost 行情（demo-ticks 為合成測試資料）", DIM)] {
+            x += painter.text(pos2(x, title.center().y), Align2::LEFT_CENTER, s, f12.clone(), c).width() + 12.0;
+        }
+
+        // 走勢圖
+        if let Some(ChartEvent::Period(p)) = self.chart.show(ui, chart_r) {
+            let sym = self.chart.symbol();
+            self.switch_chart(sym, Some(p));
+        }
+
+        // 分隔線（可拖曳）
+        let hs = ui.interact(hsplit, ui.scope_id().with("hsplit"), Sense::drag());
+        let vs = ui.interact(vsplit, ui.scope_id().with("vsplit"), Sense::drag());
+        if hs.hovered() || hs.dragged() {
+            ctx.set_cursor_icon(egui::CursorIcon::ResizeVertical);
+        }
+        if vs.hovered() || vs.dragged() {
+            ctx.set_cursor_icon(egui::CursorIcon::ResizeHorizontal);
+        }
+        if hs.dragged() {
+            if let Some(q) = hs.interact_pointer_pos() {
+                self.top_frac = ((q.y - full.min.y - TITLE_H) / avail).clamp(0.15, 0.85);
+            }
+        }
+        if vs.dragged() {
+            if let Some(q) = vs.interact_pointer_pos() {
+                self.left_w = (q.x - full.min.x).clamp(200.0, full.width() - 200.0);
+            }
+        }
+        painter.rect_filled(hsplit, 0.0, if hs.hovered() || hs.dragged() { ACCENT } else { BORDER });
+        painter.rect_filled(vsplit, 0.0, if vs.hovered() || vs.dragged() { ACCENT } else { BORDER });
+
+        // 報價表
+        if let Some(sym) = self.table.show(ui, table_r) {
+            if let Some(tb) = self.tick.as_mut() {
+                tb.on_switch(&sym);
+            }
+            self.switch_chart(sym, None);
+            ctx.request_repaint_after(ONE_US);
+        }
+
+        // 資訊格
+        self.paint_info(&painter, info_r);
+
+        // 狀態列
+        painter.rect_filled(status, 0.0, HEADER);
+        painter.hline(status.x_range(), status.min.y + 0.5, (1.0, BORDER));
+        let (conn_text, conn_color) = match self.conn {
+            Conn::Connecting => ("連線中…", DIM),
+            Conn::Up => ("已連線，等待行情", ACCENT),
+            Conn::Ready => ("行情連線", DOWN),
+            Conn::Down => ("行情中斷，重連中", UP),
+        };
+        let f11 = FontId::proportional(11.0);
+        let m11 = FontId::monospace(11.0);
+        painter.text(pos2(status.min.x + 12.0, status.center().y), Align2::LEFT_CENTER, format!("● {conn_text} {}", xq_feed::feed_addr()), f11, conn_color);
+        let s = &self.stats;
+        let mut rx = status.max.x - 12.0;
+        for (t, c) in [
+            (format!("封包 {}/s → 套用 {}/s", s.frames_in, s.applies), DIM),
+            (format!("RSS {:.1} MB", s.rss_mb), TEXT),
+            (format!("FPS {}", s.fps), TEXT),
+        ] {
+            rx -= painter.text(pos2(rx, status.center().y), Align2::RIGHT_CENTER, t, m11.clone(), c).width() + 16.0;
+        }
+
+        // ── 量測與排程 ──
+        if self.bench {
+            if self.bench_frame == 0 {
+                self.bench_frame = 1;
+                ctx.request_repaint_after(ONE_US);
+            }
+            if self.bench_quote == 0 && self.conn == Conn::Ready {
+                self.bench_quote = 1;
+                ctx.request_repaint_after(ONE_US);
+            }
+        }
+        if self.tick.as_ref().is_some_and(|t| t.has_pending()) {
+            want(bridge::APPLY_EVERY);
+        }
+        if self.chart.stress_on() {
+            // 壓測：連續重畫（與 GPUI on_next_frame 迴圈相同），上限 60 fps
+            want(Duration::from_micros(16_667).saturating_sub(now.elapsed()));
+        }
+        if let Some(d) = wake {
+            ctx.request_repaint_after(d.max(ONE_US));
+        }
+    }
+}
+
+impl Terminal {
+    fn paint_info(&self, painter: &egui::Painter, r: Rect) {
+        let painter = painter.with_clip_rect(r);
+        painter.rect_filled(r, 0.0, PANEL);
+        let hr = Rect::from_min_size(r.min, vec2(r.width(), 26.0));
+        painter.rect_filled(hr, 0.0, HEADER);
+        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, BORDER));
+        let f12 = FontId::proportional(12.0);
+        let m12 = FontId::monospace(12.0);
+        painter.text(pos2(hr.min.x + 8.0, hr.center().y), Align2::LEFT_CENTER, "資訊", f12.clone(), TEXT);
+        let i = &self.info;
+        let has = i.price > 0.0;
+        let color = dir_color(i.change);
+        let x0 = r.min.x + 12.0;
+        let mut y = hr.max.y + 12.0;
+        painter.text(pos2(x0, y + 8.0), Align2::LEFT_CENTER, format!("{} {}", i.symbol, i.name), FontId::proportional(15.0), TEXT);
+        y += 24.0;
+        let kv = |y: f32, x: f32, w: f32, k: &str, v: String, c: Color32| {
+            painter.text(pos2(x, y + 10.0), Align2::LEFT_CENTER, k, f12.clone(), DIM);
+            painter.text(pos2(x + w, y + 10.0), Align2::RIGHT_CENTER, v, m12.clone(), c);
+        };
+        let rows = [
+            ("成交", if has { format!("{:.2}", i.price) } else { "--".into() }, color),
+            ("漲跌", if has { fmt_change(i.change) } else { "--".into() }, color),
+            ("幅度", if has { format!("{:+.2}%", pct(i.price, i.change)) } else { "--".into() }, color),
+            ("昨收", if has { format!("{:.2}", i.price - i.change) } else { "--".into() }, TEXT),
+            ("總量", if has { fmt_int(i.volume) } else { "--".into() }, TEXT),
+        ];
+        for (k, (a, b, c)) in rows.into_iter().enumerate() {
+            kv(y + k as f32 * 20.0, x0, 220.0, a, b, c);
+        }
+        let s = &self.stats;
+        let x1 = x0 + 236.0;
+        let y1 = hr.max.y + 12.0;
+        painter.text(pos2(x1, y1 + 8.0), Align2::LEFT_CENTER, "效能（每秒取樣）", FontId::proportional(13.0), DIM);
+        let perf = [
+            ("引擎封包", format!("{}/s", s.frames_in)),
+            ("報價筆數（未合併）", format!("{}/s", fmt_int(s.quote_rows_in as i64))),
+            ("UI 套用（合併後）", format!("{}/s", s.applies)),
+            ("套用平均耗時", format!("{} µs", s.apply_us_avg)),
+            ("走勢圖重建", format!("{}/s · {} µs", s.chart_paints, s.chart_paint_us_avg)),
+        ];
+        for (k, (a, b)) in perf.into_iter().enumerate() {
+            kv(y1 + 24.0 + k as f32 * 20.0, x1, 240.0, a, b, TEXT);
+        }
+        painter.text(
+            pos2(x0, y + 5.0 * 20.0 + 16.0),
+            Align2::LEFT_CENTER,
+            "右下網頁格：egui 版不內嵌 WebView，此格先做資訊／效能面板。",
+            FontId::proportional(11.0),
+            DIM,
+        );
+    }
+}
+
+/// 中文字型：直接 mmap 系統的 Noto Sans CJK（.ttc 一份檔案兩個字面：TC＝index 3、Mono TC＝index 8），不複製進記憶體
+fn setup_fonts(ctx: &egui::Context) {
+    let mut defs = egui::FontDefinitions::default();
+    let path = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".into());
+    match std::fs::File::open(&path).and_then(|f| unsafe { memmap2::Mmap::map(&f) }) {
+        Ok(mm) => {
+            let blob: egui::epaint::text::Blob = Arc::new(mm);
+            defs.font_data.insert("noto-tc".into(), Arc::new(egui::FontData::from_blob(blob.clone(), 3)));
+            defs.font_data.insert("noto-mono-tc".into(), Arc::new(egui::FontData::from_blob(blob, 8)));
+            defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "noto-tc".into());
+            defs.families.entry(egui::FontFamily::Monospace).or_default().insert(0, "noto-mono-tc".into());
+        }
+        Err(e) => eprintln!("[fonts] 讀不到 {path}: {e}（中文會變方塊）"),
+    }
+    ctx.set_fonts(defs);
+}
+
+pub fn rss_mb() -> f64 {
+    std::fs::read_to_string("/proc/self/status")
+        .ok()
+        .and_then(|s| {
+            s.lines().find(|l| l.starts_with("VmRSS:")).and_then(|l| l.split_whitespace().nth(1)).and_then(|v| v.parse::<f64>().ok())
+        })
+        .map(|kb| kb / 1024.0)
+        .unwrap_or(0.0)
+}
+
+fn main() -> eframe::Result {
+    let renderer = match std::env::var("XQ_RENDERER").as_deref() {
+        Ok("wgpu") => eframe::Renderer::Wgpu,
+        _ => eframe::Renderer::Glow,
+    };
+    eprintln!("[egui] renderer={renderer:?}");
+    let opts = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([1240.0, 760.0]).with_title("XQ 風格測試（egui）"),
+        renderer,
+        ..Default::default()
+    };
+    eframe::run_native("XQ 風格測試（egui）", opts, Box::new(|cc| Ok(Box::new(Terminal::new(cc)))))
+}

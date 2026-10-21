@@ -1,0 +1,24 @@
+[package]
+name = "egui-xq-demo"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.95"
+publish = false
+description = "XQ 風格看盤 demo（Rust + egui/eframe 立即模式），與 wry-xq-demo／gpui-xq-demo 同一套行情與壓測"
+
+[dependencies]
+# 共用行情協議（WryFeedHost 二進位封包＋壓測時間戳），固定在 gpui-xq-demo 的版本
+xq-feed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
+# 兩種 renderer 都編進去，執行時用 XQ_RENDERER=glow|wgpu 選（預設見 README）
+eframe = { version = "0.37", default-features = false, features = ["glow", "wgpu", "x11", "default_fonts"] }
+egui = "0.37"
+parking_lot = "0.12"
+memmap2 = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+strip = true
+debug = false
+lto = "thin"
+codegen-units = 4

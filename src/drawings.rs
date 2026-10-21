@@ -1,0 +1,569 @@
+//! 畫線工具（與 wry／GPUI 版相同 8 種）：幾何、空間索引 hit-test、畫線層快取（egui Mesh）。
+//!
+//! 效能：
+//! - 畫線層只在「尺度」改變（價格軸 lo/hi、每根寬、版面、畫線內容／選取）時重建；
+//!   純平移（view.right 改變）沿用快取，只把頂點整批水平位移（不重新三角化、不重新排字）。
+//! - 重建時先用 bounding box 剔除不在可視區（左右各多留半個寬度給平移）的畫線。
+//! - hit-test 用 64px 格子的空間索引，只測游標附近 3×3 格的候選。
+//! - 被選取／繪製中的那條不進快取，在 live 層每幀即時畫（含控制點）。
+
+use egui::{pos2, vec2, Rect};
+use serde::{Deserialize, Serialize};
+
+use crate::gfx::{p, Sink, P};
+use crate::theme::{rgb, rgba};
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Tool {
+    Trend,
+    Ray,
+    Hline,
+    Vline,
+    Channel,
+    Fib,
+    Rect,
+    Text,
+}
+
+impl Tool {
+    pub const ALL: [Tool; 8] = [Tool::Trend, Tool::Ray, Tool::Hline, Tool::Vline, Tool::Channel, Tool::Fib, Tool::Rect, Tool::Text];
+    pub fn need(self) -> usize {
+        match self {
+            Tool::Hline | Tool::Vline | Tool::Text => 1,
+            Tool::Channel => 3,
+            _ => 2,
+        }
+    }
+    pub fn label(self) -> &'static str {
+        match self {
+            Tool::Trend => "趨勢線",
+            Tool::Ray => "射線",
+            Tool::Hline => "水平線",
+            Tool::Vline => "垂直線",
+            Tool::Channel => "平行通道",
+            Tool::Fib => "費波納契回撤",
+            Tool::Rect => "矩形",
+            Tool::Text => "文字註記",
+        }
+    }
+}
+
+/// 錨點：i = K 棒索引（可帶小數），p = 價格
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Pt {
+    pub i: f64,
+    pub p: f64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Drawing {
+    #[serde(rename = "type")]
+    pub kind: Tool,
+    pub pts: Vec<Pt>,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub text: String,
+}
+
+pub const FIB: [f64; 7] = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
+pub const FIB_COLORS: [u32; 7] = [0x9e9e9e, 0xe5484d, 0xf5a623, 0x4caf50, 0x26a69a, 0x4fc3f7, 0x9e9e9e];
+pub const DRAW_COLOR: u32 = 0xffb000;
+pub const SEL_COLOR: u32 = 0xffffff;
+
+/// 價格窗格的座標轉換（與 wry xOf / yOf 相同）
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Xf {
+    pub plot_l: f32,
+    pub plot_r: f32,
+    pub right: f64,
+    pub bar_w: f64,
+    /// 窗格頂（含圖例列）與高
+    pub pane_top: f32,
+    pub pane_h: f32,
+    /// 繪圖區（扣掉圖例）
+    pub y0: f32,
+    pub ph: f32,
+    pub lo: f64,
+    pub hi: f64,
+}
+
+impl Xf {
+    #[inline]
+    pub fn x(&self, i: f64) -> f32 {
+        (self.plot_r as f64 - (self.right - i) * self.bar_w - self.bar_w / 2.0) as f32
+    }
+    #[inline]
+    pub fn y(&self, v: f64) -> f32 {
+        (self.y0 as f64 + self.ph as f64 * (1.0 - (v - self.lo) / (self.hi - self.lo))) as f32
+    }
+    pub fn i_at(&self, x: f32) -> f64 {
+        self.right - (self.plot_r as f64 - self.bar_w / 2.0 - x as f64) / self.bar_w
+    }
+    pub fn p_at(&self, y: f32) -> f64 {
+        self.lo + (1.0 - (y - self.y0) as f64 / self.ph as f64) * (self.hi - self.lo)
+    }
+    pub fn pt(&self, a: Pt) -> P {
+        p(self.x(a.i), self.y(a.p))
+    }
+    pub fn clip(&self) -> Rect {
+        Rect::from_min_size(pos2(self.plot_l, self.pane_top), vec2(self.plot_r - self.plot_l, self.pane_h))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Level {
+    pub k: usize,
+    pub p: f64,
+    pub y: f32,
+    pub x1: f32,
+    pub x2: f32,
+}
+
+/// 一條畫線的螢幕幾何（與 wry geom() 相同）
+#[derive(Clone, Debug, Default)]
+pub struct Geom {
+    pub segs: Vec<[P; 2]>,
+    pub fill: Option<[P; 4]>,
+    pub mid: Option<[P; 2]>,
+    pub levels: Vec<Level>,
+    pub diag: Option<[P; 2]>,
+    pub fill_box: Option<[f32; 4]>,
+    pub text_box: Option<[f32; 4]>,
+    pub handles: Vec<P>,
+    pub bbox: [f32; 4],
+}
+
+/// 字寬估計（等寬字型：ASCII 0.6em、CJK 1.2em）——幾何／hit-test 不必碰排字系統
+pub fn text_width(s: &str, size: f32) -> f32 {
+    s.chars().map(|c| if c.is_ascii() { 0.6 } else { 1.2 }).sum::<f32>() * size
+}
+
+fn price_line(a: Pt, b: Pt, i: f64) -> f64 {
+    if b.i == a.i { a.p } else { a.p + (b.p - a.p) * (i - a.i) / (b.i - a.i) }
+}
+
+pub fn geom(d: &Drawing, xf: &Xf) -> Geom {
+    let pts: Vec<P> = d.pts.iter().map(|&a| xf.pt(a)).collect();
+    let mut g = Geom { handles: pts.clone(), ..Default::default() };
+    match d.kind {
+        Tool::Trend => g.segs.push([pts[0], pts[1]]),
+        Tool::Ray => {
+            let (dx, dy) = (pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+            let t = 20000.0 / dx.abs().max(dy.abs()).max(1.0);
+            g.segs.push([pts[0], p(pts[0].x + dx * t, pts[0].y + dy * t)]);
+        }
+        Tool::Hline => {
+            g.segs.push([p(xf.plot_l, pts[0].y), p(xf.plot_r, pts[0].y)]);
+            g.handles = vec![p(pts[0].x.clamp(xf.plot_l + 6.0, xf.plot_r - 6.0), pts[0].y)];
+        }
+        Tool::Vline => {
+            g.segs.push([p(pts[0].x, xf.pane_top), p(pts[0].x, xf.pane_top + xf.pane_h)]);
+            g.handles = vec![p(pts[0].x, pts[0].y.clamp(xf.pane_top + 6.0, xf.pane_top + xf.pane_h - 6.0))];
+        }
+        Tool::Channel => {
+            let (a, b) = (d.pts[0], d.pts[1]);
+            let c = *d.pts.get(2).unwrap_or(&b);
+            let off = c.p - price_line(a, b, c.i);
+            let a2 = xf.pt(Pt { i: a.i, p: a.p + off });
+            let b2 = xf.pt(Pt { i: b.i, p: b.p + off });
+            let am = xf.pt(Pt { i: a.i, p: a.p + off / 2.0 });
+            let bm = xf.pt(Pt { i: b.i, p: b.p + off / 2.0 });
+            g.segs.push([pts[0], pts[1]]);
+            if d.pts.len() >= 3 {
+                g.segs.push([a2, b2]);
+            }
+            g.mid = Some([am, bm]);
+            g.fill = Some([pts[0], pts[1], b2, a2]);
+        }
+        Tool::Fib => {
+            let (a, b) = (d.pts[0], d.pts[1]);
+            let x1 = pts[0].x.min(pts[1].x);
+            let x2 = pts[0].x.max(pts[1].x).max(x1 + 40.0);
+            for (k, lv) in FIB.iter().enumerate() {
+                let pr = b.p + (a.p - b.p) * lv;
+                let y = xf.y(pr);
+                g.levels.push(Level { k, p: pr, y, x1, x2 });
+                g.segs.push([p(x1, y), p(x2, y)]);
+            }
+            g.diag = Some([pts[0], pts[1]]);
+            g.fill_box = Some([x1, pts[0].y.min(pts[1].y), x2, pts[0].y.max(pts[1].y)]);
+        }
+        Tool::Rect => {
+            let (a, b) = (pts[0], pts[1]);
+            let r = p(b.x, a.y);
+            let s = p(a.x, b.y);
+            g.segs.extend([[a, r], [r, b], [b, s], [s, a]]);
+            g.fill = Some([a, r, b, s]);
+            g.handles = vec![a, b, r, s];
+        }
+        Tool::Text => {
+            let w = text_width(&d.text, 13.0) + 12.0;
+            g.text_box = Some([pts[0].x, pts[0].y - 11.0, w, 22.0]);
+        }
+    }
+    g.bbox = bbox(&g, 8.0);
+    g
+}
+
+fn bbox(g: &Geom, pad: f32) -> [f32; 4] {
+    let (mut x0, mut y0, mut x1, mut y1) = (f32::INFINITY, f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY);
+    let mut add = |q: P| {
+        if q.x.is_finite() && q.y.is_finite() {
+            x0 = x0.min(q.x);
+            y0 = y0.min(q.y);
+            x1 = x1.max(q.x);
+            y1 = y1.max(q.y);
+        }
+    };
+    for s in &g.segs {
+        add(s[0]);
+        add(s[1]);
+    }
+    for &h in &g.handles {
+        add(h);
+    }
+    if let Some(f) = &g.fill {
+        f.iter().for_each(|&q| add(q));
+    }
+    if let Some(m) = &g.mid {
+        add(m[0]);
+        add(m[1]);
+    }
+    if let Some(b) = g.fill_box {
+        add(p(b[0], b[1]));
+        add(p(b[2], b[3]));
+    }
+    if let Some(b) = g.text_box {
+        add(p(b[0], b[1]));
+        add(p(b[0] + b[2], b[1] + b[3]));
+    }
+    [x0 - pad, y0 - pad, x1 + pad, y1 + pad]
+}
+
+fn dist_seg(q: P, a: P, b: P) -> f32 {
+    let (dx, dy) = (b.x - a.x, b.y - a.y);
+    let len2 = (dx * dx + dy * dy).max(1e-6);
+    let t = (((q.x - a.x) * dx + (q.y - a.y) * dy) / len2).clamp(0.0, 1.0);
+    ((q.x - (a.x + t * dx)).powi(2) + (q.y - (a.y + t * dy)).powi(2)).sqrt()
+}
+
+fn in_poly(q: P, poly: &[P]) -> bool {
+    let mut inside = false;
+    let mut j = poly.len() - 1;
+    for i in 0..poly.len() {
+        let (a, b) = (poly[i], poly[j]);
+        if (a.y > q.y) != (b.y > q.y) && q.x < (b.x - a.x) * (q.y - a.y) / (b.y - a.y) + a.x {
+            inside = !inside;
+        }
+        j = i;
+    }
+    inside
+}
+
+pub fn hit_geom(q: P, g: &Geom) -> bool {
+    if q.x < g.bbox[0] || q.x > g.bbox[2] || q.y < g.bbox[1] || q.y > g.bbox[3] {
+        return false;
+    }
+    if g.segs.iter().any(|s| dist_seg(q, s[0], s[1]) <= 6.0) {
+        return true;
+    }
+    if let Some(f) = &g.fill {
+        if in_poly(q, f) {
+            return true;
+        }
+    }
+    let in_box = |b: [f32; 4]| q.x >= b[0] && q.x <= b[2] && q.y >= b[1] && q.y <= b[3];
+    if let Some(b) = g.fill_box {
+        if in_box(b) {
+            return true;
+        }
+    }
+    if let Some(b) = g.text_box {
+        if in_box([b[0], b[1], b[0] + b[2], b[1] + b[3]]) {
+            return true;
+        }
+    }
+    false
+}
+
+/// 空間索引：64px 格子，每格存畫線索引
+pub struct Grid {
+    cell: f32,
+    ox: f32,
+    oy: f32,
+    cols: usize,
+    rows: usize,
+    buckets: Vec<Vec<u32>>,
+}
+
+impl Grid {
+    pub fn build(area: Rect, geoms: &[Option<Geom>]) -> Grid {
+        let cell = 64.0;
+        let (ox, oy) = (area.min.x, area.min.y);
+        let cols = ((area.width() / cell).ceil() as usize).max(1);
+        let rows = ((area.height() / cell).ceil() as usize).max(1);
+        let mut buckets = vec![Vec::new(); cols * rows];
+        for (k, g) in geoms.iter().enumerate() {
+            let Some(g) = g else { continue };
+            let b = g.bbox;
+            if b[2] < ox || b[0] > ox + cols as f32 * cell || b[3] < oy || b[1] > oy + rows as f32 * cell {
+                continue;
+            }
+            let c0 = (((b[0] - ox) / cell).floor().max(0.0) as usize).min(cols - 1);
+            let c1 = (((b[2] - ox) / cell).floor().max(0.0) as usize).min(cols - 1);
+            let r0 = (((b[1] - oy) / cell).floor().max(0.0) as usize).min(rows - 1);
+            let r1 = (((b[3] - oy) / cell).floor().max(0.0) as usize).min(rows - 1);
+            for r in r0..=r1 {
+                for c in c0..=c1 {
+                    buckets[r * cols + c].push(k as u32);
+                }
+            }
+        }
+        Grid { cell, ox, oy, cols, rows, buckets }
+    }
+
+    /// 游標所在格與周圍 3×3 格的候選（由新到舊）
+    pub fn candidates(&self, q: P, out: &mut Vec<u32>) {
+        out.clear();
+        let c = (((q.x - self.ox) / self.cell).floor().max(0.0) as usize).min(self.cols - 1);
+        let r = (((q.y - self.oy) / self.cell).floor().max(0.0) as usize).min(self.rows - 1);
+        for rr in r.saturating_sub(1)..=(r + 1).min(self.rows - 1) {
+            for cc in c.saturating_sub(1)..=(c + 1).min(self.cols - 1) {
+                out.extend_from_slice(&self.buckets[rr * self.cols + cc]);
+            }
+        }
+        out.sort_unstable_by(|a, b| b.cmp(a));
+        out.dedup();
+    }
+}
+
+/// 快取鍵：不含 view.right（純平移沿用快取）
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct CacheKey {
+    pub plot_l: f32,
+    pub plot_r: f32,
+    pub bar_w: f64,
+    pub pane_top: f32,
+    pub pane_h: f32,
+    pub y0: f32,
+    pub ph: f32,
+    pub lo: f64,
+    pub hi: f64,
+    pub gen: u64,
+    pub selected: Option<usize>,
+}
+
+impl CacheKey {
+    pub fn of(xf: &Xf, gen: u64, selected: Option<usize>) -> CacheKey {
+        CacheKey {
+            plot_l: xf.plot_l,
+            plot_r: xf.plot_r,
+            bar_w: xf.bar_w,
+            pane_top: xf.pane_top,
+            pane_h: xf.pane_h,
+            y0: xf.y0,
+            ph: xf.ph,
+            lo: xf.lo,
+            hi: xf.hi,
+            gen,
+            selected,
+        }
+    }
+}
+
+/// 幾何＋空間索引（不需要 window，hit-test 可以單獨重建）
+pub struct GeomCache {
+    pub key: CacheKey,
+    pub right: f64,
+    pub geoms: Vec<Option<Geom>>,
+    pub grid: Grid,
+    /// 有進可視範圍（含平移邊界）的畫線數
+    pub visible: usize,
+}
+
+impl GeomCache {
+    pub fn build(list: &[Drawing], xf: &Xf, key: CacheKey) -> GeomCache {
+        let w = xf.plot_r - xf.plot_l;
+        // 左右各多留半個寬度：平移快取時從邊緣移入的畫線也已經在快取裡
+        let (cl, cr) = (xf.plot_l - w * 0.5, xf.plot_r + w * 0.5);
+        let (ct, cb) = (xf.pane_top, xf.pane_top + xf.pane_h);
+        let mut visible = 0;
+        let geoms: Vec<Option<Geom>> = list
+            .iter()
+            .map(|d| {
+                let g = geom(d, xf);
+                let b = g.bbox;
+                if b[2] < cl || b[0] > cr || b[3] < ct || b[1] > cb {
+                    None
+                } else {
+                    visible += 1;
+                    Some(g)
+                }
+            })
+            .collect();
+        let area = Rect::from_min_max(pos2(cl, ct), pos2(cr, cb));
+        let grid = Grid::build(area, &geoms);
+        GeomCache { key, right: xf.right, geoms, grid, visible }
+    }
+}
+
+/// 畫線層的已建好圖元：價格窗格內（平移時整批位移）、水平線（不位移）、右側價格軸標籤（不位移）
+pub struct PaintCache {
+    pub main: std::sync::Arc<egui::epaint::Mesh>,
+    pub hlines: std::sync::Arc<egui::epaint::Mesh>,
+    pub tags: std::sync::Arc<egui::epaint::Mesh>,
+    pub built_us: u64,
+    /// 上一次位移後的 main（dx 沒變就沿用，不必每幀複製頂點）
+    pub shifted: Option<(f32, std::sync::Arc<egui::epaint::Mesh>)>,
+}
+
+fn fmt_p(v: f64) -> String {
+    if v.is_finite() { format!("{v:.2}") } else { "--".into() }
+}
+
+/// 一條畫線的圖元（快取重建與 live 層共用）
+pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, with_handles: bool) {
+    let w: f32 = if sel { 2.0 } else { 1.4 };
+    let main_c = rgb(if sel { SEL_COLOR } else { DRAW_COLOR });
+    if let Some(f) = &g.fill {
+        let c = if d.kind == Tool::Rect { rgba(DRAW_COLOR, 0.10) } else { rgba(DRAW_COLOR, 0.07) };
+        s.poly(f, c);
+    }
+    match d.kind {
+        Tool::Fib => {
+            for (n, lv) in g.levels.iter().enumerate() {
+                let c = FIB_COLORS[lv.k];
+                if n > 0 {
+                    let prev = &g.levels[n - 1];
+                    let (ya, yb) = (lv.y.min(prev.y), lv.y.max(prev.y));
+                    s.rect(lv.x1, ya, lv.x2 - lv.x1, yb - ya, rgba(c, 0x14 as f32 / 255.0));
+                }
+                s.seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4), if sel { main_c } else { rgb(c) });
+                s.text(format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, 11.0, rgb(c));
+            }
+            if let Some([a, b]) = g.diag {
+                s.dashed(a, b, 1.0, rgb(DRAW_COLOR), 4.0, 4.0);
+            }
+        }
+        Tool::Text => {
+            let [x, y, bw, bh] = g.text_box.unwrap();
+            s.boxed(x, y, bw, bh, rgba(0x1e1e1e, 0.85), main_c, 1.0);
+            s.text(d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, rgb(DRAW_COLOR));
+        }
+        _ => {
+            for sg in &g.segs {
+                s.seg(sg[0], sg[1], w, main_c);
+            }
+            if let Some([a, b]) = g.mid {
+                s.dashed(a, b, 1.0, rgb(DRAW_COLOR), 4.0, 4.0);
+            }
+        }
+    }
+    if with_handles {
+        for h in &g.handles {
+            s.boxed(h.x - 4.5, h.y - 4.5, 9.0, 9.0, rgb(SEL_COLOR), rgb(0x000000), 1.0);
+        }
+    }
+}
+
+impl PaintCache {
+    /// 由幾何快取建出圖元：只處理可見畫線；選取的那條（live 層畫）與水平線分開
+    pub fn build(ctx: &egui::Context, list: &[Drawing], gc: &GeomCache, xf: &Xf) -> PaintCache {
+        let t0 = std::time::Instant::now();
+        let mut main = Sink::default();
+        let mut hl = Sink::default();
+        let mut tags = Sink::default();
+        for (k, d) in list.iter().enumerate() {
+            if Some(k) == gc.key.selected {
+                continue;
+            }
+            let Some(g) = &gc.geoms[k] else { continue };
+            if d.kind == Tool::Hline {
+                hl.seg(g.segs[0][0], g.segs[0][1], 1.4, rgb(DRAW_COLOR));
+                let y = g.segs[0][0].y;
+                if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
+                    tags.rect(xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, rgb(0x8a6a00));
+                    tags.text(fmt_p(d.pts[0].p), xf.plot_r + 5.0, y, 11.0, rgb(0xffffff));
+                }
+                continue;
+            }
+            emit(&mut main, d, g, false, false);
+        }
+        let a = std::sync::Arc::new;
+        PaintCache {
+            main: a(main.finish(ctx)),
+            hlines: a(hl.finish(ctx)),
+            tags: a(tags.finish(ctx)),
+            built_us: t0.elapsed().as_micros() as u64,
+            shifted: None,
+        }
+    }
+
+    /// 平移量 dx 下的 main（dx 改變才複製＋位移頂點）
+    pub fn main_at(&mut self, dx: f32) -> std::sync::Arc<egui::epaint::Mesh> {
+        if dx == 0.0 {
+            return self.main.clone();
+        }
+        if let Some((d, m)) = &self.shifted {
+            if *d == dx {
+                return m.clone();
+            }
+        }
+        let mut m = (*self.main).clone();
+        m.translate(vec2(dx, 0.0));
+        let m = std::sync::Arc::new(m);
+        self.shifted = Some((dx, m.clone()));
+        m
+    }
+
+    pub fn vertex_count(&self) -> usize {
+        self.main.vertices.len() + self.hlines.vertices.len()
+    }
+}
+
+/// wry `__perfAddN` 同一套產生器：同樣的索引公式與工具混合比例
+pub fn perf_mix(bars: &[crate::series::K], n: usize) -> Vec<Drawing> {
+    let plan = [
+        (Tool::Trend, n * 40 / 100),
+        (Tool::Ray, n * 8 / 100),
+        (Tool::Hline, n * 8 / 100),
+        (Tool::Vline, n * 8 / 100),
+        (Tool::Channel, n * 12 / 100),
+        (Tool::Fib, n * 12 / 100),
+        (Tool::Rect, n * 6 / 100),
+        (Tool::Text, n * 6 / 100),
+    ];
+    let mut out = Vec::with_capacity(n);
+    let add = |count: usize, kind: Tool, out: &mut Vec<Drawing>| {
+        let nb = bars.len();
+        for k in 0..count {
+            let i = ((k * 37 + 11) % (nb.saturating_sub(40)).max(2)) as usize;
+            let j = (nb - 1).min(i + 20 + (k % 30));
+            let (a, b) = (bars[i], bars[j]);
+            let p0 = a.c;
+            let p1 = b.c * (1.0 + ((k % 7) as f64 - 3.0) * 0.002);
+            let (fi, fj) = (i as f64, j as f64);
+            let d = match kind {
+                Tool::Hline | Tool::Vline => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }], text: String::new() },
+                Tool::Fib => Drawing { kind, pts: vec![Pt { i: fi, p: p0.max(p1) }, Pt { i: fj, p: p0.min(p1) }], text: String::new() },
+                Tool::Channel => Drawing {
+                    kind,
+                    pts: vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }, Pt { i: ((i + j) / 2) as f64, p: (p0 + p1) / 2.0 * 1.01 }],
+                    text: String::new(),
+                },
+                Tool::Text => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }], text: format!("T{k}") },
+                _ => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }], text: String::new() },
+            };
+            out.push(d);
+        }
+    };
+    let mut placed = 0;
+    for (kind, c) in plan {
+        add(c, kind, &mut out);
+        placed += c;
+    }
+    if placed < n {
+        add(n - placed, Tool::Trend, &mut out);
+    }
+    out
+}

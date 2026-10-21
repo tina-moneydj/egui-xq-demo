@@ -1,0 +1,4 @@
+glow baseline cpu_all=45.9% cpu_no_llvmpipe=4.4% rss=124.25MB fps_median=19
+glow stress cpu_all=256.1% cpu_no_llvmpipe=50.8% rss=143.105MB fps_median=50
+wgpu baseline cpu_all=51.9% cpu_no_llvmpipe=7.3% rss=143.613MB fps_median=19
+wgpu stress cpu_all=293.8% cpu_no_llvmpipe=47.7% rss=170.594MB fps_median=57
