@@ -1,0 +1,714 @@
+==== s1k 2026-10-21 20:59:47
+   0.096 
+   0.096 (wry-xq-demo:33153): dbind-WARNING **: 20:59:06.107: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.110 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.916 [ui] BENCH first-frame
+   1.719 [ui] BENCH fps 52.0
+   2.719 [ui] BENCH fps 60.0
+   3.719 [ui] BENCH fps 60.0
+   3.964 [ui] BENCH first-quote
+   4.719 [ui] BENCH fps 51.0
+   5.719 [ui] BENCH fps 60.0
+   6.721 [ui] BENCH fps 59.8
+   7.726 [ui] BENCH fps 59.8
+   8.738 [ui] BENCH fps 59.2
+   9.741 [ui] BENCH fps 59.8
+  10.754 [ui] BENCH fps 60.2
+  11.757 [ui] BENCH fps 59.8
+  12.770 [ui] BENCH fps 58.2
+  13.773 [ui] BENCH fps 59.8
+  14.790 [ui] BENCH fps 60.0
+  15.804 [ui] BENCH fps 60.2
+  16.805 [ui] BENCH fps 59.9
+  17.809 [ui] BENCH fps 59.8
+  18.823 [ui] BENCH fps 60.2
+  19.825 [ui] BENCH fps 59.8
+  20.837 [ui] BENCH fps 60.3
+  21.838 [ui] BENCH fps 59.9
+  22.841 [ui] BENCH fps 59.8
+  23.853 [ui] BENCH fps 60.3
+  24.857 [ui] BENCH fps 59.8
+  25.872 [ui] BENCH fps 60.1
+  26.874 [ui] BENCH fps 59.9
+  27.887 [ui] BENCH fps 60.2
+  28.890 [ui] BENCH fps 59.8
+  29.899 [ui] BENCH fps 60.5
+  30.905 [ui] BENCH fps 59.6
+  31.906 [ui] BENCH fps 60.0
+  32.910 [ui] BENCH fps 59.8
+  33.914 [ui] BENCH fps 59.7
+  34.922 [ui] BENCH fps 60.6
+  35.925 [ui] BENCH fps 59.8
+  36.930 [ui] BENCH fps 60.8
+  37.933 [ui] BENCH fps 59.8
+  38.938 [ui] BENCH fps 59.8
+  39.941 [ui] BENCH fps 59.8
+==== s1k 2026-10-21 21:06:02
+   0.099 
+   0.099 (wry-xq-demo:34475): dbind-WARNING **: 21:05:21.084: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.111 [engine] 已連上 XQNext 127.0.0.1:47631
+   1.016 [ui] BENCH first-frame
+   1.759 [ui] BENCH fps 48.0
+   2.759 [ui] BENCH fps 60.0
+   3.759 [ui] BENCH fps 60.0
+   4.133 [ui] BENCH first-quote
+   4.759 [ui] BENCH fps 53.0
+   5.759 [ui] BENCH fps 60.0
+   6.761 [ui] BENCH fps 60.9
+   7.771 [ui] BENCH fps 59.4
+   8.773 [ui] BENCH fps 59.9
+   9.791 [ui] BENCH fps 59.9
+  10.793 [ui] BENCH fps 59.9
+  11.806 [ui] BENCH fps 60.2
+  12.809 [ui] BENCH fps 59.8
+  13.822 [ui] BENCH fps 53.3
+  14.825 [ui] BENCH fps 59.8
+  15.840 [ui] BENCH fps 60.1
+  16.846 [ui] BENCH fps 58.6
+  17.854 [ui] BENCH fps 61.5
+  18.857 [ui] BENCH fps 59.8
+  19.872 [ui] BENCH fps 60.1
+  20.873 [ui] BENCH fps 59.9
+  21.890 [ui] BENCH fps 60.0
+  22.903 [ui] BENCH fps 60.2
+  23.905 [ui] BENCH fps 59.9
+  24.909 [ui] BENCH fps 59.8
+  25.922 [ui] BENCH fps 60.2
+  26.926 [ui] BENCH fps 59.9
+  27.938 [ui] BENCH fps 60.2
+  28.941 [ui] BENCH fps 59.8
+  29.956 [ui] BENCH fps 60.1
+  30.957 [ui] BENCH fps 59.9
+  31.973 [ui] BENCH fps 60.0
+  32.990 [ui] BENCH fps 60.0
+  33.994 [ui] BENCH fps 59.8
+  35.010 [ui] BENCH fps 59.0
+  36.023 [ui] BENCH fps 60.2
+  37.025 [ui] BENCH fps 59.9
+  38.029 [ui] BENCH fps 60.8
+  39.033 [ui] BENCH fps 59.8
+  40.038 [ui] BENCH fps 59.8
+  41.041 [ui] BENCH fps 59.8
+==== s1k 2026-10-21 21:08:08
+   0.111 
+   0.111 (wry-xq-demo:35628): dbind-WARNING **: 21:07:27.313: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.123 [engine] 已連上 XQNext 127.0.0.1:47631
+   1.059 [ui] BENCH first-frame
+   1.825 [ui] BENCH fps 50.0
+   2.824 [ui] BENCH fps 60.0
+   3.824 [ui] BENCH fps 60.0
+   4.221 [ui] BENCH first-quote
+   4.824 [ui] BENCH fps 50.0
+   5.824 [ui] BENCH fps 60.0
+   6.825 [ui] BENCH fps 60.0
+   7.841 [ui] BENCH fps 59.0
+   8.849 [ui] BENCH fps 60.5
+   9.865 [ui] BENCH fps 60.0
+  10.869 [ui] BENCH fps 59.8
+  11.883 [ui] BENCH fps 60.2
+  12.885 [ui] BENCH fps 59.9
+  13.900 [ui] BENCH fps 60.0
+  14.900 [ui] BENCH fps 60.0
+  15.918 [ui] BENCH fps 59.9
+  16.931 [ui] BENCH fps 60.2
+  17.932 [ui] BENCH fps 59.9
+  18.949 [ui] BENCH fps 60.0
+  19.952 [ui] BENCH fps 59.8
+  20.966 [ui] BENCH fps 60.2
+  21.968 [ui] BENCH fps 59.9
+  22.982 [ui] BENCH fps 57.2
+  23.985 [ui] BENCH fps 60.9
+  24.997 [ui] BENCH fps 60.2
+  26.012 [ui] BENCH fps 59.1
+  27.019 [ui] BENCH fps 60.6
+  28.033 [ui] BENCH fps 60.1
+  29.049 [ui] BENCH fps 60.0
+  30.060 [ui] BENCH fps 59.4
+  31.071 [ui] BENCH fps 60.3
+  32.082 [ui] BENCH fps 60.3
+  33.085 [ui] BENCH fps 59.9
+  34.102 [ui] BENCH fps 58.0
+  35.114 [ui] BENCH fps 59.3
+  36.117 [ui] BENCH fps 59.9
+  37.121 [ui] BENCH fps 60.8
+  38.125 [ui] BENCH fps 59.8
+  39.129 [ui] BENCH fps 59.8
+  40.133 [ui] BENCH fps 59.8
+==== s10k 2026-10-21 21:10:15
+   0.111 
+   0.111 (wry-xq-demo:36581): dbind-WARNING **: 21:09:33.546: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.125 [engine] 已連上 XQNext 127.0.0.1:47631
+   1.245 [ui] BENCH first-frame
+   2.003 [ui] BENCH fps 46.0
+   3.003 [ui] BENCH fps 60.0
+   4.003 [ui] BENCH fps 60.0
+   4.441 [ui] BENCH first-quote
+   5.003 [ui] BENCH fps 48.0
+   6.003 [ui] BENCH fps 60.0
+   7.007 [ui] BENCH fps 59.9
+   8.010 [ui] BENCH fps 56.7
+   9.023 [ui] BENCH fps 61.3
+  10.042 [ui] BENCH fps 59.8
+  11.057 [ui] BENCH fps 60.1
+  12.067 [ui] BENCH fps 58.4
+  13.081 [ui] BENCH fps 60.2
+  14.090 [ui] BENCH fps 59.5
+  15.102 [ui] BENCH fps 59.2
+  16.114 [ui] BENCH fps 60.3
+  17.120 [ui] BENCH fps 56.7
+  18.137 [ui] BENCH fps 57.1
+  19.147 [ui] BENCH fps 57.4
+  20.161 [ui] BENCH fps 59.2
+  21.174 [ui] BENCH fps 56.3
+  22.174 [ui] BENCH fps 58.9
+  23.181 [ui] BENCH fps 58.6
+  24.191 [ui] BENCH fps 59.3
+  25.204 [ui] BENCH fps 60.2
+  26.206 [ui] BENCH fps 59.9
+  27.221 [ui] BENCH fps 60.1
+  28.221 [ui] BENCH fps 60.0
+  29.237 [ui] BENCH fps 60.0
+  30.255 [ui] BENCH fps 58.9
+  31.267 [ui] BENCH fps 60.3
+  32.272 [ui] BENCH fps 59.7
+  33.283 [ui] BENCH fps 58.4
+  34.291 [ui] BENCH fps 60.6
+  35.305 [ui] BENCH fps 60.1
+  36.307 [ui] BENCH fps 59.9
+  37.310 [ui] BENCH fps 60.9
+  38.314 [ui] BENCH fps 59.8
+  39.318 [ui] BENCH fps 59.8
+  40.322 [ui] BENCH fps 59.8
+==== s10k 2026-10-21 21:18:48
+   0.098 
+   0.098 (wry-xq-demo:37615): dbind-WARNING **: 21:11:39.931: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.110 [engine] 已連上 XQNext 127.0.0.1:47631
+   1.028 [ui] BENCH first-frame
+   1.790 [ui] BENCH fps 49.0
+   2.789 [ui] BENCH fps 60.0
+   3.789 [ui] BENCH fps 60.0
+   4.158 [ui] BENCH first-quote
+   4.789 [ui] BENCH fps 51.0
+   5.789 [ui] BENCH fps 60.0
+   6.794 [ui] BENCH fps 59.8
+   7.813 [ui] BENCH fps 58.8
+   8.827 [ui] BENCH fps 60.2
+   9.842 [ui] BENCH fps 60.1
+  10.850 [ui] BENCH fps 59.5
+  11.872 [ui] BENCH fps 54.8
+  12.883 [ui] BENCH fps 58.4
+  13.891 [ui] BENCH fps 59.6
+  14.905 [ui] BENCH fps 59.1
+  15.922 [ui] BENCH fps 53.1
+  16.940 [ui] BENCH fps 57.0
+  17.948 [ui] BENCH fps 58.5
+  18.958 [ui] BENCH fps 60.4
+  19.971 [ui] BENCH fps 58.2
+  20.978 [ui] BENCH fps 58.6
+  21.983 [ui] BENCH fps 58.7
+  22.986 [ui] BENCH fps 59.8
+  24.000 [ui] BENCH fps 60.2
+  25.013 [ui] BENCH fps 60.2
+  26.028 [ui] BENCH fps 60.2
+  27.030 [ui] BENCH fps 59.9
+ 423.769 [ui] BENCH fps 0.1
+ 424.738 [ui] BENCH fps 59.9
+ 425.741 [ui] BENCH fps 59.8
+ 426.745 [ui] BENCH fps 59.8
+ 427.749 [ui] BENCH fps 59.8
+==== s10k 2026-10-21 21:20:54
+   0.098 
+   0.098 (wry-xq-demo:38673): dbind-WARNING **: 21:20:12.857: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.110 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.933 [ui] BENCH first-frame
+   1.724 [ui] BENCH fps 51.0
+   2.723 [ui] BENCH fps 59.0
+   3.723 [ui] BENCH fps 60.0
+   3.935 [ui] BENCH first-quote
+   4.724 [ui] BENCH fps 53.0
+   5.723 [ui] BENCH fps 60.0
+   6.727 [ui] BENCH fps 59.8
+   7.741 [ui] BENCH fps 60.1
+   8.742 [ui] BENCH fps 59.9
+   9.758 [ui] BENCH fps 59.1
+  10.759 [ui] BENCH fps 60.9
+  11.782 [ui] BENCH fps 59.6
+  12.797 [ui] BENCH fps 60.1
+  13.816 [ui] BENCH fps 59.9
+  14.831 [ui] BENCH fps 60.1
+  15.843 [ui] BENCH fps 60.3
+  16.858 [ui] BENCH fps 60.0
+  17.875 [ui] BENCH fps 60.0
+  18.878 [ui] BENCH fps 59.8
+  19.894 [ui] BENCH fps 60.1
+  20.899 [ui] BENCH fps 59.6
+  21.910 [ui] BENCH fps 60.3
+  22.928 [ui] BENCH fps 60.0
+  23.936 [ui] BENCH fps 60.5
+  24.946 [ui] BENCH fps 59.4
+  25.962 [ui] BENCH fps 60.1
+  26.974 [ui] BENCH fps 59.2
+  27.990 [ui] BENCH fps 60.0
+  29.002 [ui] BENCH fps 59.3
+  30.011 [ui] BENCH fps 60.5
+  31.025 [ui] BENCH fps 60.2
+  32.026 [ui] BENCH fps 59.9
+  33.045 [ui] BENCH fps 59.9
+  34.058 [ui] BENCH fps 60.2
+  35.075 [ui] BENCH fps 60.0
+  36.078 [ui] BENCH fps 59.8
+  37.082 [ui] BENCH fps 60.8
+  38.086 [ui] BENCH fps 59.8
+  39.090 [ui] BENCH fps 59.8
+  40.095 [ui] BENCH fps 59.8
+==== s50k 2026-10-21 21:23:00
+   0.094 
+   0.094 (wry-xq-demo:39665): dbind-WARNING **: 21:22:18.801: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.106 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.947 [ui] BENCH first-frame
+   1.724 [ui] BENCH fps 50.0
+   2.723 [ui] BENCH fps 60.1
+   3.724 [ui] BENCH fps 60.0
+   3.957 [ui] BENCH first-quote
+   4.723 [ui] BENCH fps 50.0
+   5.723 [ui] BENCH fps 60.0
+   6.727 [ui] BENCH fps 60.8
+   7.745 [ui] BENCH fps 57.9
+   8.758 [ui] BENCH fps 60.3
+   9.765 [ui] BENCH fps 59.6
+  10.776 [ui] BENCH fps 53.4
+  11.795 [ui] BENCH fps 57.9
+  12.815 [ui] BENCH fps 49.0
+  13.829 [ui] BENCH fps 50.3
+  14.832 [ui] BENCH fps 51.8
+  15.846 [ui] BENCH fps 54.3
+  16.853 [ui] BENCH fps 50.6
+  17.855 [ui] BENCH fps 42.9
+  18.870 [ui] BENCH fps 53.2
+  19.882 [ui] BENCH fps 56.3
+  20.899 [ui] BENCH fps 60.0
+  21.914 [ui] BENCH fps 60.0
+  22.925 [ui] BENCH fps 59.4
+  23.940 [ui] BENCH fps 60.1
+  24.948 [ui] BENCH fps 52.5
+  25.956 [ui] BENCH fps 57.6
+  26.978 [ui] BENCH fps 58.7
+  27.986 [ui] BENCH fps 59.5
+  28.996 [ui] BENCH fps 60.3
+  29.998 [ui] BENCH fps 55.9
+  31.018 [ui] BENCH fps 57.9
+  32.026 [ui] BENCH fps 59.5
+  33.042 [ui] BENCH fps 58.1
+  34.049 [ui] BENCH fps 59.5
+  35.064 [ui] BENCH fps 60.2
+  36.079 [ui] BENCH fps 60.0
+  37.082 [ui] BENCH fps 60.9
+  38.085 [ui] BENCH fps 59.8
+  39.090 [ui] BENCH fps 59.8
+  40.094 [ui] BENCH fps 60.7
+==== s50k 2026-10-21 21:25:06
+   0.100 
+   0.100 (wry-xq-demo:40644): dbind-WARNING **: 21:24:24.753: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.111 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.911 [ui] BENCH first-frame
+   1.701 [ui] BENCH fps 50.9
+   2.701 [ui] BENCH fps 60.0
+   3.701 [ui] BENCH fps 60.0
+   3.949 [ui] BENCH first-quote
+   4.701 [ui] BENCH fps 52.0
+   5.701 [ui] BENCH fps 60.0
+   6.704 [ui] BENCH fps 59.8
+   7.721 [ui] BENCH fps 59.0
+   8.730 [ui] BENCH fps 56.5
+   9.740 [ui] BENCH fps 60.3
+  10.750 [ui] BENCH fps 60.5
+  11.754 [ui] BENCH fps 59.7
+  12.770 [ui] BENCH fps 59.1
+  13.782 [ui] BENCH fps 57.3
+  14.797 [ui] BENCH fps 59.1
+  15.810 [ui] BENCH fps 60.3
+  16.814 [ui] BENCH fps 58.8
+  17.829 [ui] BENCH fps 57.1
+  18.837 [ui] BENCH fps 59.6
+  19.852 [ui] BENCH fps 59.1
+  20.869 [ui] BENCH fps 58.0
+  21.886 [ui] BENCH fps 58.1
+  22.893 [ui] BENCH fps 57.6
+  23.907 [ui] BENCH fps 57.2
+  24.927 [ui] BENCH fps 54.9
+  25.937 [ui] BENCH fps 52.4
+  26.951 [ui] BENCH fps 52.3
+  27.963 [ui] BENCH fps 59.3
+  28.982 [ui] BENCH fps 57.9
+  29.985 [ui] BENCH fps 52.8
+  30.990 [ui] BENCH fps 58.7
+  32.007 [ui] BENCH fps 57.0
+  33.023 [ui] BENCH fps 56.0
+  34.044 [ui] BENCH fps 56.9
+  35.053 [ui] BENCH fps 58.5
+  36.067 [ui] BENCH fps 58.2
+  37.068 [ui] BENCH fps 56.9
+  38.072 [ui] BENCH fps 60.8
+  39.076 [ui] BENCH fps 59.8
+  40.080 [ui] BENCH fps 59.8
+==== s50k 2026-10-21 21:27:11
+   0.101 
+   0.101 (wry-xq-demo:41647): dbind-WARNING **: 21:26:30.773: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.114 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.943 [ui] BENCH first-frame
+   1.730 [ui] BENCH fps 51.0
+   2.730 [ui] BENCH fps 60.0
+   3.731 [ui] BENCH fps 59.9
+   3.899 [ui] BENCH first-quote
+   4.732 [ui] BENCH fps 53.9
+   5.732 [ui] BENCH fps 60.0
+   6.732 [ui] BENCH fps 60.0
+   7.747 [ui] BENCH fps 59.1
+   8.759 [ui] BENCH fps 60.3
+   9.760 [ui] BENCH fps 59.9
+  10.778 [ui] BENCH fps 59.0
+  11.780 [ui] BENCH fps 59.8
+  12.799 [ui] BENCH fps 58.9
+  13.814 [ui] BENCH fps 55.1
+  14.824 [ui] BENCH fps 57.4
+  15.851 [ui] BENCH fps 56.5
+  16.860 [ui] BENCH fps 53.5
+  17.864 [ui] BENCH fps 56.7
+  18.874 [ui] BENCH fps 59.5
+  19.877 [ui] BENCH fps 60.8
+  20.887 [ui] BENCH fps 59.3
+  21.889 [ui] BENCH fps 58.9
+  22.901 [ui] BENCH fps 58.4
+  23.905 [ui] BENCH fps 57.7
+  24.913 [ui] BENCH fps 52.6
+  25.925 [ui] BENCH fps 56.4
+  26.934 [ui] BENCH fps 57.5
+  27.941 [ui] BENCH fps 58.5
+  28.958 [ui] BENCH fps 59.1
+  29.962 [ui] BENCH fps 60.8
+  30.967 [ui] BENCH fps 59.7
+  31.976 [ui] BENCH fps 59.4
+  32.986 [ui] BENCH fps 60.4
+  33.989 [ui] BENCH fps 59.8
+  34.993 [ui] BENCH fps 59.8
+  36.011 [ui] BENCH fps 59.9
+  37.013 [ui] BENCH fps 60.9
+  38.016 [ui] BENCH fps 59.8
+  39.020 [ui] BENCH fps 59.8
+  40.024 [ui] BENCH fps 59.8
+==== s100k 2026-10-21 21:29:17
+   0.090 
+   0.090 (wry-xq-demo:43339): dbind-WARNING **: 21:28:36.701: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.100 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.882 [ui] BENCH first-frame
+   1.687 [ui] BENCH fps 52.0
+   2.687 [ui] BENCH fps 60.0
+   3.687 [ui] BENCH fps 60.0
+   3.888 [ui] BENCH first-quote
+   4.687 [ui] BENCH fps 54.0
+   5.687 [ui] BENCH fps 60.0
+   6.688 [ui] BENCH fps 59.9
+   7.694 [ui] BENCH fps 50.6
+   8.708 [ui] BENCH fps 53.3
+   9.716 [ui] BENCH fps 52.5
+  10.729 [ui] BENCH fps 54.3
+  11.739 [ui] BENCH fps 56.4
+  12.752 [ui] BENCH fps 54.3
+  13.755 [ui] BENCH fps 55.8
+  14.776 [ui] BENCH fps 54.9
+  15.784 [ui] BENCH fps 52.6
+  16.799 [ui] BENCH fps 54.2
+  17.809 [ui] BENCH fps 59.3
+  18.822 [ui] BENCH fps 55.3
+  19.843 [ui] BENCH fps 55.8
+  20.852 [ui] BENCH fps 51.6
+  21.862 [ui] BENCH fps 43.6
+  22.878 [ui] BENCH fps 52.2
+  23.887 [ui] BENCH fps 58.5
+  24.892 [ui] BENCH fps 53.7
+  25.895 [ui] BENCH fps 56.9
+  26.906 [ui] BENCH fps 57.4
+  27.917 [ui] BENCH fps 58.3
+  28.928 [ui] BENCH fps 55.4
+  29.946 [ui] BENCH fps 54.1
+  30.952 [ui] BENCH fps 56.7
+  31.967 [ui] BENCH fps 56.2
+  32.975 [ui] BENCH fps 60.5
+  33.979 [ui] BENCH fps 54.8
+  34.984 [ui] BENCH fps 55.7
+  36.002 [ui] BENCH fps 50.1
+  37.004 [ui] BENCH fps 57.9
+  38.008 [ui] BENCH fps 59.8
+  39.012 [ui] BENCH fps 59.8
+  40.016 [ui] BENCH fps 59.8
+==== s100k 2026-10-21 21:31:23
+   0.097 
+   0.097 (wry-xq-demo:44346): dbind-WARNING **: 21:30:42.625: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.108 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.889 [ui] BENCH first-frame
+   1.682 [ui] BENCH fps 50.9
+   2.681 [ui] BENCH fps 60.1
+   3.683 [ui] BENCH fps 59.9
+   3.925 [ui] BENCH first-quote
+   4.683 [ui] BENCH fps 52.0
+   5.683 [ui] BENCH fps 60.0
+   6.686 [ui] BENCH fps 59.9
+   7.696 [ui] BENCH fps 49.5
+   8.720 [ui] BENCH fps 53.8
+   9.732 [ui] BENCH fps 52.4
+  10.739 [ui] BENCH fps 55.6
+  11.750 [ui] BENCH fps 55.4
+  12.765 [ui] BENCH fps 48.2
+  13.777 [ui] BENCH fps 53.4
+  14.785 [ui] BENCH fps 57.5
+  15.802 [ui] BENCH fps 56.0
+  16.811 [ui] BENCH fps 58.4
+  17.820 [ui] BENCH fps 55.6
+  18.825 [ui] BENCH fps 54.7
+  19.834 [ui] BENCH fps 52.5
+  20.855 [ui] BENCH fps 53.9
+  21.860 [ui] BENCH fps 52.7
+  22.876 [ui] BENCH fps 56.1
+  23.887 [ui] BENCH fps 57.4
+  24.896 [ui] BENCH fps 56.5
+  25.915 [ui] BENCH fps 57.9
+  26.932 [ui] BENCH fps 57.0
+  27.936 [ui] BENCH fps 57.8
+  28.948 [ui] BENCH fps 55.3
+  29.952 [ui] BENCH fps 54.8
+  30.961 [ui] BENCH fps 55.5
+  31.970 [ui] BENCH fps 58.5
+  32.976 [ui] BENCH fps 57.7
+  33.978 [ui] BENCH fps 58.9
+  34.987 [ui] BENCH fps 58.5
+  35.992 [ui] BENCH fps 55.7
+  36.993 [ui] BENCH fps 60.9
+  37.999 [ui] BENCH fps 60.7
+  39.001 [ui] BENCH fps 59.8
+  40.005 [ui] BENCH fps 59.8
+==== s100k 2026-10-21 21:33:29
+   0.104 
+   0.104 (wry-xq-demo:45404): dbind-WARNING **: 21:32:48.620: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.116 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.922 [ui] BENCH first-frame
+   1.709 [ui] BENCH fps 50.9
+   2.709 [ui] BENCH fps 60.0
+   3.711 [ui] BENCH fps 59.9
+   3.921 [ui] BENCH first-quote
+   4.711 [ui] BENCH fps 52.0
+   5.712 [ui] BENCH fps 60.0
+   6.711 [ui] BENCH fps 59.9
+   7.717 [ui] BENCH fps 54.7
+   8.732 [ui] BENCH fps 59.1
+   9.753 [ui] BENCH fps 54.8
+  10.760 [ui] BENCH fps 57.6
+  11.772 [ui] BENCH fps 59.3
+  12.782 [ui] BENCH fps 53.4
+  13.798 [ui] BENCH fps 50.2
+  14.801 [ui] BENCH fps 51.8
+  15.812 [ui] BENCH fps 53.4
+  16.828 [ui] BENCH fps 52.2
+  17.842 [ui] BENCH fps 50.3
+  18.856 [ui] BENCH fps 52.3
+  19.869 [ui] BENCH fps 55.2
+  20.883 [ui] BENCH fps 55.3
+  21.900 [ui] BENCH fps 52.1
+  22.915 [ui] BENCH fps 53.1
+  23.931 [ui] BENCH fps 55.2
+  24.944 [ui] BENCH fps 53.3
+  25.950 [ui] BENCH fps 55.7
+  26.960 [ui] BENCH fps 57.4
+  27.965 [ui] BENCH fps 56.8
+  28.977 [ui] BENCH fps 58.3
+  29.992 [ui] BENCH fps 56.1
+  31.004 [ui] BENCH fps 59.3
+  32.007 [ui] BENCH fps 54.8
+  33.016 [ui] BENCH fps 56.5
+  34.035 [ui] BENCH fps 57.8
+  35.036 [ui] BENCH fps 58.0
+  36.042 [ui] BENCH fps 54.6
+  37.044 [ui] BENCH fps 58.9
+  38.048 [ui] BENCH fps 59.8
+  39.052 [ui] BENCH fps 59.8
+  40.055 [ui] BENCH fps 59.8
+==== burst 2026-10-21 21:35:36
+   0.102 
+   0.102 (wry-xq-demo:46369): dbind-WARNING **: 21:34:54.552: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.115 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.980 [ui] BENCH first-frame
+   1.757 [ui] BENCH fps 50.0
+   2.756 [ui] BENCH fps 60.0
+   3.756 [ui] BENCH fps 60.0
+   4.192 [ui] BENCH first-quote
+   4.756 [ui] BENCH fps 49.0
+   5.756 [ui] BENCH fps 60.0
+   6.760 [ui] BENCH fps 59.8
+   7.774 [ui] BENCH fps 53.3
+   8.784 [ui] BENCH fps 54.5
+   9.790 [ui] BENCH fps 58.6
+  10.798 [ui] BENCH fps 60.5
+  11.813 [ui] BENCH fps 60.1
+  12.836 [ui] BENCH fps 57.7
+  13.841 [ui] BENCH fps 57.7
+  14.847 [ui] BENCH fps 60.6
+  15.849 [ui] BENCH fps 59.9
+  16.857 [ui] BENCH fps 59.5
+  17.862 [ui] BENCH fps 59.6
+  18.864 [ui] BENCH fps 59.9
+  19.878 [ui] BENCH fps 60.1
+  20.880 [ui] BENCH fps 59.9
+  21.895 [ui] BENCH fps 60.1
+  22.896 [ui] BENCH fps 59.9
+  23.919 [ui] BENCH fps 59.7
+  24.928 [ui] BENCH fps 60.5
+  25.932 [ui] BENCH fps 59.8
+  26.947 [ui] BENCH fps 60.0
+  27.954 [ui] BENCH fps 58.6
+  28.963 [ui] BENCH fps 60.4
+  29.964 [ui] BENCH fps 60.0
+  30.979 [ui] BENCH fps 60.1
+  31.981 [ui] BENCH fps 58.9
+  32.985 [ui] BENCH fps 59.8
+  33.997 [ui] BENCH fps 60.3
+  35.000 [ui] BENCH fps 59.8
+  36.014 [ui] BENCH fps 60.2
+  37.021 [ui] BENCH fps 59.6
+  38.024 [ui] BENCH fps 60.8
+  39.028 [ui] BENCH fps 59.8
+  40.033 [ui] BENCH fps 59.8
+  41.037 [ui] BENCH fps 60.7
+==== burst 2026-10-21 21:37:42
+   0.123 
+   0.123 (wry-xq-demo:47338): dbind-WARNING **: 21:37:00.810: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.135 [engine] 已連上 XQNext 127.0.0.1:47631
+   1.013 [ui] BENCH first-frame
+   1.811 [ui] BENCH fps 51.9
+   2.811 [ui] BENCH fps 60.0
+   3.814 [ui] BENCH fps 59.9
+   4.170 [ui] BENCH first-quote
+   4.813 [ui] BENCH fps 52.0
+   5.813 [ui] BENCH fps 60.0
+   6.814 [ui] BENCH fps 58.9
+   7.822 [ui] BENCH fps 55.5
+   8.828 [ui] BENCH fps 56.7
+   9.841 [ui] BENCH fps 60.2
+  10.843 [ui] BENCH fps 59.8
+  11.850 [ui] BENCH fps 59.6
+  12.863 [ui] BENCH fps 58.2
+  13.881 [ui] BENCH fps 58.0
+  14.895 [ui] BENCH fps 60.1
+  15.908 [ui] BENCH fps 60.3
+  16.915 [ui] BENCH fps 59.6
+  17.931 [ui] BENCH fps 60.0
+  18.939 [ui] BENCH fps 60.6
+  19.942 [ui] BENCH fps 59.8
+  20.956 [ui] BENCH fps 60.1
+  21.959 [ui] BENCH fps 59.9
+  22.971 [ui] BENCH fps 60.3
+  23.974 [ui] BENCH fps 59.8
+  24.986 [ui] BENCH fps 60.3
+  25.990 [ui] BENCH fps 59.8
+  27.006 [ui] BENCH fps 60.0
+  28.022 [ui] BENCH fps 60.0
+  29.039 [ui] BENCH fps 60.0
+  30.049 [ui] BENCH fps 59.4
+  31.060 [ui] BENCH fps 60.3
+  32.072 [ui] BENCH fps 60.2
+  33.074 [ui] BENCH fps 59.9
+  34.089 [ui] BENCH fps 60.1
+  35.092 [ui] BENCH fps 59.8
+  36.095 [ui] BENCH fps 59.8
+  37.098 [ui] BENCH fps 60.8
+  38.102 [ui] BENCH fps 59.8
+  39.106 [ui] BENCH fps 59.8
+  40.112 [ui] BENCH fps 60.6
+==== burst 2026-10-21 21:39:48
+   0.111 
+   0.111 (wry-xq-demo:48387): dbind-WARNING **: 21:39:07.002: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.125 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.965 [ui] BENCH first-frame
+   1.745 [ui] BENCH fps 50.0
+   2.745 [ui] BENCH fps 59.0
+   3.745 [ui] BENCH fps 60.0
+   3.962 [ui] BENCH first-quote
+   4.745 [ui] BENCH fps 51.0
+   5.745 [ui] BENCH fps 60.0
+   6.748 [ui] BENCH fps 59.8
+   7.759 [ui] BENCH fps 52.4
+   8.765 [ui] BENCH fps 54.7
+   9.779 [ui] BENCH fps 55.2
+  10.784 [ui] BENCH fps 55.7
+  11.796 [ui] BENCH fps 52.3
+  12.812 [ui] BENCH fps 58.1
+  13.824 [ui] BENCH fps 58.3
+  14.836 [ui] BENCH fps 59.3
+  15.852 [ui] BENCH fps 60.0
+  16.854 [ui] BENCH fps 59.8
+  17.868 [ui] BENCH fps 61.2
+  18.876 [ui] BENCH fps 59.5
+  19.886 [ui] BENCH fps 60.4
+  20.898 [ui] BENCH fps 60.3
+  21.903 [ui] BENCH fps 59.7
+  22.914 [ui] BENCH fps 60.3
+  23.916 [ui] BENCH fps 59.9
+  24.932 [ui] BENCH fps 60.0
+  25.948 [ui] BENCH fps 60.0
+  26.952 [ui] BENCH fps 59.8
+  27.966 [ui] BENCH fps 60.2
+  28.968 [ui] BENCH fps 59.9
+  29.984 [ui] BENCH fps 60.0
+  30.998 [ui] BENCH fps 60.2
+  32.000 [ui] BENCH fps 59.9
+  33.016 [ui] BENCH fps 60.0
+  34.035 [ui] BENCH fps 59.9
+  35.037 [ui] BENCH fps 59.9
+  36.040 [ui] BENCH fps 59.8
+  37.044 [ui] BENCH fps 60.8
+  38.048 [ui] BENCH fps 59.8
+  39.052 [ui] BENCH fps 59.8
+  40.056 [ui] BENCH fps 60.8
+==== s10k 2026-10-21 21:42:11
+   0.101 
+   0.101 (wry-xq-demo:49547): dbind-WARNING **: 21:41:30.440: AT-SPI: Error retrieving accessibility bus address: org.freedesktop.DBus.Error.ServiceUnknown: The name org.a11y.Bus was not provided by any .service files
+   0.114 [engine] 已連上 XQNext 127.0.0.1:47631
+   0.992 [ui] BENCH first-frame
+   1.777 [ui] BENCH fps 50.9
+   2.777 [ui] BENCH fps 60.1
+   3.776 [ui] BENCH fps 60.0
+   4.161 [ui] BENCH first-quote
+   4.776 [ui] BENCH fps 51.0
+   5.777 [ui] BENCH fps 60.0
+   6.777 [ui] BENCH fps 59.9
+   7.787 [ui] BENCH fps 59.4
+   8.789 [ui] BENCH fps 59.9
+   9.801 [ui] BENCH fps 60.2
+  10.805 [ui] BENCH fps 59.8
+  11.821 [ui] BENCH fps 60.0
+  12.836 [ui] BENCH fps 60.0
+  13.840 [ui] BENCH fps 59.8
+  14.845 [ui] BENCH fps 59.7
+  15.855 [ui] BENCH fps 60.4
+  16.872 [ui] BENCH fps 60.0
+  17.889 [ui] BENCH fps 60.0
+  18.891 [ui] BENCH fps 59.8
+  19.906 [ui] BENCH fps 59.1
+  20.925 [ui] BENCH fps 55.9
+  21.931 [ui] BENCH fps 56.7
+  22.948 [ui] BENCH fps 59.0
+  23.951 [ui] BENCH fps 59.8
+  24.953 [ui] BENCH fps 60.9
+  25.962 [ui] BENCH fps 59.4
+  26.965 [ui] BENCH fps 58.8
+  27.982 [ui] BENCH fps 58.1
+  28.986 [ui] BENCH fps 58.8
+  30.003 [ui] BENCH fps 58.9
+  31.016 [ui] BENCH fps 60.3
+  32.018 [ui] BENCH fps 58.8
+  33.024 [ui] BENCH fps 59.7
+  34.038 [ui] BENCH fps 60.2
+  35.055 [ui] BENCH fps 60.0
+  36.070 [ui] BENCH fps 60.1
+  37.075 [ui] BENCH fps 60.7
+  38.077 [ui] BENCH fps 59.9
+  39.081 [ui] BENCH fps 59.8
+  40.085 [ui] BENCH fps 59.8

@@ -1,0 +1,80 @@
+==== s1k 2026-10-21 21:04:38
+   0.003 [egui] renderer=Glow
+   0.110 [xq-feed] 已連上 127.0.0.1:47631
+   0.198 BENCH first-frame
+   0.198 BENCH first-quote
+==== s1k 2026-10-21 21:06:44
+   0.002 [egui] renderer=Glow
+   0.084 [xq-feed] 已連上 127.0.0.1:47631
+   0.155 BENCH first-frame
+   0.155 BENCH first-quote
+==== s1k 2026-10-21 21:08:50
+   0.003 [egui] renderer=Glow
+   0.112 [xq-feed] 已連上 127.0.0.1:47631
+   0.195 BENCH first-frame
+   0.195 BENCH first-quote
+==== s10k 2026-10-21 21:10:56
+   0.003 [egui] renderer=Glow
+   0.088 [xq-feed] 已連上 127.0.0.1:47631
+   0.161 BENCH first-frame
+   0.161 BENCH first-quote
+==== s10k 2026-10-21 21:19:29
+   0.002 [egui] renderer=Glow
+   0.095 [xq-feed] 已連上 127.0.0.1:47631
+   0.173 BENCH first-frame
+   0.173 BENCH first-quote
+==== s10k 2026-10-21 21:21:35
+   0.003 [egui] renderer=Glow
+   0.086 [xq-feed] 已連上 127.0.0.1:47631
+   0.154 BENCH first-frame
+   0.154 BENCH first-quote
+==== s50k 2026-10-21 21:23:41
+   0.002 [egui] renderer=Glow
+   0.092 [xq-feed] 已連上 127.0.0.1:47631
+   0.165 BENCH first-frame
+   0.165 BENCH first-quote
+==== s50k 2026-10-21 21:25:47
+   0.002 [egui] renderer=Glow
+   0.086 [xq-feed] 已連上 127.0.0.1:47631
+   0.167 BENCH first-frame
+   0.167 BENCH first-quote
+==== s50k 2026-10-21 21:27:53
+   0.003 [egui] renderer=Glow
+   0.111 [xq-feed] 已連上 127.0.0.1:47631
+   0.198 BENCH first-frame
+   0.198 BENCH first-quote
+==== s100k 2026-10-21 21:29:59
+   0.002 [egui] renderer=Glow
+   0.084 [xq-feed] 已連上 127.0.0.1:47631
+   0.162 BENCH first-frame
+   0.162 BENCH first-quote
+==== s100k 2026-10-21 21:32:05
+   0.003 [egui] renderer=Glow
+   0.094 [xq-feed] 已連上 127.0.0.1:47631
+   0.172 BENCH first-frame
+   0.172 BENCH first-quote
+==== s100k 2026-10-21 21:34:11
+   0.003 [egui] renderer=Glow
+   0.097 [xq-feed] 已連上 127.0.0.1:47631
+   0.180 BENCH first-frame
+   0.180 BENCH first-quote
+==== burst 2026-10-21 21:36:17
+   0.002 [egui] renderer=Glow
+   0.085 [xq-feed] 已連上 127.0.0.1:47631
+   0.157 BENCH first-frame
+   0.157 BENCH first-quote
+==== burst 2026-10-21 21:38:23
+   0.003 [egui] renderer=Glow
+   0.099 [xq-feed] 已連上 127.0.0.1:47631
+   0.175 BENCH first-frame
+   0.175 BENCH first-quote
+==== burst 2026-10-21 21:40:29
+   0.003 [egui] renderer=Glow
+   0.085 [xq-feed] 已連上 127.0.0.1:47631
+   0.160 BENCH first-frame
+   0.160 BENCH first-quote
+==== s1k 2026-10-21 21:41:29
+   0.003 [egui] renderer=Glow
+   0.092 [xq-feed] 已連上 127.0.0.1:47631
+   0.165 BENCH first-frame
+   0.165 BENCH first-quote
