@@ -492,10 +492,15 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
+ "js-sys",
  "memmap2",
  "parking_lot",
  "serde",
  "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
  "xq-feed",
  "xq-tape",
 ]

@@ -6,7 +6,13 @@
 //! 沒變就沿用；但 egui 每次重畫都是整個視窗重新送給 GPU（立即模式、沒有局部重畫）。
 
 #![allow(dead_code)] // series/indicators/model 由 GPUI 版原樣移植，保留未用的 API
+/// 網頁版：eprintln! 改寫到 console.log（壓測腳本從 DevTools Protocol 收同樣的 BENCH／CHARTPERF／TICKBENCH 行）
+#[cfg(target_arch = "wasm32")]
+macro_rules! eprintln {
+    ($($t:tt)*) => { $crate::plat::log(&format!($($t)*)) };
+}
 mod bridge;
+mod plat;
 mod chart;
 mod drawings;
 mod gfx;
@@ -21,7 +27,8 @@ mod tick_tape;
 mod tickbench;
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use egui::{pos2, vec2, Align2, Color32, FontId, Rect, Sense};
 
@@ -112,7 +119,10 @@ impl Peer {
 }
 
 fn window_count() -> usize {
-    std::env::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
+    if plat::IS_WEB {
+        return 1; // 瀏覽器只有一張 canvas，沒有原生多視窗
+    }
+    crate::plat::var("XQ_WINDOWS").ok().and_then(|v| v.parse().ok()).unwrap_or(1usize).clamp(1, 8)
 }
 
 struct Terminal {
@@ -161,18 +171,18 @@ impl Terminal {
         vis.window_fill = PANEL;
         cc.egui_ctx.set_visuals(vis);
         let (sym, name) = names::WATCH[0];
-        let tape_feed = std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
+        let tape_feed = crate::plat::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
         let tape = tape_feed.clone().map(|f| TickTape::new(f, sym, &cc.egui_ctx));
         let bridge = FeedBridge::start(cc.egui_ctx.clone(), tape_feed);
         let mut table = QuoteTable::new(names::WATCH);
-        let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
+        let period = crate::plat::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         let chart = ChartView::new(sym, name, period);
-        let tick = xq_feed::tick_bench_enabled().then(tickbench::TickBench::default);
+        let tick = crate::plat::tick_bench_enabled().then(tickbench::TickBench::default);
         if tick.is_some() {
             table.enable_stress_indexed();
         }
-        let group = std::env::var_os("XQ_GROUP_STRESS").is_some_and(|v| v != "0").then(|| {
-            let num = |k: &str, d: u64| std::env::var(k).ok().and_then(|v| v.parse::<u64>().ok()).filter(|v| *v > 0).unwrap_or(d);
+        let group = crate::plat::var_os("XQ_GROUP_STRESS").is_some_and(|v| v != "0").then(|| {
+            let num = |k: &str, d: u64| crate::plat::var(k).ok().and_then(|v| v.parse::<u64>().ok()).filter(|v| *v > 0).unwrap_or(d);
             let hz = num("XQ_STRESS_TICK_HZ", 3000);
             (
                 GroupCfg {
@@ -193,24 +203,24 @@ impl Terminal {
                     title: format!("XQ 風格測試（egui） #{}", k + 1),
                     chart: ChartView::new(sym, name, period),
                     info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
-                    top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
+                    top_frac: crate::plat::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
                     left_w: 470.0,
                     frames: 0,
-                    tick: xq_feed::tick_bench_enabled().then(|| tickbench::TickBench::for_window(k)),
+                    tick: crate::plat::tick_bench_enabled().then(|| tickbench::TickBench::for_window(k)),
                 }
             })
             .collect();
         let mut t = Terminal {
             peers,
-            debug_repaint: std::env::var("XQ_DEBUG_REPAINT").is_ok_and(|v| v == "1"),
-            debug: std::env::var_os("XQ_DEBUG").is_some(),
+            debug_repaint: crate::plat::var("XQ_DEBUG_REPAINT").is_ok_and(|v| v == "1"),
+            debug: crate::plat::var_os("XQ_DEBUG").is_some(),
             bridge,
             table,
             chart,
             info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
             tape,
             conn: Conn::Connecting,
-            top_frac: std::env::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
+            top_frac: crate::plat::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
             left_w: 470.0,
             frames: 0,
             total_frames: 0,
@@ -222,8 +232,8 @@ impl Terminal {
             last_paint_us: 0,
             last_sample: Instant::now(),
             stats: Stats::default(),
-            metrics_log: std::env::var_os("XQ_METRICS").is_some(),
-            bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
+            metrics_log: crate::plat::var_os("XQ_METRICS").is_some(),
+            bench: crate::plat::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
             bench_frame: 0,
             bench_quote: 0,
             track_jank: false,
@@ -697,12 +707,12 @@ fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
     };
     let f11 = FontId::proportional(11.0);
     let m11 = FontId::monospace(11.0);
-    painter.text(pos2(status.min.x + 12.0, status.center().y), Align2::LEFT_CENTER, format!("● {conn_text} {}", xq_feed::feed_addr()), f11, conn_color);
+    painter.text(pos2(status.min.x + 12.0, status.center().y), Align2::LEFT_CENTER, format!("● {conn_text} {}", crate::plat::feed_label()), f11, conn_color);
     let s = stats;
     let mut rx = status.max.x - 12.0;
     for (t, c) in [
         (format!("封包 {}/s → 套用 {}/s", s.frames_in, s.applies), DIM),
-        (format!("RSS {:.1} MB", s.rss_mb), TEXT),
+        (format!("{} {:.1} MB", if plat::IS_WEB { "WASM" } else { "RSS" }, s.rss_mb), TEXT),
         (format!("FPS {}", s.fps), TEXT),
     ] {
         rx -= painter.text(pos2(rx, status.center().y), Align2::RIGHT_CENTER, t, m11.clone(), c).width() + 16.0;
@@ -762,9 +772,10 @@ fn paint_info(painter: &egui::Painter, r: Rect, i: &Info, s: &Stats) {
 }
 
 /// 中文字型：直接 mmap 系統的 Noto Sans CJK（.ttc 一份檔案兩個字面：TC＝index 3、Mono TC＝index 8），不複製進記憶體
+#[cfg(not(target_arch = "wasm32"))]
 fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
-    let path = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".into());
+    let path = crate::plat::var("XQ_CJK_FONT").unwrap_or_else(|_| "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".into());
     match std::fs::File::open(&path).and_then(|f| unsafe { memmap2::Mmap::map(&f) }) {
         Ok(mm) => {
             let blob: egui::epaint::text::Blob = Arc::new(mm);
@@ -778,6 +789,28 @@ fn setup_fonts(ctx: &egui::Context) {
     ctx.set_fonts(defs);
 }
 
+/// 網頁版：瀏覽器拿不到系統字型檔，把 Noto Sans TC 的子集（常用字＋Big5 一級字＋標點，見 web/README）直接編進 wasm。
+/// 等寬字型＝Noto Sans Mono CJK TC 的 ASCII 子集（數字，12 KB），中文落到 noto-tc。
+#[cfg(target_arch = "wasm32")]
+fn setup_fonts(ctx: &egui::Context) {
+    static TC: &[u8] = include_bytes!("../web/fonts/NotoSansTC-subset.otf");
+    static MONO: &[u8] = include_bytes!("../web/fonts/NotoSansMonoTC-ascii.otf");
+    let mut defs = egui::FontDefinitions::default();
+    defs.font_data.insert("noto-tc".into(), Arc::new(egui::FontData::from_static(TC)));
+    defs.font_data.insert("noto-mono-tc".into(), Arc::new(egui::FontData::from_static(MONO)));
+    defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "noto-tc".into());
+    let mono = defs.families.entry(egui::FontFamily::Monospace).or_default();
+    mono.insert(0, "noto-mono-tc".into());
+    mono.push("noto-tc".into());
+    ctx.set_fonts(defs);
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn rss_mb() -> f64 {
+    plat::wasm_heap_mb()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -788,8 +821,9 @@ pub fn rss_mb() -> f64 {
         .unwrap_or(0.0)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
-    let renderer = match std::env::var("XQ_RENDERER").as_deref() {
+    let renderer = match crate::plat::var("XQ_RENDERER").as_deref() {
         Ok("wgpu") => eframe::Renderer::Wgpu,
         _ => eframe::Renderer::Glow,
     };
@@ -800,4 +834,22 @@ fn main() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native("XQ 風格測試（egui）", opts, Box::new(|cc| Ok(Box::new(Terminal::new(cc)))))
+}
+
+/// 網頁版入口：wasm-bindgen 會在載入時呼叫 main；畫在 index.html 的 <canvas id="xq">
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    use wasm_bindgen::JsCast;
+    eprintln!("BENCH wasm-start");
+    wasm_bindgen_futures::spawn_local(async {
+        let canvas = web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.get_element_by_id("xq"))
+            .and_then(|e| e.dyn_into::<web_sys::HtmlCanvasElement>().ok())
+            .expect("index.html 少了 <canvas id=xq>");
+        let opts = eframe::WebOptions::default();
+        if let Err(e) = eframe::WebRunner::new().start(canvas, opts, Box::new(|cc| Ok(Box::new(Terminal::new(cc))))).await {
+            eprintln!("[egui] 啟動失敗: {e:?}");
+        }
+    });
 }

@@ -15,7 +15,8 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use egui::epaint::{Mesh, Shape};
 use egui::{pos2, vec2, Align2, Color32, FontId, Key, Rect, Sense, Ui};
@@ -57,7 +58,7 @@ impl TapeFeed {
 
     /// **在行情執行緒上**被 `bridge::merge` 呼叫（合併前、每包一次）：O(1)／筆、不配置、不碰 UI。
     pub fn on_quotes(&self, quotes: &[Quote]) {
-        let now = xq_feed::unix_us() / 1000;
+        let now = crate::plat::unix_us() / 1000;
         let mut s = self.0.lock();
         let TapeShared { core, pending } = &mut *s;
         for q in quotes {
@@ -104,12 +105,12 @@ impl TapeSettings {
 }
 
 fn settings_path() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("XQ_TAPE_STATE") {
+    if let Some(p) = crate::plat::var_os("XQ_TAPE_STATE") {
         return Some(PathBuf::from(p));
     }
-    let base = std::env::var_os("XDG_DATA_HOME")
+    let base = crate::plat::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
+        .or_else(|| crate::plat::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")))?;
     Some(base.join("egui-xq-demo").join("tick_tape.json"))
 }
 
@@ -167,7 +168,7 @@ impl TickTape {
     pub fn new(feed: TapeFeed, symbol: &str, ctx: &egui::Context) -> Self {
         let persist = !["XQ_BENCH", "XQ_TICK_BENCH", "XQ_CHART_STRESS", "XQ_GROUP_STRESS"]
             .iter()
-            .any(|k| std::env::var_os(k).is_some_and(|v| v != "0"));
+            .any(|k| crate::plat::var_os(k).is_some_and(|v| v != "0"));
         let loaded = persist.then(|| {
             let slot = Arc::new(Mutex::new(None));
             let (s2, ctx) = (slot.clone(), ctx.clone());

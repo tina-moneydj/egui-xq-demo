@@ -469,7 +469,7 @@ pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, with_handles: bool) 
 impl PaintCache {
     /// 由幾何快取建出圖元：只處理可見畫線；選取的那條（live 層畫）與水平線分開
     pub fn build(ctx: &egui::Context, list: &[Drawing], gc: &GeomCache, xf: &Xf) -> PaintCache {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         let mut main = Sink::default();
         let mut hl = Sink::default();
         let mut tags = Sink::default();

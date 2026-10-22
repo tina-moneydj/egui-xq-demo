@@ -90,7 +90,7 @@ impl QuoteTable {
             matches: Vec::new(),
             match_sel: 0,
             composing: false,
-            ime_log: std::env::var("XQ_IME_LOG").is_ok_and(|v| v == "1"),
+            ime_log: crate::plat::var("XQ_IME_LOG").is_ok_and(|v| v == "1"),
         }
     }
 
@@ -316,7 +316,7 @@ impl QuoteTable {
         let sx = hr.min.x + 24.0 + tw + 60.0;
         let sr = Rect::from_min_max(pos2(sx, hr.min.y + 3.0), pos2((sx + 150.0).min(br.min.x - 8.0), hr.max.y - 3.0));
         let mut search_pick = None;
-        if sr.width() > 40.0 {
+        if sr.width() > 40.0 && crate::plat::search_enabled() {
             search_pick = self.show_search(ui, sr);
         }
         // 欄位標頭
@@ -367,7 +367,7 @@ impl QuoteTable {
             }
             let key = Key { clip, origin_y: origin.y, i0, i1, gen: self.gen, selected: self.selected, hover, font: gfx::font_key(&ctx) };
             if gfx::no_view_cache() || !matches!(&self.cache, Some((k, _)) if *k == key) {
-                let t0 = std::time::Instant::now();
+                let t0 = crate::plat::Instant::now();
                 let mesh = self.build_rows(&ctx, origin.x, origin.y, w, i0, i1, hover);
                 if i1 > i0 {
                     self.paints += 1;

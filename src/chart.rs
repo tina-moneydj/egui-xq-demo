@@ -8,7 +8,8 @@
 //! 不是光柵化。左側畫線工具列、上方週期／指標選單。XQ_CHART_STRESS=1 跑與 wry／GPUI 版相同的重圖表壓測。
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use egui::epaint::Mesh;
 use egui::{pos2, vec2, Color32, Context, Key, Rect, Sense, Shape, Ui};
@@ -461,7 +462,7 @@ struct StressCfg {
 }
 
 fn env_ms(k: &str, d: u64) -> Duration {
-    Duration::from_millis(std::env::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d))
+    Duration::from_millis(crate::plat::var(k).ok().and_then(|v| v.parse().ok()).unwrap_or(d))
 }
 
 // ───────────────────────── ChartView ─────────────────────────
@@ -499,14 +500,14 @@ pub struct ChartView {
 
 impl ChartView {
     pub fn new(symbol: &str, name: &str, period: Period) -> Self {
-        let stress_on = std::env::var_os("XQ_CHART_STRESS").is_some_and(|v| v != "0");
-        let persist = !stress_on && !std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0");
+        let stress_on = crate::plat::var_os("XQ_CHART_STRESS").is_some_and(|v| v != "0");
+        let persist = !stress_on && !crate::plat::var_os("XQ_BENCH").is_some_and(|v| v != "0");
         let store = if persist { Store::load() } else { Store::default() };
         let stress = stress_on.then(|| {
             let now = Instant::now();
             (
                 StressCfg {
-                    drawings: std::env::var("XQ_CHART_DRAWINGS").ok().and_then(|v| v.parse().ok()).unwrap_or(1000),
+                    drawings: crate::plat::var("XQ_CHART_DRAWINGS").ok().and_then(|v| v.parse().ok()).unwrap_or(1000),
                     warm: env_ms("XQ_CHART_WARM_MS", 3000),
                     phase: env_ms("XQ_CHART_PHASE_MS", 10_000),
                     wait: env_ms("XQ_CHART_WAIT_MS", 15_000),
