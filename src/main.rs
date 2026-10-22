@@ -11,6 +11,7 @@ mod chart;
 mod drawings;
 mod gfx;
 mod indicators;
+mod layers;
 mod model;
 mod names;
 mod series;
@@ -19,6 +20,7 @@ mod table;
 mod theme;
 mod tick_tape;
 mod tickbench;
+mod zstress;
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};

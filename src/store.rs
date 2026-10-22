@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::drawings::Drawing;
+use crate::layers::Layer;
 use crate::model::IndCfg;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -15,6 +16,9 @@ pub struct Entry {
     pub cfg: Option<IndCfg>,
     #[serde(default)]
     pub drawings: Vec<Drawing>,
+    /// 圖層（舊存檔沒有 → 讀進來時補一個預設層）
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub layers: Vec<Layer>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
