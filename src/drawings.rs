@@ -5,7 +5,10 @@
 //!   純平移（view.right 改變）沿用快取，只把頂點整批水平位移（不重新三角化、不重新排字）。
 //! - 重建時先用 bounding box 剔除不在可視區（左右各多留半個寬度給平移）的畫線。
 //! - hit-test 用 64px 格子的空間索引，只測游標附近 3×3 格的候選。
-//! - 被選取／繪製中的那條不進快取，在 live 層每幀即時畫（含控制點）。
+//! - 圖層／上下順序（z-order，見 layers.rs）：嚴格依（圖層順位, 圖層內順位）由下往上畫——
+//!   每條畫線的填色、線、字依序三角化進同一個 Mesh（egui 的 Mesh 依索引順序畫，同一張字型貼圖，一次 draw call）。
+//! - 選取的那條不進快取，在「它自己的位置」即時畫：畫線層切成 下面（快取）／選取（每幀）／上面（快取）三明治，
+//!   拖曳時只重建中間那片，上下兩段只在選取改變、順序或圖層改變時重建。控制點在 live 層（最上面）。
 
 use egui::{pos2, vec2, Rect};
 use serde::{Deserialize, Serialize};
@@ -63,6 +66,19 @@ pub struct Drawing {
     pub pts: Vec<Pt>,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub text: String,
+    /// 圖層 id（layers.rs；舊存檔沒有 → 0，0 不寫出，與舊版／wry 相容）
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub layer: u32,
+}
+
+fn is_zero(v: &u32) -> bool {
+    *v == 0
+}
+
+impl Drawing {
+    pub fn new(kind: Tool, pts: Vec<Pt>, text: String) -> Drawing {
+        Drawing { kind, pts, text, layer: 0 }
+    }
 }
 
 pub const FIB: [f64; 7] = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
@@ -382,7 +398,8 @@ pub struct GeomCache {
 }
 
 impl GeomCache {
-    pub fn build(list: &[Drawing], xf: &Xf, key: CacheKey) -> GeomCache {
+    /// hidden(k)：隱藏圖層的畫線不建幾何（不畫、點不到）
+    pub fn build(list: &[Drawing], xf: &Xf, key: CacheKey, hidden: impl Fn(usize) -> bool) -> GeomCache {
         let w = xf.plot_r - xf.plot_l;
         // 左右各多留半個寬度：平移快取時從邊緣移入的畫線也已經在快取裡
         let (cl, cr) = (xf.plot_l - w * 0.5, xf.plot_r + w * 0.5);
@@ -390,7 +407,11 @@ impl GeomCache {
         let mut visible = 0;
         let geoms: Vec<Option<Geom>> = list
             .iter()
-            .map(|d| {
+            .enumerate()
+            .map(|(k, d)| {
+                if hidden(k) {
+                    return None;
+                }
                 let g = geom(d, xf);
                 let b = g.bbox;
                 if b[2] < cl || b[0] > cr || b[3] < ct || b[1] > cb {
@@ -407,10 +428,9 @@ impl GeomCache {
     }
 }
 
-/// 畫線層的已建好圖元：價格窗格內（平移時整批位移）、水平線（不位移）、右側價格軸標籤（不位移）
+/// 畫線層一段（下面或上面）的已建好圖元：價格窗格內依 z 順序的 Mesh（平移時整批位移）、右側價格軸標籤（不位移）
 pub struct PaintCache {
     pub main: std::sync::Arc<egui::epaint::Mesh>,
-    pub hlines: std::sync::Arc<egui::epaint::Mesh>,
     pub tags: std::sync::Arc<egui::epaint::Mesh>,
     pub built_us: u64,
     /// 上一次位移後的 main（dx 沒變就沿用，不必每幀複製頂點）
@@ -421,8 +441,9 @@ fn fmt_p(v: f64) -> String {
     if v.is_finite() { format!("{v:.2}") } else { "--".into() }
 }
 
-/// 一條畫線的圖元（快取重建與 live 層共用）
-pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, with_handles: bool) {
+/// 一條畫線的圖元（快取重建、選取那片、繪製中共用）。hline_ext：水平線左右各多畫一個寬度（快取平移時不會斷）。
+/// 結尾 seal()：這條的填色／線／字在下一條之前畫完（嚴格 z 順序）。控制點另外畫（live 層）。
+pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
     let w: f32 = if sel { 2.0 } else { 1.4 };
     let main_c = rgb(if sel { SEL_COLOR } else { DRAW_COLOR });
     if let Some(f) = &g.fill {
@@ -446,9 +467,14 @@ pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, with_handles: bool) 
             }
         }
         Tool::Text => {
-            let [x, y, bw, bh] = g.text_box.unwrap();
-            s.boxed(x, y, bw, bh, rgba(0x1e1e1e, 0.85), main_c, 1.0);
-            s.text(d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, rgb(DRAW_COLOR));
+            if let Some([x, y, bw, bh]) = g.text_box {
+                s.boxed(x, y, bw, bh, rgba(0x1e1e1e, 0.85), main_c, if sel { 2.0 } else { 1.0 });
+                s.text(d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, rgb(DRAW_COLOR));
+            }
+        }
+        Tool::Hline if hline_ext > 0.0 => {
+            let [a, b] = g.segs[0];
+            s.seg(p(a.x - hline_ext, a.y), p(b.x + hline_ext, b.y), w, main_c);
         }
         _ => {
             for sg in &g.segs {
@@ -459,44 +485,37 @@ pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, with_handles: bool) 
             }
         }
     }
-    if with_handles {
-        for h in &g.handles {
-            s.boxed(h.x - 4.5, h.y - 4.5, 9.0, 9.0, rgb(SEL_COLOR), rgb(0x000000), 1.0);
-        }
+    s.seal();
+}
+
+/// 選取畫線的控制點（live 層，永遠在最上面）
+pub fn emit_handles(s: &mut Sink, hs: &[P]) {
+    for h in hs {
+        s.boxed(h.x - 4.5, h.y - 4.5, 9.0, 9.0, rgb(SEL_COLOR), rgb(0x000000), 1.0);
     }
 }
 
 impl PaintCache {
-    /// 由幾何快取建出圖元：只處理可見畫線；選取的那條（live 層畫）與水平線分開
-    pub fn build(ctx: &egui::Context, list: &[Drawing], gc: &GeomCache, xf: &Xf) -> PaintCache {
+    /// 由幾何快取建出一段（idxs = 由下到上的畫線索引）的圖元：只處理可見畫線
+    pub fn build(ctx: &egui::Context, list: &[Drawing], gc: &GeomCache, xf: &Xf, idxs: &[u32]) -> PaintCache {
         let t0 = crate::plat::Instant::now();
         let mut main = Sink::default();
-        let mut hl = Sink::default();
         let mut tags = Sink::default();
-        for (k, d) in list.iter().enumerate() {
-            if Some(k) == gc.key.selected {
-                continue;
-            }
-            let Some(g) = &gc.geoms[k] else { continue };
+        let ext = xf.plot_r - xf.plot_l;
+        for &k in idxs {
+            let k = k as usize;
+            let (Some(d), Some(Some(g))) = (list.get(k), gc.geoms.get(k)) else { continue };
             if d.kind == Tool::Hline {
-                hl.seg(g.segs[0][0], g.segs[0][1], 1.4, rgb(DRAW_COLOR));
                 let y = g.segs[0][0].y;
                 if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
                     tags.rect(xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, rgb(0x8a6a00));
                     tags.text(fmt_p(d.pts[0].p), xf.plot_r + 5.0, y, 11.0, rgb(0xffffff));
                 }
-                continue;
             }
-            emit(&mut main, d, g, false, false);
+            emit(&mut main, d, g, false, ext);
         }
         let a = std::sync::Arc::new;
-        PaintCache {
-            main: a(main.finish(ctx)),
-            hlines: a(hl.finish(ctx)),
-            tags: a(tags.finish(ctx)),
-            built_us: t0.elapsed().as_micros() as u64,
-            shifted: None,
-        }
+        PaintCache { main: a(main.finish(ctx)), tags: a(tags.finish(ctx)), built_us: t0.elapsed().as_micros() as u64, shifted: None }
     }
 
     /// 平移量 dx 下的 main（dx 改變才複製＋位移頂點）
@@ -517,8 +536,16 @@ impl PaintCache {
     }
 
     pub fn vertex_count(&self) -> usize {
-        self.main.vertices.len() + self.hlines.vertices.len()
+        self.main.vertices.len()
     }
+}
+
+/// 壓測用：拿哪一條當「拖曳／選取」的目標——perf_mix 裡第 31 個矩形（半透明填色，落在預設可視範圍內）。
+/// wry `__perfPick` 同一個公式。
+pub fn perf_pick(n: usize) -> Option<usize> {
+    let rect_start = n * 40 / 100 + n * 8 / 100 * 3 + n * 12 / 100 * 2;
+    let rects = n * 6 / 100;
+    (rects > 0).then(|| rect_start + 30.min(rects - 1))
 }
 
 /// wry `__perfAddN` 同一套產生器：同樣的索引公式與工具混合比例
@@ -544,15 +571,15 @@ pub fn perf_mix(bars: &[crate::series::K], n: usize) -> Vec<Drawing> {
             let p1 = b.c * (1.0 + ((k % 7) as f64 - 3.0) * 0.002);
             let (fi, fj) = (i as f64, j as f64);
             let d = match kind {
-                Tool::Hline | Tool::Vline => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }], text: String::new() },
-                Tool::Fib => Drawing { kind, pts: vec![Pt { i: fi, p: p0.max(p1) }, Pt { i: fj, p: p0.min(p1) }], text: String::new() },
-                Tool::Channel => Drawing {
+                Tool::Hline | Tool::Vline => Drawing::new(kind, vec![Pt { i: fi, p: p0 }], String::new()),
+                Tool::Fib => Drawing::new(kind, vec![Pt { i: fi, p: p0.max(p1) }, Pt { i: fj, p: p0.min(p1) }], String::new()),
+                Tool::Channel => Drawing::new(
                     kind,
-                    pts: vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }, Pt { i: ((i + j) / 2) as f64, p: (p0 + p1) / 2.0 * 1.01 }],
-                    text: String::new(),
-                },
-                Tool::Text => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }], text: format!("T{k}") },
-                _ => Drawing { kind, pts: vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }], text: String::new() },
+                    vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }, Pt { i: ((i + j) / 2) as f64, p: (p0 + p1) / 2.0 * 1.01 }],
+                    String::new(),
+                ),
+                Tool::Text => Drawing::new(kind, vec![Pt { i: fi, p: p0 }], format!("T{k}")),
+                _ => Drawing::new(kind, vec![Pt { i: fi, p: p0 }, Pt { i: fj, p: p1 }], String::new()),
             };
             out.push(d);
         }

@@ -15,9 +15,11 @@ use egui::epaint::Mesh;
 use egui::{pos2, vec2, Color32, Context, Key, Rect, Sense, Shape, Ui};
 
 use crate::drawings::{self, PaintCache, Tool};
+use crate::layers::ZOp;
+use crate::zstress::{ZMode, ZState};
 use crate::gfx::{self, p, Align, Sink, P};
 use crate::indicators::{OvSpec, SubKind, MAX_OVERLAYS, MAX_SUBS};
-use crate::model::{IndCfg, Model, PaneKind, ALL, AXIS_W, DRAW, HEAD, LIVE, PLOT, SAVE, TIME_H};
+use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, AXIS_W, DRAW, HEAD, LIVE, PLOT, SAVE, SEL, TIME_H};
 use crate::series::Period;
 use crate::store::{Entry, Store};
 use crate::theme::*;
@@ -274,12 +276,18 @@ fn build_live(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
     let xf = g.xf();
     let mut out: Layer = Vec::new();
     let mut sel = Sink::default();
-    if let Some(d) = m.selected.and_then(|k| m.drawings.get(k)) {
-        drawings::emit(&mut sel, d, &drawings::geom(d, &xf), true, true);
-    }
+    let mut hs = Vec::new();
+    // 繪製中的那條（預覽，畫在最上面）
     if let Some(pd) = &m.pending {
-        drawings::emit(&mut sel, &pd.d, &drawings::geom(&pd.d, &xf), false, true);
+        let g = drawings::geom(&pd.d, &xf);
+        hs.extend_from_slice(&g.handles);
+        drawings::emit(&mut sel, &pd.d, &g, false, 0.0);
     }
+    // 選取那條的控制點永遠在最上面（線本身在「選取那片」、原本的順位）
+    if let Some(d) = m.selected.and_then(|k| m.drawings.get(k)) {
+        hs.extend_from_slice(&drawings::geom(d, &xf).handles);
+    }
+    drawings::emit_handles(&mut sel, &hs);
     if !sel.is_empty() {
         out.push((xf.clip(), Arc::new(sel.finish(ctx))));
     }
@@ -418,6 +426,8 @@ enum Mode {
     Ticks,
     Crosshair,
     Pan,
+    /// 圖層／上下順序四段（zstress.rs）
+    Z(ZMode),
 }
 impl Mode {
     fn name(self) -> &'static str {
@@ -425,14 +435,16 @@ impl Mode {
             Mode::Ticks => "ticks",
             Mode::Crosshair => "crosshair",
             Mode::Pan => "pan",
+            Mode::Z(z) => z.name(),
         }
     }
 }
 
 #[derive(Default, Clone, Copy, Debug)]
 pub struct LayerStats {
-    pub paints: [u64; 3],
-    pub paint_us: [u64; 3],
+    /// 0 底圖、1 畫線（下段＋上段）、2 live、3 選取那片
+    pub paints: [u64; 4],
+    pub paint_us: [u64; 4],
     pub rebuilds: u64,
     pub rebuild_us: u64,
 }
@@ -455,6 +467,7 @@ enum Stage {
 
 struct StressCfg {
     drawings: usize,
+    layers: usize,
     warm: Duration,
     phase: Duration,
     wait: Duration,
@@ -483,12 +496,16 @@ pub struct ChartView {
     dirty: u8,
     plot: Option<(LayerKey, Layer)>,
     live: Option<(LayerKey, Layer)>,
+    /// 三明治中間那片：選取的那條（拖曳時每幀只重建這片＋live）
+    sel: Option<(LayerKey, Layer)>,
     pub stats: LayerStats,
     menu_open: bool,
+    layers_open: bool,
     store: Store,
     persist: bool,
     save_at: Option<Instant>,
     stress: Option<(StressCfg, Stage)>,
+    zs: ZState,
     total_steps: u64,
     focused: bool,
     last_press: Option<(Instant, egui::Pos2)>,
@@ -508,6 +525,7 @@ impl ChartView {
             (
                 StressCfg {
                     drawings: crate::plat::var("XQ_CHART_DRAWINGS").ok().and_then(|v| v.parse().ok()).unwrap_or(1000),
+                    layers: crate::zstress::env_layers(),
                     warm: env_ms("XQ_CHART_WARM_MS", 3000),
                     phase: env_ms("XQ_CHART_PHASE_MS", 10_000),
                     wait: env_ms("XQ_CHART_WAIT_MS", 15_000),
@@ -521,12 +539,15 @@ impl ChartView {
             dirty: ALL,
             plot: None,
             live: None,
+            sel: None,
             stats: LayerStats::default(),
             menu_open: false,
+            layers_open: false,
             store,
             persist,
             save_at: None,
             stress,
+            zs: ZState::new(crate::zstress::env_layers()),
             total_steps: 0,
             focused: false,
             last_press: None,
@@ -552,7 +573,7 @@ impl ChartView {
     }
 
     fn refresh(&mut self, f: u8) {
-        self.dirty |= f & (PLOT | DRAW | LIVE);
+        self.dirty |= f & (PLOT | DRAW | LIVE | SEL);
         if f & SAVE != 0 {
             self.schedule_save();
         }
@@ -572,9 +593,7 @@ impl ChartView {
                 self.m.set_cfg(c);
             }
         }
-        self.m.drawings = e.drawings;
-        self.m.selected = None;
-        self.m.drawings_changed();
+        self.m.set_drawings(e.drawings, e.layers);
     }
 
     fn schedule_save(&mut self) {
@@ -584,7 +603,7 @@ impl ChartView {
         let key = self.m.key();
         self.store.v = 1;
         self.store.last_cfg = Some(self.m.cfg.clone());
-        self.store.keys.insert(key, Entry { cfg: Some(self.m.cfg.clone()), drawings: self.m.drawings.clone() });
+        self.store.keys.insert(key, Entry { cfg: Some(self.m.cfg.clone()), drawings: self.m.drawings.clone(), layers: self.m.layers.clone() });
         self.save_at = Some(Instant::now() + Duration::from_millis(450));
     }
 
@@ -652,7 +671,7 @@ impl ChartView {
             Stage::Delay(t) if now.duration_since(t) >= Duration::from_millis(300) => {
                 let t_setup = Instant::now();
                 self.m.set_cfg(IndCfg::stress());
-                self.m.load_perf_drawings(cfg.drawings);
+                self.zs.pick = self.m.load_perf_drawings(cfg.drawings, cfg.layers);
                 self.m.mouse = None;
                 let setup_ms = t_setup.elapsed().as_secs_f64() * 1000.0;
                 eprintln!("CHARTPERF|{{\"phase\":\"setup-begin\",\"indicatorSetupMs\":{setup_ms:.2}}}");
@@ -666,15 +685,16 @@ impl ChartView {
                 let b = self.m.bounds.unwrap_or(Rect::NOTHING);
                 let st = self.stats;
                 let vis = self.m.gc.as_ref().map_or(0, |g| g.visible);
-                let verts = self.m.pc.as_ref().map_or(0, |p| p.2.vertex_count());
+                let verts = self.m.pc.as_ref().map_or(0, |c| c.below.vertex_count() + c.above.vertex_count());
                 let first_paint_ms = st.paint_us.iter().sum::<u64>() as f64 / 1000.0;
                 eprintln!(
-                    "CHARTPERF|{{\"phase\":\"setup\",\"cssW\":{:.0},\"cssH\":{:.0},\"overlays\":{},\"subs\":{},\"drawings\":{},\"visibleDrawings\":{},\"drawVertices\":{},\"bars\":{},\"sinceStartMs\":{:.0},\"rebuildMs\":{:.2},\"paintMsTotal\":{:.2},\"rssMb\":{:.1}}}",
+                    "CHARTPERF|{{\"phase\":\"setup\",\"cssW\":{:.0},\"cssH\":{:.0},\"overlays\":{},\"subs\":{},\"drawings\":{},\"layers\":{},\"visibleDrawings\":{},\"drawVertices\":{},\"bars\":{},\"sinceStartMs\":{:.0},\"rebuildMs\":{:.2},\"paintMsTotal\":{:.2},\"rssMb\":{:.1}}}",
                     b.width(),
                     b.height(),
                     self.m.ovs.len(),
                     self.m.subs.len(),
                     self.m.drawings.len(),
+                    self.m.layers.len(),
                     vis,
                     verts,
                     self.m.s.bars.len(),
@@ -696,16 +716,20 @@ impl ChartView {
                 }
             }
             Stage::Run { mode, s0, steps, base_right } => {
-                if now.duration_since(s0.t) >= cfg.phase {
+                if let Mode::Z(_) = mode {
+                    self.zs.record(self.stats.rebuild_us);
+                }
+                let dur = if mode == Mode::Z(ZMode::ZShot) { Duration::from_millis(3000) } else { cfg.phase };
+                if now.duration_since(s0.t) >= dur {
                     let s1 = self.snap(frames);
                     let secs = s1.t.duration_since(s0.t).as_secs_f64();
                     let nfr = s1.frames - s0.frames;
-                    let lp: Vec<u64> = (0..3).map(|k| s1.st.paints[k] - s0.st.paints[k]).collect();
-                    let lu: Vec<u64> = (0..3).map(|k| s1.st.paint_us[k] - s0.st.paint_us[k]).collect();
+                    let lp: Vec<u64> = (0..4).map(|k| s1.st.paints[k] - s0.st.paints[k]).collect();
+                    let lu: Vec<u64> = (0..4).map(|k| s1.st.paint_us[k] - s0.st.paint_us[k]).collect();
                     let tot_us: u64 = lu.iter().sum();
                     let per = |k: usize| if lp[k] > 0 { lu[k] as f64 / lp[k] as f64 / 1000.0 } else { 0.0 };
                     eprintln!(
-                        "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"drawRebuilds\":{},\"rssMb\":{:.1}}}",
+                        "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"selPaints\":{},\"selMs\":{:.3},\"drawRebuilds\":{},\"rebuildMsTotal\":{:.2},\"rssMb\":{:.1}{}}}",
                         mode.name(),
                         secs,
                         nfr,
@@ -718,8 +742,12 @@ impl ChartView {
                         per(1),
                         lp[2],
                         per(2),
+                        lp[3],
+                        per(3),
                         s1.st.rebuilds - s0.st.rebuilds,
-                        crate::rss_mb()
+                        (s1.st.rebuild_us - s0.st.rebuild_us) as f64 / 1000.0,
+                        crate::rss_mb(),
+                        if let Mode::Z(_) = mode { self.zs.report(&self.m) } else { String::new() }
                     );
                     eprintln!("CHARTPHASE|{}|end", mode.name());
                     if mode == Mode::Pan {
@@ -731,10 +759,18 @@ impl ChartView {
                         let f = self.m.mouse_move(p(-1.0, -1.0), false);
                         self.refresh(f);
                     }
+                    if let Mode::Z(z) = mode {
+                        let f = self.zs.end(&mut self.m, z);
+                        self.refresh(f & !HEAD);
+                    }
                     match mode {
                         Mode::Ticks => self.begin_phase(Mode::Crosshair, frames),
                         Mode::Crosshair => self.begin_phase(Mode::Pan, frames),
-                        Mode::Pan => {
+                        Mode::Pan => self.begin_phase(Mode::Z(ZMode::Drag), frames),
+                        Mode::Z(ZMode::Drag) => self.begin_phase(Mode::Z(ZMode::Select), frames),
+                        Mode::Z(ZMode::Select) => self.begin_phase(Mode::Z(ZMode::Reorder), frames),
+                        Mode::Z(ZMode::Reorder) => self.begin_phase(Mode::Z(ZMode::ZShot), frames),
+                        Mode::Z(ZMode::ZShot) => {
                             eprintln!("CHARTPERF|{{\"phase\":\"done\",\"sinceStartMs\":{:.0}}}", cfg.t0.elapsed().as_secs_f64() * 1000.0);
                             Stage::Done
                         }
@@ -759,6 +795,10 @@ impl ChartView {
     }
 
     fn begin_phase(&mut self, mode: Mode, frames: u64) -> Stage {
+        if let Mode::Z(z) = mode {
+            let f = self.zs.begin(&mut self.m, z);
+            self.refresh(f & !HEAD);
+        }
         eprintln!("CHARTPHASE|{}|start", mode.name());
         if mode == Mode::Pan {
             self.m.set_busy(true);
@@ -769,6 +809,10 @@ impl ChartView {
 
     fn stress_step(&mut self, mode: Mode, f: u64, base_right: f64) -> u8 {
         self.total_steps += 1;
+        if let Mode::Z(z) = mode {
+            let fl = self.zs.step(&mut self.m, z, f, self.stats.rebuild_us);
+            return fl & !HEAD;
+        }
         let m = &mut self.m;
         let mut fl = m.synth_tick(f);
         if matches!(mode, Mode::Crosshair | Mode::Pan) {
@@ -840,6 +884,16 @@ impl ChartView {
                 let f = self.m.reset_view();
                 self.refresh(f);
             }
+            let lb = small_btn(ui, "圖層    ", self.layers_open);
+            let c = lb.rect.right_center() + vec2(-10.0, 0.0);
+            ui.painter().add(Shape::convex_polygon(
+                vec![c + vec2(-3.5, -2.0), c + vec2(3.5, -2.0), c + vec2(0.0, 2.5)],
+                if self.layers_open { TEXT } else { DIM },
+                egui::Stroke::NONE,
+            ));
+            if lb.clicked() {
+                self.layers_open = !self.layers_open;
+            }
             // Noto Sans CJK 沒有 ▾（U+25BE）字形，會畫成缺字方塊：字後留空，三角形自己畫（與 gpui 版外觀一致）
             let mb = small_btn(ui, "指標    ", self.menu_open);
             let c = mb.rect.right_center() + vec2(-10.0, 0.0);
@@ -865,6 +919,13 @@ impl ChartView {
         let mut menu_rect = None;
         if self.menu_open {
             menu_rect = self.show_menu(&ctx, pos2(rect.max.x - 428.0, rect.min.y + 28.0));
+        }
+        if self.layers_open {
+            let r = self.show_layers(&ctx, pos2(rect.max.x - 358.0, rect.min.y + 28.0));
+            menu_rect = Some(match menu_rect {
+                Some(m) => m.union(r),
+                None => r,
+            });
         }
 
         // ── 繪圖區輸入 ──
@@ -898,7 +959,8 @@ impl ChartView {
         for (clip, mesh) in &self.plot.as_ref().unwrap().1 {
             sp.with_clip_rect(*clip).add(Shape::Mesh(mesh.clone()));
         }
-        self.paint_draw(&ctx, &layer_painter(1), stage);
+        let dp = layer_painter(1);
+        self.paint_draw(&ctx, &dp, stage);
         let sp = layer_painter(2);
         if self.dirty & LIVE != 0 || !matches!(&self.live, Some((k, _)) if *k == key) {
             let t = Instant::now();
@@ -914,12 +976,14 @@ impl ChartView {
         ev
     }
 
-    /// 畫線層：快取命中就只位移貼上；尺度變了才重建（只建可見的）。
+    /// 畫線層三明治：下段（快取）→ 選取那條（原本順位，即時）→ 上段（快取）。
+    /// 下段＋上段只在尺度、畫線內容、圖層或選取變了才重建（只建可見的）；拖曳選取那條時只重建中間那片。
     fn paint_draw(&mut self, ctx: &Context, sp: &egui::Painter, stage: Rect) {
         let m = &mut self.m;
         m.geo(stage);
         if m.drawings.is_empty() {
             m.pc = None;
+            self.sel = None;
             return;
         }
         let dx = m.ensure_gc();
@@ -931,28 +995,53 @@ impl ChartView {
             self.draw_font = Some(font);
             m.pc = None;
         }
-        let stale = !matches!(&m.pc, Some((k, _, _)) if *k == key);
+        let stale = !matches!(&m.pc, Some(c) if c.key == key);
         if stale {
             let t = Instant::now();
+            let ord = m.ensure_order().clone();
+            let (lo, _, hi) = ord.split(m.selected);
             let gc = m.gc.as_ref().unwrap();
             let mut bxf = xf;
             bxf.right = gc.right;
-            let pc = PaintCache::build(ctx, &m.drawings, gc, &bxf);
+            let below = PaintCache::build(ctx, &m.drawings, gc, &bxf, lo);
+            let above = PaintCache::build(ctx, &m.drawings, gc, &bxf, hi);
             self.stats.rebuilds += 1;
             let us = t.elapsed().as_micros() as u64;
             self.stats.rebuild_us += us;
             self.stats.paints[1] += 1;
             self.stats.paint_us[1] += us;
-            m.pc = Some((key, right, pc));
+            m.pc = Some(DrawCache { key, right, below, above });
         }
-        let (_, r, pc) = m.pc.as_mut().unwrap();
-        *r = right;
+        let lkey = LayerKey { rect: stage, font };
+        if self.dirty & (SEL | DRAW | PLOT) != 0 || stale || !matches!(&self.sel, Some((k, _)) if *k == lkey) {
+            let t = Instant::now();
+            let mut layer = Layer::new();
+            if let Some(k) = m.selected.filter(|&k| !m.ensure_order().hidden(k)) {
+                if let Some(d) = m.drawings.get(k) {
+                    let mut s = gfx::Sink::default();
+                    drawings::emit(&mut s, d, &drawings::geom(d, &xf), true, 0.0);
+                    layer.push((xf.clip(), Arc::new(s.finish(ctx))));
+                }
+            }
+            self.sel = Some((lkey, layer));
+            self.stats.paints[3] += 1;
+            self.stats.paint_us[3] += t.elapsed().as_micros() as u64;
+        }
+        let c = m.pc.as_mut().unwrap();
+        c.right = right;
         let t = Instant::now();
         let clip = xf.clip();
-        let main = pc.main_at(dx);
+        let main = c.below.main_at(dx);
         sp.with_clip_rect(clip).add(Shape::Mesh(main));
-        sp.with_clip_rect(clip).add(Shape::Mesh(pc.hlines.clone()));
-        sp.add(Shape::Mesh(pc.tags.clone()));
+        sp.add(Shape::Mesh(c.below.tags.clone()));
+        for (cl, mesh) in &self.sel.as_ref().unwrap().1 {
+            sp.with_clip_rect(*cl).add(Shape::Mesh(mesh.clone()));
+        }
+        if m.selected.is_some() {
+            let main = c.above.main_at(dx);
+            sp.with_clip_rect(clip).add(Shape::Mesh(main));
+            sp.add(Shape::Mesh(c.above.tags.clone()));
+        }
         if dx != 0.0 && !stale {
             // 平移位移也算一次畫線層更新
             self.stats.paints[1] += 1;
@@ -1012,7 +1101,7 @@ impl ChartView {
         if self.focused {
             for e in events {
                 let f = match e {
-                    egui::Event::Key { key, pressed: true, .. } => {
+                    egui::Event::Key { key, pressed: true, modifiers, .. } => {
                         if self.m.text_edit.is_some() {
                             match key {
                                 Key::Enter => self.m.commit_text(true),
@@ -1024,9 +1113,13 @@ impl ChartView {
                                 _ => 0,
                             }
                         } else {
+                            let ctrl = modifiers.ctrl || modifiers.command;
                             match key {
                                 Key::Delete | Key::Backspace => self.m.delete_selected(),
                                 Key::Escape => self.m.escape(),
+                                // 上下順序：Ctrl+] 上移一層、Ctrl+[ 下移一層、加 Shift 移到最上／最下
+                                Key::CloseBracket if ctrl => self.m.zop(if modifiers.shift { ZOp::Front } else { ZOp::Forward }),
+                                Key::OpenBracket if ctrl => self.m.zop(if modifiers.shift { ZOp::Back } else { ZOp::Backward }),
                                 _ => 0,
                             }
                         }
@@ -1087,6 +1180,74 @@ impl ChartView {
             };
             self.refresh(f);
         }
+    }
+
+    /// 圖層面板：選取畫線的上下順序＋圖層清單（最上層在最上面；顯示／鎖定／上移／下移；點名稱設為作用中圖層）
+    fn show_layers(&mut self, ctx: &Context, at: egui::Pos2) -> Rect {
+        let m = &self.m;
+        let sel_layer = m.selected.and_then(|k| m.drawings.get(k)).map(|d| d.layer);
+        let (layers, counts, active) = (m.layers.clone(), m.layer_counts(), m.active_layer);
+        let has_sel = sel_layer.is_some();
+        let mut f: u8 = 0;
+        let r = egui::Area::new(egui::Id::unique("layers-panel")).fixed_pos(at).order(egui::Order::Foreground).show(ctx, |ui| {
+            egui::Frame::popup(ui.style()).fill(PANEL).stroke((1.0, BORDER)).show(ui, |ui| {
+                ui.set_width(340.0);
+                ui.style_mut().override_font_id = Some(egui::FontId::proportional(11.0));
+                ui.label(egui::RichText::new(if has_sel { "選取的畫線（在自己的圖層內調整）" } else { "選取一條畫線後可調整上下順序" }).color(DIM));
+                ui.horizontal_wrapped(|ui| {
+                    for op in ZOp::ALL {
+                        if ui.add_enabled(has_sel, egui::Button::new(format!("{}（{}）", op.label(), op.keys())).small()).clicked() {
+                            f |= self.m.zop(op);
+                        }
+                    }
+                    let can_move = has_sel && sel_layer != Some(active);
+                    if ui.add_enabled(can_move, egui::Button::new("移到作用中圖層").small()).clicked() {
+                        f |= self.m.move_selected_to_layer(active);
+                    }
+                });
+                ui.separator();
+                let n = layers.len();
+                ui.horizontal(|ui| {
+                    ui.label(egui::RichText::new(format!("圖層（{n}，上面的蓋住下面的）")).color(DIM));
+                    if ui.add_enabled(n < crate::layers::MAX_LAYERS, egui::Button::new("+ 新圖層").small()).clicked() {
+                        f |= self.m.layer_add();
+                    }
+                });
+                egui::ScrollArea::vertical().max_height(420.0).show(ui, |ui| {
+                    for (pos, l) in layers.iter().enumerate().rev() {
+                        let id = l.id;
+                        let is_active = id == active;
+                        ui.horizontal(|ui| {
+                            if ui.add(egui::Button::new(if l.visible { "顯示" } else { "隱藏" }).small().selected(!l.visible)).clicked() {
+                                f |= self.m.layer_toggle_visible(id);
+                            }
+                            if ui.add(egui::Button::new(if l.locked { "鎖定" } else { "未鎖" }).small().selected(l.locked)).clicked() {
+                                f |= self.m.layer_toggle_lock(id);
+                            }
+                            let name = format!(
+                                "{}{}（{}）{}",
+                                if is_active { "▶ " } else { "" },
+                                l.name,
+                                counts.get(pos).copied().unwrap_or(0),
+                                if sel_layer == Some(id) { " ●" } else { "" }
+                            );
+                            let txt = egui::RichText::new(name).color(if l.visible { TEXT } else { DIM });
+                            if fixed_w(ui, 170.0, |ui| ui.add(egui::Button::new(txt).small().frame(false).selected(is_active))).clicked() {
+                                f |= self.m.set_active_layer(id);
+                            }
+                            if ui.add_enabled(pos + 1 < n, egui::Button::new("▲").small()).clicked() {
+                                f |= self.m.layer_move(id, true);
+                            }
+                            if ui.add_enabled(pos > 0, egui::Button::new("▼").small()).clicked() {
+                                f |= self.m.layer_move(id, false);
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        self.refresh(f);
+        r.response.rect
     }
 
     fn show_menu(&mut self, ctx: &Context, at: egui::Pos2) -> Option<Rect> {

@@ -45,17 +45,30 @@ pub fn mono(size: f32) -> FontId {
     FontId::new(size, FontFamily::Monospace)
 }
 
-/// 一層的圖元收集器
+/// 一層的圖元收集器。
+/// 預設順序：整層的填色 → 線 → 字（批次最少）。呼叫 seal() 會切出一段：
+/// finish 時一段一段依序畫（每段內 填色 → 線 → 字），畫線層用它做到「每條畫線嚴格依 z 順序」，
+/// 只記邊界索引，不多配置 Mesh。
 #[derive(Default)]
 pub struct Sink {
     fill: Mesh,
     shapes: Vec<Shape>,
     texts: Vec<Txt>,
+    /// 已切好的段：(fill 頂點結尾, fill 索引結尾, shapes 結尾, texts 結尾)
+    cuts: Vec<(usize, usize, usize, usize)>,
 }
 
 impl Sink {
     pub fn is_empty(&self) -> bool {
         self.fill.is_empty() && self.shapes.is_empty() && self.texts.is_empty()
+    }
+
+    /// 切一段：之前加的圖元會在之後加的之前畫完
+    pub fn seal(&mut self) {
+        let c = (self.fill.vertices.len(), self.fill.indices.len(), self.shapes.len(), self.texts.len());
+        if self.cuts.last() != Some(&c) {
+            self.cuts.push(c);
+        }
     }
 
     /// 軸向矩形（1px 線、K 棒、量柱）
@@ -166,18 +179,17 @@ impl Sink {
     }
 
     /// 三角化成一個 Mesh（字的 UV 依目前字型貼圖大小；貼圖變大時呼叫端要重建快取）
-    pub fn finish(self, ctx: &Context) -> Mesh {
-        let Sink { mut fill, shapes, texts } = self;
-        let galleys: Vec<(Arc<egui::Galley>, &Txt)> = if texts.is_empty() {
+    pub fn finish(mut self, ctx: &Context) -> Mesh {
+        if !self.cuts.is_empty() {
+            self.seal_end();
+        }
+        let galleys: Vec<(Arc<egui::Galley>, &Txt)> = if self.texts.is_empty() {
             Vec::new()
         } else {
-            ctx.fonts_mut(|f| texts.iter().map(|t| (f.layout_no_wrap(t.s.clone(), if t.mono { mono(t.size) } else { FontId::proportional(t.size) }, t.color), t)).collect())
+            ctx.fonts_mut(|f| self.texts.iter().map(|t| (f.layout_no_wrap(t.s.clone(), if t.mono { mono(t.size) } else { FontId::proportional(t.size) }, t.color), t)).collect())
         };
         let mut tess = tessellator(ctx);
-        for s in shapes {
-            tess.tessellate_shape(s, &mut fill);
-        }
-        for (g, t) in galleys {
+        let put_text = |tess: &mut Tessellator, g: Arc<egui::Galley>, t: &Txt, out: &mut Mesh| {
             let sz = g.size();
             let x = match t.align {
                 Align::Left => t.x,
@@ -185,9 +197,42 @@ impl Sink {
                 Align::Right => t.x - sz.x,
             };
             let y = t.y_mid - sz.y / 2.0;
-            tess.tessellate_shape(Shape::galley(pos2(x.round(), y.round()), g, t.color), &mut fill);
+            tess.tessellate_shape(Shape::galley(pos2(x.round(), y.round()), g, t.color), out);
+        };
+        if self.cuts.is_empty() {
+            let mut fill = std::mem::take(&mut self.fill);
+            for s in std::mem::take(&mut self.shapes) {
+                tess.tessellate_shape(s, &mut fill);
+            }
+            for (g, t) in galleys {
+                put_text(&mut tess, g, t, &mut fill);
+            }
+            return fill;
         }
-        fill
+        // 分段：每段依序 填色 → 線 → 字
+        let mut out = Mesh::default();
+        out.vertices.reserve(self.fill.vertices.len() * 2);
+        out.indices.reserve(self.fill.indices.len() * 2);
+        let mut galleys = galleys.into_iter();
+        let mut shapes = std::mem::take(&mut self.shapes).into_iter();
+        let (mut v0, mut i0, mut s0, mut t0) = (0, 0, 0, 0);
+        for &(v1, i1, s1, t1) in &self.cuts {
+            let base = out.vertices.len() as u32;
+            out.vertices.extend_from_slice(&self.fill.vertices[v0..v1]);
+            out.indices.extend(self.fill.indices[i0..i1].iter().map(|&i| i - v0 as u32 + base));
+            for s in shapes.by_ref().take(s1 - s0) {
+                tess.tessellate_shape(s, &mut out);
+            }
+            for (g, t) in galleys.by_ref().take(t1 - t0) {
+                put_text(&mut tess, g, t, &mut out);
+            }
+            (v0, i0, s0, t0) = (v1, i1, s1, t1);
+        }
+        out
+    }
+
+    fn seal_end(&mut self) {
+        self.seal();
     }
 }
 
