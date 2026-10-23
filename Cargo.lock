@@ -2876,7 +2876,7 @@ dependencies = [
 [[package]]
 name = "xq-tokens"
 version = "0.1.0"
-source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=6e60222efd8a36a5693ef4d922265394bc86a273#6e60222efd8a36a5693ef4d922265394bc86a273"
+source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=dc4f0a80bf571b646480c05ebb71ddba139a0752#dc4f0a80bf571b646480c05ebb71ddba139a0752"
 dependencies = [
  "serde_json",
 ]
