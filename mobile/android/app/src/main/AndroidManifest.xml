@@ -6,7 +6,7 @@
         android:hasCode="false"
         android:label="XQ egui"
         android:debuggable="true"
-        android:theme="@android:style/Theme.Black.NoTitleBar">
+        android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
         <activity
             android:name="android.app.NativeActivity"
             android:exported="true"
