@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 ABIS="${1:-x86_64}"
 T=""; for a in ${ABIS//,/ }; do T="$T -t $a"; done
-cargo ndk -P 26 $T -o android/app/src/main/jniLibs build --release
+cargo ndk -P 26 $T -o android/app/src/main/jniLibs build --release ${CARGO_FEATURES:+--features $CARGO_FEATURES}
 # cargo-ndk 會順手複製 gpui-mobile 的 rlib 動態副本，不需要打包
 find android/app/src/main/jniLibs -name 'libgpui_mobile-*.so' -delete
 (cd android && ./gradlew -q assembleRelease -Pabis="$ABIS")

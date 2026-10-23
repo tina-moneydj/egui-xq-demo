@@ -20,6 +20,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 libc = "0.2"
 
+[features]
+# wgpu：多帶 egui-wgpu（Vulkan）渲染器，XQ_RENDERER=wgpu 時用；預設只有 glow（APK 較小）
+wgpu = ["eframe/wgpu"]
+
 [target.'cfg(target_os = "android")'.dependencies]
 eframe = { version = "0.37", default-features = false, features = ["glow", "android-native-activity", "default_fonts"] }
 winit = { version = "0.30", default-features = false, features = ["android-native-activity"] }

@@ -557,8 +557,12 @@ pub fn rss_mb() -> f64 {
 #[no_mangle]
 fn android_main(app: winit::platform::android::activity::AndroidApp) {
     droid::init(app.internal_data_path());
-    eprintln!("[egui] android_main renderer=glow");
-    let opts = eframe::NativeOptions { android_app: Some(app), renderer: eframe::Renderer::Glow, ..Default::default() };
+    #[cfg(feature = "wgpu")]
+    let renderer = if std::env::var("XQ_RENDERER").is_ok_and(|v| v == "wgpu") { eframe::Renderer::Wgpu } else { eframe::Renderer::Glow };
+    #[cfg(not(feature = "wgpu"))]
+    let renderer = eframe::Renderer::Glow;
+    eprintln!("[egui] android_main renderer={renderer:?}");
+    let opts = eframe::NativeOptions { android_app: Some(app), renderer, ..Default::default() };
     if let Err(e) = eframe::run_native("XQ egui", opts, Box::new(|cc| Ok(Box::new(MobileApp::new(cc))))) {
         eprintln!("[egui] run_native error: {e}");
     }
