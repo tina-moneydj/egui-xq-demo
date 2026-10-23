@@ -560,8 +560,8 @@ impl Terminal {
     fn show_peers(&mut self, ctx: &egui::Context) {
         let Terminal { peers, table, stats, conn, .. } = self;
         let (stats, conn) = (&*stats, *conn);
-        for p in peers.iter_mut() {
-            let builder = egui::ViewportBuilder::default().with_inner_size([1240.0, 760.0]).with_title(p.title.clone());
+        for (k, p) in peers.iter_mut().enumerate() {
+            let builder = viewport_for(k + 1, &p.title);
             ctx.show_viewport_immediate(p.id, builder, |ui, _class| {
                 p.frames += 1;
                 if let Some(tb) = p.tick.as_mut() {
@@ -764,6 +764,7 @@ fn paint_info(painter: &egui::Painter, r: Rect, i: &Info, s: &Stats) {
 }
 
 /// 中文字型：直接 mmap 系統的 Noto Sans CJK（.ttc 一份檔案兩個字面：TC＝index 3、Mono TC＝index 8），不複製進記憶體
+#[cfg(not(target_os = "macos"))]
 fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
     let path = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".into());
@@ -780,6 +781,75 @@ fn setup_fonts(ctx: &egui::Context) {
     ctx.set_fonts(defs);
 }
 
+/// macOS：用 CoreText 找系統的蘋方-繁（PingFangTC-Regular）實際檔案位置（新版 macOS 放在 /System/Library/AssetsV2/…，
+/// 路徑不固定），mmap 進來並在 .ttc 裡找到對應字面的 index；找不到再試黑體-繁、Arial Unicode。
+/// 比例字：蘋方放第一順位；等寬：保留 egui 內建的 Hack 給數字對齊，中文由蘋方後援。`XQ_CJK_FONT=路徑[#index]` 可覆寫。
+#[cfg(target_os = "macos")]
+fn setup_fonts(ctx: &egui::Context) {
+    let mut defs = egui::FontDefinitions::default();
+    let mut pick: Option<(std::path::PathBuf, String)> = None;
+    if let Ok(v) = std::env::var("XQ_CJK_FONT") {
+        let (p, ix) = v.split_once('#').map(|(p, i)| (p.to_string(), i.to_string())).unwrap_or((v.clone(), "0".into()));
+        pick = Some((p.into(), format!("#{ix}")));
+    }
+    if pick.is_none() {
+        for ps in ["PingFangTC-Regular", "STHeitiTC-Light", "ArialUnicodeMS"] {
+            if let Ok(f) = core_text::font::new_from_name(ps, 14.0) {
+                if f.postscript_name() == ps {
+                    if let Some(path) = f.copy_descriptor().font_path() {
+                        pick = Some((path, ps.to_string()));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    let Some((path, want)) = pick else {
+        eprintln!("[fonts] 找不到蘋方／黑體（中文會變方塊）");
+        ctx.set_fonts(defs);
+        return;
+    };
+    match std::fs::File::open(&path).and_then(|f| unsafe { memmap2::Mmap::map(&f) }) {
+        Ok(mm) => {
+            let index = if let Some(ix) = want.strip_prefix('#') {
+                ix.parse().unwrap_or(0)
+            } else {
+                let n = ttf_parser::fonts_in_collection(&mm).unwrap_or(1);
+                (0..n)
+                    .find(|&i| {
+                        ttf_parser::Face::parse(&mm, i).ok().is_some_and(|face| {
+                            face.names().into_iter().any(|nm| {
+                                nm.name_id == ttf_parser::name_id::POST_SCRIPT_NAME && nm.to_string().as_deref() == Some(want.as_str())
+                            })
+                        })
+                    })
+                    .unwrap_or(0)
+            };
+            eprintln!("[fonts] {} index={index}（{want}）", path.display());
+            let blob: egui::epaint::text::Blob = Arc::new(mm);
+            defs.font_data.insert("cjk-tc".into(), Arc::new(egui::FontData::from_blob(blob, index)));
+            defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "cjk-tc".into());
+            let mono = defs.families.entry(egui::FontFamily::Monospace).or_default();
+            let at = mono.len().min(1);
+            mono.insert(at, "cjk-tc".into());
+        }
+        Err(e) => eprintln!("[fonts] 讀不到 {}: {e}（中文會變方塊）", path.display()),
+    }
+    ctx.set_fonts(defs);
+}
+
+/// macOS：目前程序的常駐記憶體（resident size，相當於 Linux RSS）
+#[cfg(target_os = "macos")]
+pub fn rss_mb() -> f64 {
+    unsafe {
+        let mut ti: libc::proc_taskinfo = std::mem::zeroed();
+        let sz = std::mem::size_of::<libc::proc_taskinfo>() as libc::c_int;
+        let n = libc::proc_pidinfo(libc::getpid(), libc::PROC_PIDTASKINFO, 0, &mut ti as *mut _ as *mut libc::c_void, sz);
+        if n == sz { ti.pti_resident_size as f64 / (1024.0 * 1024.0) } else { 0.0 }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -790,6 +860,21 @@ pub fn rss_mb() -> f64 {
         .unwrap_or(0.0)
 }
 
+/// 壓測用視窗位置：`XQ_WIN_RECTS="x,y,w,h[,…];…"`，第 k 個給第 k 個視窗；x,y＝全域座標（邏輯點，主螢幕左上＝0,0），w,h＝內容區。
+/// 沒設定時照舊 1240×760。macOS 測試包（bench/mac）用這個放視窗（不需要輔助使用權限）。
+pub fn viewport_for(k: usize, title: &str) -> egui::ViewportBuilder {
+    let b = egui::ViewportBuilder::default().with_title(title);
+    let rect = std::env::var("XQ_WIN_RECTS").ok().and_then(|v| {
+        let e = v.split(';').filter(|e| !e.trim().is_empty()).nth(k)?.to_string();
+        let n: Vec<f32> = e.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+        (n.len() >= 4).then(|| (n[0], n[1], n[2], n[3]))
+    });
+    match rect {
+        Some((x, y, w, h)) => b.with_position([x, y]).with_inner_size([w, h]),
+        None => b.with_inner_size([1240.0, 760.0]),
+    }
+}
+
 fn main() -> eframe::Result {
     let renderer = match std::env::var("XQ_RENDERER").as_deref() {
         Ok("wgpu") => eframe::Renderer::Wgpu,
@@ -797,7 +882,7 @@ fn main() -> eframe::Result {
     };
     eprintln!("[egui] renderer={renderer:?}");
     let opts = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([1240.0, 760.0]).with_title("XQ 風格測試（egui）"),
+        viewport: viewport_for(0, "XQ 風格測試（egui）"),
         renderer,
         ..Default::default()
     };
