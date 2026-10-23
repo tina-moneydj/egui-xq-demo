@@ -26,6 +26,30 @@ for r in rows:
         if k in ("app", "run", "phase", "chartperf", "indperf") or isinstance(v, (bool, str)) or v is None:
             continue
         a.setdefault(k, []).append(v)
+# 指標「補算最後一根」：從原始 touch logcat 取走勢圖畫面每秒的 indPatchUs，取每輪中位數（比平均不受單一離群秒影響）
+import glob, re
+for f in sorted(glob.glob(os.path.join(d, "*-r*-touch.log"))):
+    m = re.match(r"(.+)-r(\d+)-touch\.log", os.path.basename(f))
+    if not m:
+        continue
+    app, run = m.group(1), int(m.group(2))
+    if not any(r["app"] == app and r["run"] == run and r["phase"] == "chart-mem" for r in rows):
+        continue  # 只算完整的那幾輪
+    v = []
+    for ln in open(f, errors="replace"):
+        i = ln.find("FRAMES|")
+        if i < 0:
+            continue
+        try:
+            j = json.loads(ln[i + 7:])
+        except Exception:
+            continue
+        if j.get("screen") == "chart" and j.get("indPatch"):
+            v.append(j["indPatchUs"])
+    if v:
+        a = agg.setdefault((app, "indicator"), {})
+        a.setdefault("patchUsMedian", []).append(round(statistics.median(v), 2))
+        a.setdefault("patchSamples", []).append(len(v))
 out = {}
 for (app, ph), m in sorted(agg.items()):
     o = out.setdefault(ph, {}).setdefault(app, {})
