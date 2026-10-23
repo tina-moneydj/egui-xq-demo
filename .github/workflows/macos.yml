@@ -62,6 +62,16 @@ jobs:
           PY
           ditto -c -k --keepParent xq-bench-mac xq-bench-mac.zip
           ls -la *.zip
+      - name: 實際跑一輪（egui wgpu／glow 主視窗；CI 虛擬機的數字不具參考性，只確認 Mac 版真的能開視窗、收行情）
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          cd xq-bench-mac
+          python3 xq_bench_mac.py --apps egui-wgpu,egui --scenarios main --runs 1 --no-zip --no-footprint --out "$GITHUB_WORKSPACE/smoke"
+          ls -la "$GITHUB_WORKSPACE/smoke"; head -60 "$GITHUB_WORKSPACE/smoke/summary.md" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: smoke-mac-egui, path: smoke, if-no-files-found: ignore, retention-days: 14 }
       - uses: actions/upload-artifact@v4
         with: { name: xq-bench-mac, path: "*.zip", retention-days: 30 }
       - name: Publish mac-bench-latest pre-release（私人）
