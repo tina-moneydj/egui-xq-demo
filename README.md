@@ -4,7 +4,7 @@
 **同版面、接同一個行情來源**：`WryFeedHost`（.NET，`127.0.0.1:47631`）。協議 crate `xq-feed` 直接沿用 gpui-xq-demo 的（Cargo git 依賴，鎖定 rev）。
 走勢圖的狀態、指標、畫線邏輯（`model.rs`／`indicators.rs`／`drawings.rs`／`series.rs`）是從 GPUI 版**原樣移植**，三版算的東西一樣，只差畫面框架。
 
-> **Mac 壓測包（mac-bench 分支）**：工具包放在 gpui-xq-demo 的 [bench/mac](https://github.com/tina-moneydj/gpui-xq-demo/tree/mac-bench/bench/mac)，會一起編這個 repo（兩個資料夾放同一層）。macOS 改動：蘋方-繁字型（CoreText 找檔案）、自身 RSS 用 `proc_pidinfo`、`XQ_WIN_RECTS` 指定視窗位置。CI 工作流程在 `ci/macos.yml`（token 沒有 workflow 權限，尚未啟用）。
+> **Mac 壓測包（mac-bench 分支）**：工具包放在 gpui-xq-demo 的 [bench/mac](https://github.com/tina-moneydj/gpui-xq-demo/tree/mac-bench/bench/mac)，會一起編這個 repo（兩個資料夾放同一層）。macOS 改動：蘋方-繁字型（CoreText 找檔案）、自身 RSS 用 `proc_pidinfo`、`XQ_WIN_RECTS` 指定視窗位置。CI：`.github/workflows/macos.yml` 編 egui（arm64）並組成完整 Mac 壓測包，發佈到本 repo 的 [mac-bench-latest](https://github.com/tina-moneydj/egui-xq-demo/releases/tag/mac-bench-latest) 預發行版（私人 repo，要登入才看得到）：下載 `xq-bench-mac.zip` → 解壓 → `xattr -dr com.apple.quarantine` → `./run-bench.command`。
 
 ![主視窗](docs/bench/2026-10-21-parity/main/egui.png)
 
