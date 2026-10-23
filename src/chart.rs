@@ -18,36 +18,35 @@ use crate::layers::ZOp;
 use crate::zstress::{ZMode, ZState};
 use crate::gfx::{self, p, Align, Sink, P};
 use crate::indicators::{OvSpec, SubKind, MAX_OVERLAYS, MAX_SUBS};
-use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, AXIS_W, DRAW, HEAD, LIVE, PLOT, SAVE, SEL, TIME_H};
+use crate::model::{DrawCache, IndCfg, Model, PaneKind, ALL, axis_w, DRAW, HEAD, LIVE, PLOT, SAVE, SEL, time_h};
 use crate::series::Period;
 use crate::store::{Entry, Store};
 use crate::theme::*;
 
-pub const C_UP: u32 = 0xe5484d;
-pub const C_DOWN: u32 = 0x30a46c;
-const C_GRID: u32 = 0x242424;
-const C_AXIS: u32 = 0x8a8a8a;
-const C_TEXT: u32 = 0xcfcfcf;
-const C_SEP: u32 = 0x333333;
-const C_CROSS: u32 = 0x8b95a5;
-const C_CROSS_LABEL: u32 = 0x3b4252;
-pub const OV_COLORS: [u32; 20] = [
-    0xf5c542, 0xc678dd, 0x56b6c2, 0xff7f50, 0x7fdbff, 0xe5484d, 0x30a46c, 0xf06292, 0xffb74d, 0x4fc3f7, 0xaed581, 0xce93d8,
-    0x80cbc4, 0xffab91, 0x90caf9, 0xfff176, 0xef9a9a, 0xb0bec5, 0xdce775, 0xb39ddb,
-];
-const HEAD_H: f32 = 28.0;
-const RAIL_W: f32 = 34.0;
+// 走勢圖配色：來自設計 token（color.chart.*）
+pub fn c_up() -> u32 { tk().chart.up }
+pub fn c_down() -> u32 { tk().chart.down }
+fn c_grid() -> u32 { tk().chart.grid }
+fn c_axis() -> u32 { tk().chart.axis }
+fn c_text() -> u32 { tk().chart.text }
+fn c_sep() -> u32 { tk().chart.separator }
+fn c_cross() -> u32 { tk().chart.crosshair }
+fn c_cross_label() -> u32 { tk().chart.crosshair_label }
+pub fn ov_color(i: usize) -> u32 { let o = &tk().chart.overlay; o[i % o.len()] }
+fn head_h() -> f32 { xq_tokens::t().layout.chart_header }
+fn rail_w() -> f32 { xq_tokens::t().layout.tool_rail }
 
 fn sub_colors(k: SubKind) -> &'static [u32] {
+    let c = &tk().chart;
     match k {
-        SubKind::Vol => &[0xf5c542, 0xc678dd],
-        SubKind::Kd => &[0xf5a623, 0x4fc3f7],
-        SubKind::Macd => &[0xf5c542, 0x4fc3f7],
-        SubKind::Rsi => &[0xc678dd],
-        SubKind::Wr => &[0xf06292],
-        SubKind::Dmi => &[0xe5484d, 0x30a46c, 0xf5c542],
-        SubKind::Atr => &[0xffb74d],
-        SubKind::Obv => &[0x4fc3f7],
+        SubKind::Vol => &c.sub_vol,
+        SubKind::Kd => &c.sub_kd,
+        SubKind::Macd => &c.sub_macd,
+        SubKind::Rsi => &c.sub_rsi,
+        SubKind::Wr => &c.sub_wr,
+        SubKind::Dmi => &c.sub_dmi,
+        SubKind::Atr => &c.sub_atr,
+        SubKind::Obv => &c.sub_obv,
     }
 }
 
@@ -102,26 +101,26 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
     let mut glob = Sink::default();
     if bars.is_empty() {
         let msg = if m.s.period == Period::Intraday { "等待引擎分時資料…（需連上 WryFeedHost）" } else { "沒有資料" };
-        glob.text(msg, bx + 16.0, by + 16.0, 12.0, hex(C_AXIS));
+        glob.text(msg, bx + 16.0, by + 16.0, tk().font.md, hex(c_axis()));
         return vec![(b, Arc::new(glob.finish(ctx)))];
     }
     let intraday = m.s.period == Period::Intraday;
     let (i0, i1) = (g.i0, g.i1);
     let x = |i: usize| g.x(i as f64);
-    let (up_c, dn_c) = (hex(C_UP), hex(C_DOWN));
-    let axis = hex(C_AXIS);
+    let (up_c, dn_c) = (hex(c_up()), hex(c_down()));
+    let axis = hex(c_axis());
     let axis_tx = g.plot_r + 6.0;
     let mut out: Layer = Vec::with_capacity(g.panes.len() + 1);
     for pane in &g.panes {
         let mut s = Sink::default();
         let (top, h) = (pane.y0, pane.ph);
         if pane.top > by {
-            glob.rect(g.plot_l, pane.top, g.plot_w, 1.0, hex(C_SEP));
+            glob.rect(g.plot_l, pane.top, g.plot_w, 1.0, hex(c_sep()));
         }
         for &i in &g.ticks {
             let xx = x(i).round();
             if xx >= g.plot_l && xx <= g.plot_r {
-                glob.rect(xx, top, 1.0, h, hex(C_GRID));
+                glob.rect(xx, top, 1.0, h, hex(c_grid()));
             }
         }
         let sub = match pane.kind {
@@ -131,8 +130,8 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
         if let Some((_, guides)) = sub.and_then(|s| s.fixed()) {
             for &t in guides {
                 let y = pane.y(t).round();
-                glob.hdash(g.plot_l, g.plot_r, y, hex(C_GRID), 3.0, 3.0);
-                glob.text(format!("{t}"), axis_tx, y, 11.0, axis);
+                glob.hdash(g.plot_l, g.plot_r, y, hex(c_grid()), 3.0, 3.0);
+                glob.text(format!("{t}"), axis_tx, y, tk().font.sm, axis);
             }
         } else {
             let st = nice_step(pane.hi - pane.lo, if sub.is_some() { (h / 30.0).max(1.0) as f64 } else { (h / 45.0).max(2.0) as f64 });
@@ -141,15 +140,15 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
             while t <= pane.hi && guard < 50 {
                 let y = pane.y(t).round();
                 if y >= top + 4.0 && y <= top + h - 2.0 {
-                    glob.rect(g.plot_l, y, g.plot_w, 1.0, hex(C_GRID));
+                    glob.rect(g.plot_l, y, g.plot_w, 1.0, hex(c_grid()));
                     let lbl = if t.abs() >= 10000.0 { fmt_v(t) } else if st < 1.0 { format!("{t:.2}") } else if st < 10.0 { format!("{t:.1}") } else { format!("{t:.0}") };
-                    glob.text(lbl, axis_tx, y, 11.0, axis);
+                    glob.text(lbl, axis_tx, y, tk().font.sm, axis);
                 }
                 t += st;
                 guard += 1;
             }
             if sub.is_some_and(|s| s.cfg.kind == SubKind::Dmi) && 20.0 > pane.lo && 20.0 < pane.hi {
-                glob.hdash(g.plot_l, g.plot_r, pane.y(20.0).round(), hex(0x3a3a3a), 3.0, 3.0);
+                glob.hdash(g.plot_l, g.plot_r, pane.y(20.0).round(), hex(tk().chart.midline), 3.0, 3.0);
             }
         }
         let yv = |v: f64| pane.y(v);
@@ -158,7 +157,7 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
                 if intraday {
                     s.polyline(1.5, if m.change >= 0.0 { up_c } else { dn_c }, (i0..=i1).map(|i| Some(p(x(i), yv(bars[i].c)))));
                     if m.s.prev > 0.0 {
-                        s.hdash(g.plot_l, g.plot_r, yv(m.s.prev), hex(0x777777), 4.0, 4.0);
+                        s.hdash(g.plot_l, g.plot_r, yv(m.s.prev), hex(tk().chart.prev_close), 4.0, 4.0);
                     }
                 } else {
                     let bwid = (g.bar_w * 0.7).round().max(1.0) as f32;
@@ -175,7 +174,7 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
                     }
                 }
                 for (idx, o) in m.ovs.iter().enumerate() {
-                    let col = hex(OV_COLORS[idx % 20]);
+                    let col = hex(ov_color(idx));
                     match o.spec {
                         OvSpec::Sar { .. } => {
                             let r = (g.bar_w * 0.2).clamp(1.2, 2.5) as f32;
@@ -187,7 +186,7 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
                             }
                         }
                         OvSpec::Bb { .. } => {
-                            let fc = hexa(0x5c9ded, 0.08);
+                            let fc = hexa(tk().chart.area_fill.rgb, tk().chart.area_fill.a);
                             for i in i0..i1 {
                                 let (u0, u1, l0, l1) = (o.out.up[i], o.out.up[i + 1], o.out.lo[i], o.out.lo[i + 1]);
                                 if u0.is_finite() && u1.is_finite() && l0.is_finite() && l1.is_finite() {
@@ -220,7 +219,7 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
                         let k = &bars[i];
                         let up = if intraday { i == 0 || k.c >= bars[i - 1].c } else { k.c >= k.o };
                         let y = yv(k.v);
-                        s.rect(x(i) - bw / 2.0, y, bw, base - y, hexa(if up { C_UP } else { C_DOWN }, 0xaa as f32 / 255.0));
+                        s.rect(x(i) - bw / 2.0, y, bw, base - y, hexa(if up { c_up() } else { c_down() }, 0xaa as f32 / 255.0));
                     }
                 }
                 if !sb.out.hist.is_empty() {
@@ -242,21 +241,21 @@ fn build_plot(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
         }
         out.push((clip_rect(g.plot_l, pane.top + 1.0, g.plot_w, pane.h - 1.0), Arc::new(s.finish(ctx))));
     }
-    glob.rect(bx, g.bottom, bw, 1.0, hex(C_SEP));
-    glob.rect(g.plot_r, by, 1.0, g.bottom - by, hex(C_SEP));
+    glob.rect(bx, g.bottom, bw, 1.0, hex(c_sep()));
+    glob.rect(g.plot_r, by, 1.0, g.bottom - by, hex(c_sep()));
     for &i in &g.ticks {
         let st = fmt_time(bars[i].t, m.s.period, false);
         let half = drawings::text_width(&st, 11.0) / 2.0 + 2.0;
         let cxp = x(i).clamp(g.plot_l + half, g.plot_r - half);
-        glob.text_at(st, cxp, g.bottom + TIME_H / 2.0 + 1.0, 11.0, axis, Align::Center);
+        glob.text_at(st, cxp, g.bottom + time_h() / 2.0 + 1.0, tk().font.sm, axis, Align::Center);
     }
     let last = bars[bars.len() - 1];
     let pr = g.panes[0];
     let ly = pr.y(last.c);
     if ly >= pr.y0 && ly <= pr.y0 + pr.ph {
-        let c = if m.change > 0.0 { C_UP } else if m.change < 0.0 { C_DOWN } else { 0x3b82f6 };
-        glob.rect(g.plot_r + 1.0, ly - 8.0, AXIS_W - 2.0, 16.0, hex(c));
-        glob.text(fmt_p(last.c), g.plot_r + 5.0, ly, 11.0, hex(0xffffff));
+        let c = if m.change > 0.0 { c_up() } else if m.change < 0.0 { c_down() } else { tk().chart.flat };
+        glob.rect(g.plot_r + 1.0, ly - 8.0, axis_w() - 2.0, 16.0, hex(c));
+        glob.text(fmt_p(last.c), g.plot_r + 5.0, ly, tk().font.sm, hex(tk().chart.tag_text));
     }
     // 格線／軸在最底下：把 glob 放在最前面
     out.insert(0, (b, Arc::new(glob.finish(ctx))));
@@ -294,43 +293,43 @@ fn build_live(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
     if let Some(d) = m.selected.and_then(|k| m.drawings.get(k)).filter(|d| d.kind == Tool::Hline) {
         let y = xf.y(d.pts[0].p);
         if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
-            s.rect(g.plot_r + 1.0, y - 8.0, AXIS_W - 2.0, 16.0, hex(0x666666));
-            s.text(fmt_p(d.pts[0].p), g.plot_r + 5.0, y, 11.0, hex(0xffffff));
+            s.rect(g.plot_r + 1.0, y - 8.0, axis_w() - 2.0, 16.0, hex(tk().chart.tag_bg));
+            s.text(fmt_p(d.pts[0].p), g.plot_r + 5.0, y, tk().font.sm, hex(tk().chart.tag_text));
         }
     }
     if let Some(te) = &m.text_edit {
         let st = format!("{}▏", te.text);
         let w = drawings::text_width(&st, 13.0).max(120.0) + 12.0;
         let (x0, y0) = (te.at.x, te.at.y - 11.0);
-        s.boxed(x0, y0, w, 22.0, hexa(0x1e1e1e, 0.95), hex(0x3b82f6), 1.0);
-        s.text(st, x0 + 6.0, y0 + 12.0, 13.0, hex(drawings::DRAW_COLOR));
-        s.text("輸入文字，Enter 確定，Esc 取消", x0, y0 + 32.0, 11.0, hex(C_AXIS));
+        s.boxed(x0, y0, w, 22.0, hexa(tk().chart.tooltip_bg.rgb, tk().chart.tooltip_bg.a), hex(tk().chart.tooltip_border), 1.0);
+        s.text(st, x0 + 6.0, y0 + 12.0, tk().font.lg, hex(drawings::draw_color()));
+        s.text("輸入文字，Enter 確定，Esc 取消", x0, y0 + 32.0, tk().font.sm, hex(c_axis()));
     }
     let hov = g.hover_idx(m.mouse);
     let info = hov.unwrap_or(g.i1.min(bars.len() - 1));
     if let (Some(i), Some(q)) = (hov, m.mouse) {
         let xx = g.x(i as f64).round();
         let y = q.y.round();
-        s.vdash(xx, b.min.y, g.bottom, hex(C_CROSS), 3.0, 3.0);
-        s.hdash(g.plot_l, g.plot_r, y, hex(C_CROSS), 3.0, 3.0);
+        s.vdash(xx, b.min.y, g.bottom, hex(c_cross()), 3.0, 3.0);
+        s.hdash(g.plot_l, g.plot_r, y, hex(c_cross()), 3.0, 3.0);
         let pane = g.pane_at(q).map(|k| g.panes[k]).unwrap_or(g.panes[0]);
         let v = pane.val_at(q.y);
         let is_vol = matches!(pane.kind, PaneKind::Sub(k) if matches!(m.subs[k].cfg.kind, SubKind::Vol | SubKind::Obv));
-        s.rect(g.plot_r + 1.0, y - 8.0, AXIS_W - 2.0, 16.0, hex(C_CROSS_LABEL));
-        s.text(if is_vol { fmt_v(v) } else { fmt_auto(v) }, g.plot_r + 5.0, y, 11.0, hex(0xffffff));
+        s.rect(g.plot_r + 1.0, y - 8.0, axis_w() - 2.0, 16.0, hex(c_cross_label()));
+        s.text(if is_vol { fmt_v(v) } else { fmt_auto(v) }, g.plot_r + 5.0, y, tk().font.sm, hex(tk().chart.tag_text));
         let st = fmt_time(bars[i].t, m.s.period, true);
         let w = drawings::text_width(&st, 11.0) + 10.0;
         let bxl = (xx - w / 2.0).clamp(g.plot_l, g.plot_r - w);
-        s.rect(bxl, g.bottom + 1.0, w, TIME_H - 2.0, hex(C_CROSS_LABEL));
-        s.text_at(st, bxl + w / 2.0, g.bottom + TIME_H / 2.0 + 1.0, 11.0, hex(0xffffff), Align::Center);
+        s.rect(bxl, g.bottom + 1.0, w, time_h() - 2.0, hex(c_cross_label()));
+        s.text_at(st, bxl + w / 2.0, g.bottom + time_h() / 2.0 + 1.0, tk().font.sm, hex(tk().chart.tag_text), Align::Center);
     }
     out.push((b, Arc::new(s.finish(ctx))));
     // 圖例（剪裁在各窗格內）
     let k = bars[info];
     let prev = if m.s.period == Period::Intraday { m.s.prev } else if info > 0 { bars[info - 1].c } else { k.o };
     let ch = k.c - prev;
-    let col = hex(if ch >= 0.0 { C_UP } else { C_DOWN });
-    let (t_c, a_c) = (hex(C_TEXT), hex(C_AXIS));
+    let col = hex(if ch >= 0.0 { c_up() } else { c_down() });
+    let (t_c, a_c) = (hex(c_text()), hex(c_axis()));
     let src = if m.s.live { "engine" } else if m.anchored { "合成K·現價" } else { "合成" };
     let sg = if ch >= 0.0 { "+" } else { "" };
     let head: Vec<(String, Color32)> = vec![
@@ -349,7 +348,7 @@ fn build_live(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
     items_line(&mut leg, &head, lx, pr.top + 8.0);
     let mut items: Vec<(String, Color32)> = Vec::with_capacity(32);
     for (idx, o) in m.ovs.iter().enumerate() {
-        let c = hex(OV_COLORS[idx % 20]);
+        let c = hex(ov_color(idx));
         match o.spec {
             OvSpec::Ma { period } => items.push((format!("MA{period} {}", fmt_p(o.out.line[info])), c)),
             OvSpec::Ema { period } => items.push((format!("EMA{period} {}", fmt_p(o.out.line[info])), c)),
@@ -395,7 +394,7 @@ fn build_live(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
             it.push((if nm.is_empty() { v } else { format!("{nm} {v}") }, hex(cols[li % cols.len()])));
         }
         if let Some(&hv) = sb.out.hist.get(info) {
-            it.push((format!("OSC {}", fmt_auto(hv)), hex(if hv >= 0.0 { C_UP } else { C_DOWN })));
+            it.push((format!("OSC {}", fmt_auto(hv)), hex(if hv >= 0.0 { c_up() } else { c_down() })));
         }
         let mut ls = Sink::default();
         items_line(&mut ls, &it, lx, pane.top + 7.0);
@@ -408,7 +407,7 @@ fn build_live(m: &mut Model, b: Rect, ctx: &Context) -> Layer {
 fn items_line(s: &mut Sink, items: &[(String, Color32)], x: f32, y: f32) {
     let mut xx = x;
     for (t, c) in items {
-        s.text(t.clone(), xx, y, 11.0, *c);
+        s.text(t.clone(), xx, y, tk().font.sm, *c);
         xx += egui_text_w(t, 11.0) + 2.0 * 0.6 * 11.0;
     }
 }
@@ -569,6 +568,12 @@ impl ChartView {
     }
     pub fn paint_totals(&self) -> (u64, u64) {
         (self.stats.paints.iter().sum(), self.stats.paint_us.iter().sum())
+    }
+
+    /// 換主題／token 熱更新：丟掉烤了顏色的畫線快取，三層都重建
+    pub fn tokens_changed(&mut self) {
+        self.m.pc = None;
+        self.refresh(ALL);
     }
 
     fn refresh(&mut self, f: u8) {
@@ -846,26 +851,26 @@ impl ChartView {
             }
         }
         let painter = ui.painter_at(rect);
-        painter.rect_filled(rect, 0.0, BG);
-        let head = Rect::from_min_size(rect.min, vec2(rect.width(), HEAD_H));
-        let rail = Rect::from_min_max(pos2(rect.min.x, head.max.y), pos2(rect.min.x + RAIL_W, rect.max.y));
+        painter.rect_filled(rect, 0.0, bg());
+        let head = Rect::from_min_size(rect.min, vec2(rect.width(), head_h()));
+        let rail = Rect::from_min_max(pos2(rect.min.x, head.max.y), pos2(rect.min.x + rail_w(), rect.max.y));
         let stage = Rect::from_min_max(pos2(rail.max.x, head.max.y), rect.max);
         self.stage = Some(stage);
 
         // ── 標頭 ──
-        painter.rect_filled(head, 0.0, HEADER);
-        painter.hline(head.x_range(), head.max.y - 0.5, (1.0, BORDER));
+        painter.rect_filled(head, 0.0, header());
+        painter.hline(head.x_range(), head.max.y - 0.5, (1.0, border()));
         let mut hu = ui.new_child(egui::UiBuilder::new().max_rect(head.shrink2(vec2(8.0, 3.0))).layout(egui::Layout::left_to_right(egui::Align::Center)));
         hu.spacing_mut().item_spacing.x = 10.0;
         let (price, change, volume) = (self.m.price, self.m.change, self.m.volume);
         let color = dir_color(change);
         let has = price > 0.0;
-        hu.label(egui::RichText::new(format!("{} {}", self.m.symbol(), self.m.name)).size(13.0).color(TEXT));
-        let mono = |s: String, c: Color32| egui::RichText::new(s).monospace().size(12.0).color(c);
+        hu.label(egui::RichText::new(format!("{} {}", self.m.symbol(), self.m.name)).size(tk().font.lg).color(text()));
+        let mono = |s: String, c: Color32| egui::RichText::new(s).monospace().size(tk().font.md).color(c);
         hu.label(mono(if has { format!("{price:.2}") } else { "--".into() }, color));
         if has {
             hu.label(mono(format!("{} ({:+.2}%)", fmt_change(change), pct(price, change)), color));
-            hu.label(egui::RichText::new(format!("量 {}", fmt_int(volume))).size(12.0).color(DIM));
+            hu.label(egui::RichText::new(format!("量 {}", fmt_int(volume))).size(tk().font.md).color(dim()));
         }
         let n_draw = self.m.drawings.len();
         let hint = match self.m.tool {
@@ -876,7 +881,7 @@ impl ChartView {
             None if n_draw > 0 => format!("畫線 {n_draw}"),
             None => String::new(),
         };
-        hu.label(egui::RichText::new(hint).size(11.0).color(DIM));
+        hu.label(egui::RichText::new(hint).size(tk().font.sm).color(dim()));
         hu.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.spacing_mut().item_spacing.x = 6.0;
             if small_btn(ui, "重設縮放", false).clicked() {
@@ -887,7 +892,7 @@ impl ChartView {
             let c = lb.rect.right_center() + vec2(-10.0, 0.0);
             ui.painter().add(Shape::convex_polygon(
                 vec![c + vec2(-3.5, -2.0), c + vec2(3.5, -2.0), c + vec2(0.0, 2.5)],
-                if self.layers_open { TEXT } else { DIM },
+                if self.layers_open { text() } else { dim() },
                 egui::Stroke::NONE,
             ));
             if lb.clicked() {
@@ -898,7 +903,7 @@ impl ChartView {
             let c = mb.rect.right_center() + vec2(-10.0, 0.0);
             ui.painter().add(Shape::convex_polygon(
                 vec![c + vec2(-3.5, -2.0), c + vec2(3.5, -2.0), c + vec2(0.0, 2.5)],
-                if self.menu_open { TEXT } else { DIM },
+                if self.menu_open { text() } else { dim() },
                 egui::Stroke::NONE,
             ));
             if mb.clicked() {
@@ -1136,8 +1141,8 @@ impl ChartView {
 
     fn show_rail(&mut self, ui: &mut Ui, rail: Rect) {
         let painter = ui.painter_at(rail);
-        painter.rect_filled(rail, 0.0, PANEL);
-        painter.vline(rail.max.x - 0.5, rail.y_range(), (1.0, BORDER));
+        painter.rect_filled(rail, 0.0, panel());
+        painter.vline(rail.max.x - 0.5, rail.y_range(), (1.0, border()));
         let tool = self.m.tool;
         let can_delete = self.m.selected.is_some();
         let can_clear = !self.m.drawings.is_empty();
@@ -1150,23 +1155,23 @@ impl ChartView {
             let resp = ui.interact(r, ui.scope_id().with(("rail", id)), if enabled { Sense::click() } else { Sense::hover() }).on_hover_text(title);
             let p = ui.painter_at(r);
             if on {
-                p.rect(r, 2.0, rgb(0x1f3a66), (1.0, ACCENT), egui::StrokeKind::Inside);
+                p.rect(r, 2.0, rgb(tk().toolbar.button_on_bg), (1.0, accent()), egui::StrokeKind::Inside);
             } else if enabled && resp.hovered() {
-                p.rect_filled(r, 2.0, rgb(0x2a2a2a));
+                p.rect_filled(r, 2.0, rgb(tk().toolbar.button_hover));
             }
-            let c = if !enabled { rgba(0xcfcfcf, 0.3) } else if on { rgb(0xffffff) } else { rgb(0xb8b8b8) };
+            let c = if !enabled { rgba(tk().toolbar.icon_disabled.rgb, tk().toolbar.icon_disabled.a) } else if on { rgb(tk().toolbar.icon_on) } else { rgb(tk().toolbar.icon_off) };
             paint_icon(&p, icon, Rect::from_center_size(r.center(), vec2(18.0, 18.0)), c);
             if enabled && resp.clicked() {
                 act = Some(id);
             }
         };
         btn(ui, &mut y, 0, "游標", Icon::Cursor, tool.is_none(), true);
-        painter.hline((x + 3.0)..=(x + 25.0), y + 1.0, (1.0, rgb(0x333333)));
+        painter.hline((x + 3.0)..=(x + 25.0), y + 1.0, (1.0, rgb(tk().toolbar.separator)));
         y += 4.0;
         for (k, t) in Tool::ALL.iter().enumerate() {
             btn(ui, &mut y, 1 + k as u8, t.label(), Icon::Tool(*t), tool == Some(*t), true);
         }
-        painter.hline((x + 3.0)..=(x + 25.0), y + 1.0, (1.0, rgb(0x333333)));
+        painter.hline((x + 3.0)..=(x + 25.0), y + 1.0, (1.0, rgb(tk().toolbar.separator)));
         y += 4.0;
         btn(ui, &mut y, 9, "刪除選取", Icon::Delete, false, can_delete);
         btn(ui, &mut y, 10, "全部清除", Icon::Clear, false, can_clear);
@@ -1189,10 +1194,10 @@ impl ChartView {
         let has_sel = sel_layer.is_some();
         let mut f: u8 = 0;
         let r = egui::Area::new(egui::Id::unique("layers-panel")).fixed_pos(at).order(egui::Order::Foreground).show(ctx, |ui| {
-            egui::Frame::popup(ui.style()).fill(PANEL).stroke((1.0, BORDER)).show(ui, |ui| {
+            egui::Frame::popup(ui.style()).fill(panel()).stroke((1.0, border())).show(ui, |ui| {
                 ui.set_width(340.0);
-                ui.style_mut().override_font_id = Some(egui::FontId::proportional(11.0));
-                ui.label(egui::RichText::new(if has_sel { "選取的畫線（在自己的圖層內調整）" } else { "選取一條畫線後可調整上下順序" }).color(DIM));
+                ui.style_mut().override_font_id = Some(egui::FontId::proportional(tk().font.sm));
+                ui.label(egui::RichText::new(if has_sel { "選取的畫線（在自己的圖層內調整）" } else { "選取一條畫線後可調整上下順序" }).color(dim()));
                 ui.horizontal_wrapped(|ui| {
                     for op in ZOp::ALL {
                         if ui.add_enabled(has_sel, egui::Button::new(format!("{}（{}）", op.label(), op.keys())).small()).clicked() {
@@ -1207,7 +1212,7 @@ impl ChartView {
                 ui.separator();
                 let n = layers.len();
                 ui.horizontal(|ui| {
-                    ui.label(egui::RichText::new(format!("圖層（{n}，上面的蓋住下面的）")).color(DIM));
+                    ui.label(egui::RichText::new(format!("圖層（{n}，上面的蓋住下面的）")).color(dim()));
                     if ui.add_enabled(n < crate::layers::MAX_LAYERS, egui::Button::new("+ 新圖層").small()).clicked() {
                         f |= self.m.layer_add();
                     }
@@ -1230,7 +1235,7 @@ impl ChartView {
                                 counts.get(pos).copied().unwrap_or(0),
                                 if sel_layer == Some(id) { " ●" } else { "" }
                             );
-                            let txt = egui::RichText::new(name).color(if l.visible { TEXT } else { DIM });
+                            let txt = egui::RichText::new(name).color(if l.visible { text() } else { dim() });
                             if fixed_w(ui, 170.0, |ui| ui.add(egui::Button::new(txt).small().frame(false).selected(is_active))).clicked() {
                                 f |= self.m.set_active_layer(id);
                             }
@@ -1253,14 +1258,14 @@ impl ChartView {
         let cfg = self.m.cfg.clone();
         let mut change: Option<Box<dyn FnOnce(&mut IndCfg)>> = None;
         let r = egui::Area::new(egui::Id::unique("ind-menu")).fixed_pos(at).order(egui::Order::Foreground).show(ctx, |ui| {
-            egui::Frame::popup(ui.style()).fill(PANEL).stroke((1.0, BORDER)).show(ui, |ui| {
+            egui::Frame::popup(ui.style()).fill(panel()).stroke((1.0, border())).show(ui, |ui| {
                 ui.set_width(410.0);
-                ui.style_mut().override_font_id = Some(egui::FontId::proportional(11.0));
+                ui.style_mut().override_font_id = Some(egui::FontId::proportional(tk().font.sm));
                 egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui| {
-                    ui.label(egui::RichText::new(format!("主圖疊加（{}/{MAX_OVERLAYS}）", cfg.overlays.len())).color(DIM));
+                    ui.label(egui::RichText::new(format!("主圖疊加（{}/{MAX_OVERLAYS}）", cfg.overlays.len())).color(dim()));
                     for (k, o) in cfg.overlays.iter().enumerate() {
                         ui.horizontal(|ui| {
-                            fixed_w(ui, 110.0, |ui| ui.label(egui::RichText::new(o.label()).color(rgb(OV_COLORS[k % 20]))));
+                            fixed_w(ui, 110.0, |ui| ui.label(egui::RichText::new(o.label()).color(rgb(ov_color(k)))));
                             if ui.small_button("−").clicked() {
                                 change = Some(Box::new(move |c| step_ov(&mut c.overlays[k], -1.0)));
                             }
@@ -1288,7 +1293,7 @@ impl ChartView {
                     });
                     ui.separator();
                     let n_on = cfg.subs.iter().filter(|s| s.on).count();
-                    ui.label(egui::RichText::new(format!("副圖（{n_on}/{}，最多 {MAX_SUBS}）", cfg.subs.len())).color(DIM));
+                    ui.label(egui::RichText::new(format!("副圖（{n_on}/{}，最多 {MAX_SUBS}）", cfg.subs.len())).color(dim()));
                     for (k, s) in cfg.subs.iter().enumerate() {
                         ui.horizontal(|ui| {
                             let mut on = s.on;
@@ -1301,7 +1306,7 @@ impl ChartView {
                                 }));
                             }
                             for (pi, (pn, _)) in s.kind.params().iter().enumerate() {
-                                ui.label(egui::RichText::new(format!("{pn} {}", s.p[pi])).color(DIM));
+                                ui.label(egui::RichText::new(format!("{pn} {}", s.p[pi])).color(dim()));
                                 if ui.small_button("−").clicked() {
                                     change = Some(Box::new(move |c| c.subs[k].p[pi] = (c.subs[k].p[pi] - 1.0).max(1.0)));
                                 }
@@ -1340,10 +1345,10 @@ fn fixed_w(ui: &mut Ui, w: f32, add: impl FnOnce(&mut Ui) -> egui::Response) -> 
 }
 
 fn small_btn(ui: &mut Ui, label: &str, on: bool) -> egui::Response {
-    let b = egui::Button::new(egui::RichText::new(label).size(12.0).color(if on { TEXT } else { DIM }))
-        .fill(if on { SELECTED } else { Color32::TRANSPARENT })
-        .stroke((1.0, if on { ACCENT } else { BORDER }))
-        .corner_radius(2.0)
+    let b = egui::Button::new(egui::RichText::new(label).size(tk().font.md).color(if on { text() } else { dim() }))
+        .fill(if on { selected() } else { Color32::TRANSPARENT })
+        .stroke((1.0, if on { accent() } else { border() }))
+        .corner_radius(tk().radius.xs)
         .min_size(vec2(0.0, 18.0));
     ui.add(b)
 }
@@ -1370,7 +1375,7 @@ enum Icon {
 fn paint_icon(painter: &egui::Painter, icon: Icon, b: Rect, color: Color32) {
     let s = b.width() / 24.0;
     let q = |x: f32, y: f32| pos2(b.min.x + x * s, b.min.y + y * s);
-    let st = egui::Stroke::new(1.7, color);
+    let st = egui::Stroke::new(tk().stroke.series, color);
     let poly = |pts: &[(f32, f32)]| {
         painter.add(Shape::line(pts.iter().map(|&(x, y)| q(x, y)).collect(), st));
     };
