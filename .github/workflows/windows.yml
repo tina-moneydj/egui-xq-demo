@@ -1,9 +1,10 @@
-# Windows release build：egui-xq-demo.exe（本 repo 是私人的；release 也只有有權限的人看得到）
+# Windows 預先編譯版：egui-xq-demo.exe，並組成完整的 Windows 壓測包（本 repo 私人；release 只有有權限的人看得到）
+# 完整包 = gpui-xq-demo 公開 release windows-bench-latest 的 xq-bench-windows-gpui.zip（工具包＋GPUI＋行情產生器）＋ 這裡編的 egui-xq-demo.exe
 name: windows
 
 on:
   push:
-    branches: [main]
+    branches: [windows-bench-ci]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Rust toolchain
@@ -31,23 +33,41 @@ jobs:
       - name: Test
         shell: pwsh
         run: cargo test --release --locked
-      - name: Package
+      - name: Package egui
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item target/release/egui-xq-demo.exe dist/
-          "egui-xq-demo $env:GITHUB_SHA $(Get-Date -Format o)" | Set-Content dist/egui-build.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: egui-xq-demo-windows-x64
-          path: dist/*
-      - name: Publish bench-latest pre-release
-        if: github.ref == 'refs/heads/main'
+          "egui-xq-demo $env:GITHUB_SHA ($env:GITHUB_REF_NAME) $(Get-Date -Format o)" | Set-Content dist/egui-build.txt
+      - name: 組完整壓測包（下載 gpui-xq-demo 公開 release 的 GPUI 工具包，加進 egui）
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete bench-latest --cleanup-tag -y 2>$null
-          gh release create bench-latest dist/* --prerelease --target $env:GITHUB_SHA `
-            --title "Windows bench build (main $($env:GITHUB_SHA.Substring(0,7)))" `
-            --notes "main 最新版的 Windows release build（自動產生），給 gpui-xq-demo/bench/windows 壓測工具包用。"
+          for ($i = 1; $i -le 30; $i++) {
+            gh release download windows-bench-latest -R tina-moneydj/gpui-xq-demo -p xq-bench-windows-gpui.zip --clobber
+            if ($LASTEXITCODE -eq 0 -and (Test-Path xq-bench-windows-gpui.zip)) { break }
+            Write-Host "gpui-xq-demo 的 windows-bench-latest 還沒有 xq-bench-windows-gpui.zip，等 60 秒（$i/30）"; Start-Sleep 60
+          }
+          if (-not (Test-Path xq-bench-windows-gpui.zip)) { throw "下載不到 GPUI 工具包" }
+          $global:LASTEXITCODE = 0
+          Expand-Archive xq-bench-windows-gpui.zip -DestinationPath kit -Force
+          Copy-Item dist/egui-xq-demo.exe, dist/egui-build.txt kit/xq-bench-windows/bin/
+          Get-ChildItem kit/xq-bench-windows/bin | Format-Table Name, Length
+          Compress-Archive -Path kit/xq-bench-windows -DestinationPath dist/xq-bench-windows.zip -Force
+          Get-ChildItem dist | Format-Table Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xq-bench-windows
+          path: dist/*
+      - name: Publish windows-bench-latest pre-release（私人）
+        if: github.ref == 'refs/heads/windows-bench-ci'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete windows-bench-latest --cleanup-tag -y 2>$null
+          $global:LASTEXITCODE = 0
+          gh release create windows-bench-latest dist/xq-bench-windows.zip dist/egui-xq-demo.exe --prerelease --target $env:GITHUB_SHA `
+            --title "Windows 壓測包完整版（GPUI＋egui，windows-bench-ci $($env:GITHUB_SHA.Substring(0,7))）" `
+            --notes "下載 xq-bench-windows.zip → 解壓 → 雙擊 run-bench.cmd → 把結果 zip 傳回來。私人 repo，需登入 GitHub 才能下載。說明：gpui-xq-demo 的 bench/windows/README.md"
