@@ -1,0 +1,75 @@
+# macOS 預先編譯版：egui-xq-demo（Apple Silicon arm64、ad-hoc 簽章），並組成完整的 Mac 壓測包。
+# 本 repo 是私人的：release 只有有權限的人（登入 GitHub）看得到。
+# 完整包 = gpui-xq-demo 公開 release mac-bench-latest 的 xq-bench-mac-gpui.zip（工具包＋GPUI＋行情產生器）＋ 這裡編的 egui 執行檔。
+# 為了省私人 repo 的 macOS 分鐘數（10 倍計費），預設只編 arm64；Intel Mac 要測請手動執行並勾 universal。
+name: macos
+on:
+  push:
+    branches: [mac-bench]
+  workflow_dispatch:
+    inputs:
+      universal:
+        description: "也編 Intel（x86_64）通用執行檔"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: macos-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust
+        run: rustup update stable && rustup default stable && rustup target add aarch64-apple-darwin x86_64-apple-darwin && rustc -V
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        env: { MACOSX_DEPLOYMENT_TARGET: "11.0" }
+        run: |
+          mkdir -p out
+          if [ "${{ inputs.universal }}" = "true" ]; then
+            for T in aarch64-apple-darwin x86_64-apple-darwin; do cargo build --release --locked --target $T; done
+            lipo -create -output out/egui-xq-demo target/aarch64-apple-darwin/release/egui-xq-demo target/x86_64-apple-darwin/release/egui-xq-demo
+            echo "EGUI_TARGETS=universal" >> "$GITHUB_ENV"
+          else
+            cargo build --release --locked --target aarch64-apple-darwin
+            cp target/aarch64-apple-darwin/release/egui-xq-demo out/egui-xq-demo
+            echo "EGUI_TARGETS=arm64" >> "$GITHUB_ENV"
+          fi
+          codesign --force -s - out/egui-xq-demo
+          file out/egui-xq-demo
+          ditto -c -k out/egui-xq-demo egui-xq-demo-macos.zip
+      - name: 組完整壓測包（下載 gpui-xq-demo 公開 release 的 GPUI 工具包，加進 egui）
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 20); do
+            if gh release download mac-bench-latest -R tina-moneydj/gpui-xq-demo -p xq-bench-mac-gpui.zip --clobber; then break; fi
+            echo "gpui-xq-demo 的 mac-bench-latest 還沒有 xq-bench-mac-gpui.zip，等 60 秒（$i/20）"; sleep 60
+          done
+          test -f xq-bench-mac-gpui.zip
+          ditto -x -k xq-bench-mac-gpui.zip .
+          cp out/egui-xq-demo xq-bench-mac/bin/egui-xq-demo
+          python3 - <<PY
+          import json
+          p = "xq-bench-mac/bin/build-info.json"
+          d = json.load(open(p))
+          d.update({"egui_rev": "${GITHUB_SHA::7}", "egui_branch": "${GITHUB_REF_NAME}", "egui_targets": "${EGUI_TARGETS}"})
+          json.dump(d, open(p, "w"), ensure_ascii=False); print(d)
+          PY
+          ditto -c -k --keepParent xq-bench-mac xq-bench-mac.zip
+          ls -la *.zip
+      - uses: actions/upload-artifact@v4
+        with: { name: xq-bench-mac, path: "*.zip", retention-days: 30 }
+      - name: Publish mac-bench-latest pre-release（私人）
+        if: github.ref == 'refs/heads/mac-bench'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete mac-bench-latest --cleanup-tag -y 2>/dev/null || true
+          gh release create mac-bench-latest xq-bench-mac.zip egui-xq-demo-macos.zip --prerelease --target "$GITHUB_SHA" \
+            --title "Mac 壓測包完整版（GPUI＋egui，mac-bench ${GITHUB_SHA::7}）" \
+            --notes "下載 xq-bench-mac.zip → 解壓 → 終端機執行 xattr -dr com.apple.quarantine 解壓出的資料夾 → ./run-bench.command → 把結果 zip 傳回來。egui 執行檔：${EGUI_TARGETS}。私人 repo，需登入 GitHub 才能下載。"
