@@ -512,6 +512,10 @@ pub struct ChartView {
     /// 走勢圖繪圖區（不含工具列與標頭）
     pub stage: Option<Rect>,
     draw_font: Option<([usize; 2], u32)>,
+    /// 手機觸控：按下的時間／位置、是否已進入長按十字線、雙指縮放累積量
+    touch_press: Option<(Instant, egui::Pos2)>,
+    touch_cross: bool,
+    pinch_acc: f32,
 }
 
 impl ChartView {
@@ -553,6 +557,9 @@ impl ChartView {
             last_pointer: None,
             stage: None,
             draw_font: None,
+            touch_press: None,
+            touch_cross: false,
+            pinch_acc: 0.0,
         };
         v.restore_saved();
         v
@@ -1054,7 +1061,90 @@ impl ChartView {
         }
     }
 
+    /// 手機觸控：單指拖曳＝平移（或拖畫線）；按住不動 400ms＝十字線（之後手指移動只移十字線）；
+    /// 雙指＝縮放（與滾輪同一個 Model::wheel，每 15% 一階）；放開手指十字線消失（觸控沒有 hover）。
+    #[cfg(target_os = "android")]
+    fn handle_touch(&mut self, ui: &mut Ui, stage: Rect, menu: Option<Rect>) {
+        const LONG: Duration = Duration::from_millis(400);
+        let _ = ui.interact(stage, ui.scope_id().with("chart-stage"), Sense::click_and_drag());
+        let (pressed, released, down, latest, multi) =
+            ui.input(|i| (i.pointer.primary_pressed(), i.pointer.primary_released(), i.pointer.primary_down(), i.pointer.latest_pos(), i.multi_touch()));
+        let over_menu = |q: egui::Pos2| menu.is_some_and(|r| r.contains(q));
+        if let Some(mt) = multi {
+            // 雙指縮放：先結束單指的平移
+            if self.touch_press.take().is_some() {
+                let q = latest.unwrap_or(pos2(-1.0, -1.0));
+                let f = self.m.mouse_up(p(q.x, q.y));
+                self.refresh(f);
+            }
+            self.pinch_acc += mt.zoom_delta.max(0.01).ln();
+            let step = 1.15f32.ln();
+            while self.pinch_acc.abs() >= step {
+                let dir = self.pinch_acc.signum();
+                self.pinch_acc -= dir * step;
+                let f = self.m.wheel(dir);
+                self.refresh(f);
+            }
+            return;
+        }
+        self.pinch_acc = 0.0;
+        if pressed {
+            if let Some(q) = latest.filter(|q| stage.contains(*q) && !over_menu(*q)) {
+                if self.menu_open {
+                    self.menu_open = false;
+                }
+                self.touch_press = Some((Instant::now(), q));
+                self.touch_cross = false;
+                let f = self.m.mouse_down(p(q.x, q.y), 1);
+                self.refresh(f);
+            }
+        }
+        if let (Some((t0, q0)), Some(q)) = (self.touch_press, latest) {
+            if down && !self.touch_cross {
+                let held = t0.elapsed();
+                if q.distance(q0) > 10.0 {
+                    // 已經在拖：不再判定長按
+                    self.touch_press = Some((t0 - LONG * 10, q0));
+                } else if held >= LONG && held < LONG * 5 && self.m.drag.is_none() && self.m.pending.is_none() {
+                    // 長按：取消平移，改成十字線模式
+                    let f = self.m.mouse_up(p(q.x, q.y)) | self.m.mouse_move(p(q.x, q.y), true);
+                    self.touch_cross = true;
+                    self.refresh(f);
+                } else if held < LONG {
+                    ui.ctx().request_repaint_after(LONG - held);
+                }
+            }
+        }
+        if latest != self.last_pointer && self.touch_press.is_some() {
+            self.last_pointer = latest;
+            if let Some(q) = latest {
+                let inside = stage.contains(q);
+                let f = self.m.mouse_move(p(q.x, q.y), inside || self.touch_cross);
+                self.refresh(f);
+            }
+        }
+        if released && self.touch_press.take().is_some() {
+            let q = latest.unwrap_or(pos2(-1.0, -1.0));
+            let mut f = 0;
+            if !self.touch_cross {
+                f |= self.m.mouse_up(p(q.x, q.y));
+            }
+            f |= self.m.mouse_move(p(-1.0, -1.0), false);
+            self.touch_cross = false;
+            self.last_pointer = None;
+            self.refresh(f);
+        }
+    }
+
     fn handle_input(&mut self, ui: &mut Ui, stage: Rect, menu: Option<Rect>) {
+        #[cfg(target_os = "android")]
+        self.handle_touch(ui, stage, menu);
+        #[cfg(not(target_os = "android"))]
+        self.handle_mouse(ui, stage, menu);
+    }
+
+    #[cfg_attr(target_os = "android", allow(dead_code))]
+    fn handle_mouse(&mut self, ui: &mut Ui, stage: Rect, menu: Option<Rect>) {
         let resp = ui.interact(stage, ui.scope_id().with("chart-stage"), Sense::click_and_drag());
         let (pressed, released, latest, scroll, events) = ui.input(|i| {
             (i.pointer.primary_pressed(), i.pointer.primary_released(), i.pointer.latest_pos(), i.smooth_scroll_delta().y, i.events.clone())

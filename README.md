@@ -4,168 +4,16 @@
 **同版面、接同一個行情來源**：`WryFeedHost`（.NET，`127.0.0.1:47631`）。協議 crate `xq-feed` 直接沿用 gpui-xq-demo 的（Cargo git 依賴，鎖定 rev）。
 走勢圖的狀態、指標、畫線邏輯（`model.rs`／`indicators.rs`／`drawings.rs`／`series.rs`）是從 GPUI 版**原樣移植**，三版算的東西一樣，只差畫面框架。
 
-> **網頁版（`web-wasm` 分支）**：egui 和 GPUI 都能編成 WebAssembly 在瀏覽器跑（同一個主畫面、WebSocket 行情、注音可打）。結論與數字見下方「網頁版」一節。
+> **main 現在有什麼（2026-10-24 合併，台北時間）**
+> - **選型最新結論**先看「[一般客戶電腦實測：Mac／Windows](#一般客戶電腦實測macwindows2026-10-23gpui-vs-egui)」：在 Tina 的兩台一般電腦（內顯）上，GPUI 和 egui 的 FPS、單視窗延遲打平；**CPU／GPU 用量和多視窗是 egui 明顯較好**。
+> - 同一份程式碼現在可以編成三種：**桌面版**、**網頁版**（WebAssembly，見「[網頁版](#網頁版webassemblyegui-與-gpui-都有)」）、**Android 手機版**（`mobile/`，見「[手機版](#手機版android2026-10-23-新增egui-和-gpui-一起做)」）。
+> - 顏色、字級等改讀和 GPUI 版**共用的設計 token**（見「[設計 token](#設計-token一套設計規範eguigpui-兩版共用2026-10-23)」），按 F8 切深色／淺色。
 
 ![主視窗](docs/bench/2026-10-21-parity/main/egui.png)
 
 | 5 萬列報價表壓測 | 重圖表（20 疊加＋8 副圖＋1000 畫線） |
 |---|---|
 | ![壓力](docs/bench/2026-10-21-parity/main/egui-stress.png) | ![重圖表](docs/bench/2026-10-21-parity/heavy/egui-heavy.png) |
-
-## 設計 token：一套設計規範，egui／GPUI 兩版共用（2026-10-23，`design-tokens` 分支）
-
-### 結論先看
-
-- ✅ **可行，而且畫面完全沒變**：兩版的顏色、字級、圓角、線寬、版面尺寸都改成讀**同一份** token 檔
-  （放在 gpui-xq-demo 的 [`crates/xq-tokens/tokens/`](https://github.com/tina-moneydj/gpui-xq-demo/tree/design-tokens/crates/xq-tokens/tokens)，W3C DTCG 2025.10 格式，Figma 原生就能匯入／匯出）。
-  用預設 token 截圖和 main 逐像素比對：**除了狀態列每秒變動的 RSS 數字，其他 0 個像素不同**（兩版都是）。
-- ✅ **改一個 token，兩個 App 一起變**：只把 `color.chart.up`（K 棒漲色）從 `#e5484d` 改成 `#a855f7`，兩版都沒改程式，K 棒和成交量柱的漲色一起變紫（約 1.8 萬個像素）。
-- ✅ **深色／淺色主題**：按 **F8** 即時切換，或 `XQ_THEME=light` 啟動；切換後的畫面和直接用淺色啟動一樣（只差每秒變的計數）。
-- ✅ **熱更新**：`XQ_TOKENS_DIR=資料夾 XQ_TOKENS_WATCH=1` 執行時，程式每 0.3 秒檢查一次檔案，設計師存檔後畫面就換色（實測存檔後 2.5 秒截圖已是新顏色），不用重編。
-- ✅ **效能沒變差**：主視窗中位數 GPUI 52.0→50.2 FPS、egui 61.3→60.9 FPS，每幀 CPU、走勢圖繪製時間、記憶體的差距都比同一版每輪之間的起伏小（記憶體多約 0.4–0.7 MB，是兩份主題的 token 表）。
-- ✅ **改錯會被擋**：token 少一個或格式錯，`cargo build` 直接失敗並寫出是哪個 token（例：`[light] token「color.market.up」缺少`）。
-- ⚠️ **盤點時發現兩版本來就不一致**：按鈕圓角 GPUI 4px、egui 2px；K 棒漲色（`#e5484d`）和報價表漲色（`#ff4d4f`）也是兩個不同的紅。先各給一個 token 保持畫面不變，之後由設計師決定要不要統一。
-
-### 設計師怎麼改（不用懂程式）
-
-1. 打開 gpui-xq-demo 的 `crates/xq-tokens/tokens/`：`color.dark.tokens.json`（深色）、`color.light.tokens.json`（淺色）、`base.tokens.json`（字級、間距、圓角、尺寸）。
-2. **用 Figma**：第一次把這三個檔拖進 Figma 的 Variables 視窗匯入（名稱會變成 `color/market/up` 這種斜線分層）。之後在 Figma 改，
-   在 collection 上按右鍵 → **Export modes**，每個 mode 一個 JSON，改成上面的檔名蓋回去、送 PR。
-   **不用 Figma**：直接改 JSON 裡的 `"hex": "#ff4d4f"`（和旁邊的 `components`）也可以。
-3. 想先看效果：`XQ_TOKENS_DIR=你的資料夾 XQ_TOKENS_WATCH=1 ./target/release/gpui-xq-demo`（egui 版同樣），邊改邊看。
-4. 合進去後兩個 App 重編就會帶新值（token 內嵌在執行檔裡，不用另外附檔案）。
-
-### 兩個 App 怎麼拿到
-
-- GPUI 版直接依賴 workspace 裡的 `crates/xq-tokens`；egui 版用 Cargo git 依賴同一個 crate（鎖定 rev，和 `xq-feed` 的做法一樣）。
-- 程式裡原本寫死的 `0xff4d4f`、`px(11.)`、`ROW_H = 22.0` 等，改成 `tk().market.up`、`tk().font.sm`、`tk().layout.table_row`。
-  讀一個 token 只是一次原子讀取，沒有鎖、沒有查表。
-- 換主題或熱更新時版本號 +1；App 看到就把烤了顏色的快取（走勢圖畫線、報價表列）丟掉重畫。
-- 詳細格式、Figma 限制、完整盤點表：[`crates/xq-tokens/README.md`](https://github.com/tina-moneydj/gpui-xq-demo/blob/design-tokens/crates/xq-tokens/README.md)。
-
-### 截圖（[docs/bench/2026-10-23-tokens/](docs/bench/2026-10-23-tokens/)）
-
-| | GPUI | egui |
-|---|---|---|
-| 預設 token（和 main 一樣） | ![](docs/bench/2026-10-23-tokens/gpui-tokens-default.png) | ![](docs/bench/2026-10-23-tokens/egui-tokens-default.png) |
-| 只改 `color.chart.up` → 紫色 | ![](docs/bench/2026-10-23-tokens/gpui-up-token.png) | ![](docs/bench/2026-10-23-tokens/egui-up-token.png) |
-| 淺色主題（F8） | ![](docs/bench/2026-10-23-tokens/gpui-f8.png) | ![](docs/bench/2026-10-23-tokens/egui-f8.png) |
-
-逐像素比對數字在 `shots-diff.json`；行情用 `xq-tickgen --rate 0 --seed 1`（只送一次快照，畫面固定才能逐像素比）。
-
-### 效能（主視窗、每秒 2000 筆跳價、量 30 秒，main 與 token 版交錯跑 5 輪取中位數）
-
-| 指標（中位數） | GPUI main | GPUI token | egui main | egui token |
-|---|---|---|---|---|
-| FPS | 52.0 | 50.2 | 61.3 | 60.9 |
-| 記憶體 RSS (MB) | 190.5 | 191.2 | 124.8 | 125.2 |
-| CPU（100%＝1 核） | 350.2% | 350.2% | 133.8% | 137.9% |
-| 每幀 CPU (ms) | 60.89 | 61.70 | 21.83 | 22.63 |
-| 走勢圖繪製 (µs/次) | 66 | 64 | 58 | 60 |
-
-怎麼看：**差距都在雜訊內**。這台測試機沒有 GPU（軟體繪圖），而且同時跑著其他測試，GPUI 同一版 5 輪的 FPS 就在 31–61 之間跳（token 版 32–61），
-所以 FPS 要看「每幀 CPU」比較穩：GPUI 差 1.3%、egui 差 3.7%，而 egui 同一版每輪自己就在 20.6–24.7 ms 之間。
-egui 被螢幕更新率卡在約 60 FPS。原始資料：`docs/bench/2026-10-23-tokens/perf.json`；量測腳本 `tokbench.py`（獨立 Xvfb :73、行情埠 47793）。
-
-### 還沒做的
-
-- 間距 token 已定義，但 GPUI 的 `px_2()`／`gap_1()` 這類簡寫和 egui 的 `item_spacing` 還沒全部換；畫布上的小幾何（標籤高 16、控制點 9×9）和透明度係數也還寫在程式裡。
-- egui 的字型是讀字型**檔**，字型名稱 token 目前只有 GPUI 用。
-- 淺色主題的配色是我先排的初稿，要請設計師定稿。
-- 手機版、網頁版還沒接（同一個 crate 可以直接用，不依賴任何 UI 框架）。
-
-## 功能（與 GPUI 版對照）
-
-- 版面：上＝走勢圖、左下＝報價表、右下＝資訊／效能格；**上下、左右分隔線都可拖曳**；底部狀態列（連線、FPS、RSS、封包→套用）。
-- 報價表：代號／名稱／成交／漲跌／幅度／總量，漲紅跌綠；自己做的虛擬化（`ScrollArea::show_viewport`，只為可見列產生圖元），
-  「壓力 5 萬」加 5 萬列合成資料；點列切換走勢圖代號。
-- 走勢圖：分時／日K／週K／月K、滾輪縮放、拖曳平移、重設縮放；主圖疊加最多 20 個（MA／EMA／布林／SAR）、副圖 8 種；
-  「指標 ▾」選單（項目、勾選、參數欄與 GPUI 版相同，靠左對齊；▾ 用畫的，因為 Noto CJK 沒有這個字）；十字線＋讀值；每個「代號｜週期」的設定與畫線存到
-  `~/.local/share/egui-xq-demo/state.json`（`XQ_EGUI_STATE` 可改）。
-- 畫線：左側工具列 8 種工具＋刪除／全部清除；點選、拖曳整條或控制點、Delete、Esc、文字輸入。
-  壓測注入的 1000 條畫線會畫出來、也能 hit-test（同 GPUI 的 64px 格狀空間索引）。
-
-- 畫線圖層與上下順序（最多 200 層，顯示／隱藏、鎖定、上下移；`Ctrl+]`／`Ctrl+[`／`Ctrl+Shift+]`／`Ctrl+Shift+[`）：見[下面一節](#畫線圖層與上下順序2026-10-23-新增三版一起做)。
-- 成交明細（`XQ_TAPE=1`）：與 GPUI main 同一個 `xq-tape` crate（Cargo git 依賴、鎖 rev）、同樣的行為——右側 276px 一欄、
-  逐筆成交（總量差推導）、固定容量 5000 筆、`B` 只看大單、`[`／`]` 調門檻、`Home` 回最新、設定存 `~/.local/share/egui-xq-demo/tick_tape.json`；
-  每幀最多套用一次（整批合併），可見列快取成 Mesh。
-- 多視窗（`XQ_WINDOWS=N`）：immediate viewport，共用同一條行情連線與同一個報價表（含 Mesh 快取），每個視窗自己的走勢圖。
-
-### 和 GPUI 版的對等狀況
-
-完整的功能 × 三版對照清單在 [docs/parity.md](docs/parity.md)（含截圖）。目前只剩框架本身的差異：
-
-| 項目 | 狀況 |
-|---|---|
-| 右下網頁格 | 同 GPUI，不做（放資訊格） |
-| 局部重畫 | **做不到**：egui 每次重畫都是整個視窗重新送 GPU。這版做的是「沒事不重畫」＋「沒變的圖層沿用快取的三角形」 |
-| `XQ_NO_VIEW_CACHE` | egui 沒有 view cache；對應成「每幀重建走勢圖／報價表的 Mesh 快取」 |
-| `XQ_LAYER_MODE=split` | 對應成 egui 子圖層（`set_sublayer`）分開畫 |
-| 搜尋框 | 三版 main 都不放（`ime-search-test` 分支另測） |
-
-## 建置／執行
-
-```bash
-export PATH="$HOME/.cargo/bin:$PATH"
-cargo build --release                      # rust-toolchain.toml＝stable（eframe 0.37 要 rustc ≥ 1.95）
-DISPLAY=:2 XQ_METRICS=1 ./target/release/egui-xq-demo
-XQ_RENDERER=wgpu ./target/release/egui-xq-demo   # 預設 glow（OpenGL），見下方「glow vs wgpu」
-```
-
-環境變數（與 GPUI 版同名同義，所以 `gpui-xq-demo/scripts/bench-*.sh` 可以直接驅動）：
-
-| 變數 | 用途 |
-|---|---|
-| `XQ_FEED_ADDR` | 行情位址（預設 127.0.0.1:47631） |
-| `XQ_METRICS=1` | 每秒印 fps／rss／封包／套用耗時 |
-| `XQ_BENCH=1` | 第一幀／第一筆報價／第一個重圖表畫出後印 `BENCH ...` |
-| `XQ_PERIOD=T/D/W/M` | 啟動週期 |
-| `XQ_TOP_FRAC=0.56` | 上方走勢圖佔比 |
-| `XQ_GROUP_STRESS=1`（＋`XQ_STRESS_TICK_HZ`／`_TICK_MS`／`_SCROLL_MS`） | 5 萬列＋合成跳價＋捲動壓測，印 `GROUPPERF|{json}` |
-| `XQ_CHART_STRESS=1`（＋`XQ_CHART_DRAWINGS`／`_WARM_MS`／`_PHASE_MS`） | 重圖表壓測，印 `CHARTPERF|{json}`、`CHARTPHASE|...` |
-| `XQ_TICK_BENCH=1` | 高頻進價量測（搭配 `xq-tickgen`），印 `TICKBENCH|{json}` |
-| `XQ_RENDERER=glow/wgpu` | 繪圖後端（預設 glow） |
-| `XQ_DEBUG_REPAINT=1` | 印每一幀是誰要求重畫的（找多餘重畫用） |
-| `XQ_TAPE=1`（＋`XQ_TAPE_STATE`） | 成交明細面板（預設關閉，壓測版面不變） |
-| `XQ_DEBUG=1` | 印滑鼠按下（同 GPUI） |
-| `XQ_NO_VIEW_CACHE=1` | 每幀重建 Mesh 快取（對照用） |
-| `XQ_LAYER_MODE=split` | 走勢圖圖層分子圖層畫（實驗） |
-| `XQ_WINDOWS=N` | 開 N 個看盤視窗（最多 8）；`WINIT_X11_SCALE_FACTOR=2` 可開 2 倍縮放 |
-
-## 架構與效能做法
-
-```
-src/bridge.rs     ← 背景執行緒合併（同代號只留最新）；Inbox 由空變非空才喚醒 UI，UI ≥16ms 才套用一次
-src/table.rs      ← 報價表：自己虛擬化、可見列整批三角化成一個 Mesh 快取（列、捲動位置、選取、hover 沒變就沿用）
-src/chart.rs      ← 走勢圖：plot／draw／live 三層各自快取 Mesh；平移時畫線層整批位移不重建；壓測驅動
-src/model.rs …    ← 從 GPUI 版移植（版面、互動、指標增量、畫線幾何／空間索引）
-src/gfx.rs        ← Sink：把矩形／線段／文字收集起來，一次三角化成 egui Mesh
-src/tickbench.rs  ← 高頻量測（present＝下一幀開始，同 GPUI on_next_frame／wry 兩次 rAF，都是上界）
-src/main.rs       ← 版面、分隔線、狀態列、資訊格、FPS/RSS 取樣、GROUPPERF 壓測
-```
-
-- **沒事不重畫**：沒有行情、沒有輸入就不畫（只有每秒一次的狀態列取樣）。行情進來時背景執行緒用
-  `request_repaint_after(距離上次套用滿 16ms 的時間)` 叫醒 UI，所以行情再快也最多 ~60 次/秒。
-- **避開 egui 的「多畫一幀」**：egui 的 `request_repaint()`（延遲 0）會排**兩次**重畫（讓東西穩定用），
-  所以本程式一律用 `request_repaint_after(1µs)`；報價表也關掉 egui 的慣性捲動／捲軸動畫——實測跳價時約 60% 的幀是 `ScrollArea` 的慣性計算叫的。
-  修掉後一般看盤 FPS 從 37 降到 19（＝每秒行情包數，一包一幀）。
-- **快取三角形**：egui 每幀都要把圖形變成三角形（tessellate）。這版把沒變的圖層（K 棒＋指標、1000 條畫線、報價表可見列）
-  三角化一次存成 `Arc<Mesh>`，下一幀直接沿用；只有資料、尺度、版面或字型改了才重建。
-- 字型：Noto Sans CJK TC（mmap，不複製進記憶體）。
-
-### glow vs wgpu
-
-eframe 0.37 兩個後端都編進去，用 `XQ_RENDERER` 切換。同一台機器（沒有 GPU：glow＝Mesa llvmpipe OpenGL，wgpu＝Vulkan lavapipe）
-重圖表壓測 2 次中位數（原始檔：[docs/bench/2026-10-21/renderer/](docs/bench/2026-10-21/renderer/)）：
-
-| 重圖表 | glow | wgpu |
-|---|---|---|
-| FPS 跳價／十字線／平移 | **56.1／55.2／55.6** | 51.1／48.6／57.1 |
-| CPU 扣軟體繪圖 (%) | **49.7／50.0／49.4** | 55.7／57.0／46.1 |
-| RSS (MB) | **134／142／141** | 169／162／169 |
-
-glow 記憶體少約 30 MB、FPS 大多較高，所以**預設 glow**，三方比較也用 glow。
-（GPUI 在這台走 Vulkan lavapipe；egui 用 wgpu 時一樣走 lavapipe，數字差不多，可用 `EGUI_RENDERER=wgpu` 重跑比較。）
 
 ## 一般客戶電腦實測：Mac／Windows（2026-10-23，GPUI vs egui）
 
@@ -191,116 +39,9 @@ glow 記憶體少約 30 MB、FPS 大多較高，所以**預設 glow**，三方�
 - **GPUI 每次高頻測試有一次 0.3–0.47 秒停頓**（egui 沒有），原因還在查。
 - 細節、框架限制 vs 可修項目、測試包本身的錯（Windows 重圖表逾時、Mac 摘要勝負標錯）：見 [docs/bench/real-hw/README.md](docs/bench/real-hw/README.md)。
 
-## 畫線圖層與上下順序（2026-10-23 新增，三版一起做）
+## 網頁版（WebAssembly，egui 與 GPUI 都有）
 
-像一般技術分析軟體一樣：畫線可以點選、拖曳，**可以調上下順序**，也可以分**圖層**（最多 200 層，可顯示／隱藏、鎖定、上下移）。
-
-### 結論先看
-
-- **三版功能對等，畫面順序正確。** 下層的線被上層蓋住、上層的線畫在下層之上、選取的控制點永遠在最上面；點選時抓「看得到的最上面那條」，隱藏或鎖定的圖層點不到。三版截圖見下。
-- **100 層不會比較慢。** 1000 條畫線分 100 層 vs 全放 1 層，改順序／選取時重建畫面的時間幾乎一樣（差距 < 0.05 ms；wry 在 1 ms 內）。FPS 的差距比同一設定重測的誤差還小（例外：wry 跳價／十字線時 100 層慢約 15%，見下面「有沒有退步」）。
-- **拖曳不重建。** 拖曳一條線時，其他 999 條用快取的「下層／上層」兩片，三版拖曳期間重建次數都是 0（只有開始時 1 次）。
-- **反應最快：egui。** 點選或改順序到畫面更新：egui ≈ 17 ms、wry ≈ 47 ms、GPUI ≈ 64–80 ms。重建本身 egui、GPUI 都約 0.3 ms，wry 約 4–5 ms。
-- **拖曳 FPS：egui 56 ＞ wry 28 ＞ GPUI 10**（這台沒顯卡，GPUI 的軟體繪圖最貴；而且這次 box 被另一個工作同時佔滿，GPUI 受影響最大，見下面注意事項）。
-
-### 測了什麼、為什麼重要
-
-壓測場景和「重圖表」相同（1000 條畫線＋20 個疊加指標＋8 個副圖、持續跳價），多加四段，每段 10 秒：
-
-| 段落 | 做什麼 | 為什麼重要 |
-|---|---|---|
-| drag（拖曳） | 拖著第 500 條（在中間的第 50 層）來回移動 | 拖曳要順，不能每動一下就把 1000 條重畫 |
-| select（選取） | 一直點選／取消選取中間那條 | 選取時那條要「浮」到上面並顯示控制點，其他線要拆成上下兩片快取 |
-| reorder（改順序） | 一直 上移一層／下移一層／移到最上／移到最下、整個圖層上下移、圖層隱藏／顯示 | 這就是使用者按 Ctrl+] 等快捷鍵時的成本 |
-| zshot（正確性） | 7 條互相重疊、分 3 層的畫線，拿中間那條當選取 | 截圖檢查誰蓋誰 |
-
-同一套測法跑兩種設定：**100 層**（1000 條平均分到 100 層）和**不分層**（`XQ_CHART_LAYERS=1`，全部在 1 層），比較 100 層多花多少。
-
-### 數字（交錯測 3 輪取中位數；括號內是不分層）
-
-| 項目 | wry | GPUI | egui | 最好 |
-|---|---|---|---|---|
-| 拖曳 FPS | 27.7（40.9） | 9.9（11.0） | 55.8（49.7） | **egui** |
-| 拖曳期間重建次數 | 0 | 0 | 0 | 三版相同 |
-| 選取：重建 p50／p99 (ms) | 4／7（3／6） | 0.34／1.60（0.37／0.75） | 0.34／0.60（0.33／0.62） | **egui ≈ GPUI** |
-| 選取：到畫面更新 p50／p99 (ms) | 47／67（33／73） | 80／145（96／144） | 17／37（19／28） | **egui** |
-| 改順序：重建 p50／p99 (ms) | 5／12（5／9） | 0.32／0.58（0.36／0.57） | 0.36／0.55（0.32／0.51） | **egui ≈ GPUI** |
-| 改順序：到畫面更新 p50／p99 (ms) | 49／73（51／76） | 64／131（81／128） | 18／25（17／26） | **egui** |
-| 選取／改順序時 FPS | 21／20 | 13／14 | 56／54 | **egui** |
-| 記憶體 RSS (MB) | 703（704） | 219（219） | 137（141） | **egui** |
-| 重圖表 跳價／十字線／平移 FPS | 34.6／34.3／30.5 | 13.2／12.7／9.8 | 51.6／51.4／51.0 | **egui** |
-
-- 「重建」＝改了順序或選取之後，把 1000 條重新排成上下兩片快取的 CPU 時間；「到畫面更新」＝從動作到下一幀開始（含等下一幀）。
-- **100 層 vs 不分層：重建時間一樣**（排序用「圖層位置、陣列位置」兩個數字，100 層不會多跑迴圈）。表裡 FPS 的高低（例如 wry 拖曳 28 vs 41）在另一組完整重測裡是反過來的（43 vs 17），所以只是 box 雜訊，不是圖層造成的。
-- wry 的時間是整數：WebKit 的 `performance.now()` 只精確到 1 ms。
-
-### 和 10-21 重圖表比有沒有退步
-
-| 跳價／十字線／平移 FPS | wry | GPUI | egui |
-|---|---|---|---|
-| 2026-10-21（安靜時） | 36.1／36.5／26.2 | 20.5／20.7／20.8 | 41.8／39.6／41.7 |
-| 2026-10-23（box 被佔滿） | 34.6／34.3／30.5 | 13.2／12.7／9.8 | 51.6／51.4／51.0 |
-
-上面兩列是不同時間測的，box 忙閒不同，不能直接比。下面是**同一時段、改版前後輪流跑**的對照（2026-10-23 早上，合成行情，1000 條畫線分 100 層，每段 6 秒，3 輪取中位數）。
-
-**GPUI：確實退步過，已修好。**
-
-| GPUI 跳價／十字線／平移 | FPS | CPU（整個程式，含軟體繪圖） | 每幀畫線批次 |
-|---|---|---|---|
-| 改版前（360cb93，沒有圖層） | 20.8／20.8／20.8 | 311%／323%／313% | 4 |
-| 圖層版（0eeca4e） | 20.2／20.2／20.4（較忙時 17.9／18.2／18.3） | **480%／480%／473%** | 14 |
-| 修正後（目前 main） | **20.8／20.8／20.8** | **298%／301%／307%** | **4** |
-
-- 這台機器上 GPUI 重圖表最多約 21 FPS，改版前和修正後都頂到這個上限，所以要看 CPU：圖層版每秒多花約 1.6 顆 CPU，修正後回到改版前的水準（還略低一點）。
-- 原因不是「上層那片多畫一次」（沒選取時那片本來就是空的），而是**畫線被切成很多批**：GPUI 每一批線條都要把整個視窗大小的暫存畫布清掉、畫、再貼回去，沒有顯卡時很貴。圖層版的價格軸標籤（水平線的價格）一個個夾在畫線中間，整個畫面每幀從 4 批變成 14 批。
-- 修法：價格軸標籤整組放同一層；畫線開始前先放一個「隔板」，讓所有畫線的順位都排在圖上其他東西之上，連成一批。另外沒有選取時不再通知「選取那條」和「上層那片」重畫。
-- 上下順序照樣正確：重跑正確性截圖，選取的中間層方框仍在上層文字框和線之下、下層線之上，控制點在最上面（和下面的截圖一致）。
-
-**egui：沒有退步。** 改版前（3c5d06d）60.3／60.5／60.8 FPS、CPU 286%／289%／284%；圖層版 61.3／60.4／60.1 FPS、CPU 288%／289%／288%。egui 沒選取時本來就只畫一份畫線快取，不用改。
-
-**wry：平移沒退步，但「100 層」時跳價、十字線變慢約 15%，原因不同、還沒修。**
-
-| wry 跳價／十字線／平移 FPS | 中位數 |
-|---|---|
-| 改版前（d9e06ec，8 輪） | 23.5／21.9／33.0 |
-| 圖層版，1000 條分 100 層（8 輪） | 19.0／19.3／34.8 |
-| 圖層版，全部 1 層（4 輪） | 22.4／22.4／34.4 |
-
-- wry 沒有 GPUI 那個「多一層」的問題（沒選取時上層那片本來就不畫）。
-- 慢的只有「分 100 層」：壓測把 1000 條輪流分到 100 層，照順序畫時線、填色、文字、虛線一直交錯，瀏覽器畫布每條都要換一次畫筆設定；跳價和十字線時價格範圍一直變、整份畫線每幀重畫，所以吃到這個成本。平移只位移快取，不受影響；全部放 1 層就和改版前一樣。
-- 實際使用時一個圖層裡通常是同類型的線，影響會比這個壓測小。要修可以學 GPUI：不重疊的同色線先併成一筆再畫。
-
-### 正確性截圖
-
-| wry | GPUI | egui |
-|---|---|---|
-| ![wry](docs/bench/2026-10-23-layers/layers100/wry-zshot.png) | ![GPUI](docs/bench/2026-10-23-layers/layers100/gpui-zshot.png) | ![egui](docs/bench/2026-10-23-layers/layers100/egui-zshot.png) |
-
-看法：中間被選取的白框矩形（第 2 層）邊線被上層（第 3 層）的兩個文字框蓋住；上層的趨勢線畫在白框之上、下層的在白框之下；白色控制點在最上面。三版一致。
-拖曳中截圖：`docs/bench/2026-10-23-layers/ilv/r3-<程式>-L100/<程式>-drag.png`。
-
-### 還不一樣的地方（框架限制）
-
-- **GPUI**：同一個區段裡的文字一定畫在線條上面（GPUI 把文字放在自己的圖層）。換到上一個區段（例如上層的線）就會正確蓋住。
-- **wry**：平移時，水平線往兩邊延伸的部分在快取邊緣會晚一幀補上（其他種畫線也一樣）。
-- **wry**：時間只精確到 1 ms（見上）。
-
-### 注意事項
-
-- **這台沒有顯卡**：畫面全靠 CPU 模擬（wry＝WebKit＋llvmpipe、GPUI＝Vulkan lavapipe、egui＝OpenGL llvmpipe），FPS 主要是軟體繪圖的速度；有顯卡時 FPS 會高很多，但「重建時間」這種 CPU 端數字不受影響。
-- **這次 box 很吵**：測試時另一個工作同時在建置與壓測網頁版，系統負載一直在 6–10（8 核）。所以用**交錯測**：每輪內同一個程式 100 層／不分層緊接著跑，3 輪取中位數。**請看同一輪的相對高低與「重建時間」，不要拿 FPS 絕對值跟其他輪比。**
-- 測試在 Xvfb `:5`、行情用獨立的 WryFeedHost（埠 47651，`FEED_PORT`／`XQ_FEED_ADDR`），不和其他工作搶連線。
-- 原始資料：[docs/bench/2026-10-23-layers/](docs/bench/2026-10-23-layers/)（`ilv/summary-ilv.json` 是上表；`layers100/`、`flat/` 是第一次一口氣跑完的完整版，雜訊更大，僅供參考）。
-
-### 怎麼用
-
-- 選一條線 → `Ctrl+]` 上移一層、`Ctrl+[` 下移一層、`Ctrl+Shift+]` 移到最上、`Ctrl+Shift+[` 移到最下（mac 用 ⌘）；工具列「圖層 ▾」開圖層面板：同樣四個順序按鈕、「+ 新圖層」、每層的 顯示／隱藏、鎖定、▲▼ 上下移，點圖層名稱設為作用中圖層（新畫的線放這層），「移到作用中圖層」把選取的線搬過去。順序調整都在該線自己的圖層內。
-- 存檔多一個 `layers` 欄位；舊存檔沒有這欄照樣能讀（全部放在預設圖層）。
-- 壓測：`XQ_CHART_STRESS=1 XQ_CHART_LAYERS=100`（`1`＝不分層）；`scripts/bench-main-window.sh 3 heavy` 會多跑 drag／select／reorder／zshot。
-
-## 網頁版（WebAssembly，egui 與 GPUI 都有，`web-wasm` 分支）
-
-> 分支 `web-wasm`（**未合併到 main**；已併入 main 的畫線圖層／上下順序功能）。同一份程式碼編成 `wasm32-unknown-unknown`，在瀏覽器裡跑同一個主畫面：
+> 2026-10-24 已合併到 main。同一份程式碼編成 `wasm32-unknown-unknown`，在瀏覽器裡跑同一個主畫面：
 > 5 萬列報價表、重圖表、可拖曳分隔線、狀態列、搜尋框（注音可打）、內嵌中文字型。行情透過 `xq-ws-bridge`（TCP 47631 ⇄ WebSocket）進瀏覽器，**解碼還是原生那份 `xq-feed`**。
 
 ### 結論先看
@@ -462,6 +203,375 @@ cargo run --release -p xq-ws-bridge -- --listen 127.0.0.1:8080 --feed 127.0.0.1:
 - 壓測（在 gpui-xq-demo repo 的 `scripts/web/`，用 puppeteer-core 開系統 Chrome）：`OUT=輸出資料夾 ./run-all.sh 3` → `summarize.py 輸出資料夾` → `tables.py 輸出資料夾/summary.json docs/bench/2026-10-21-parity`。
   單場：`node bench-web.js <egui|gpui> <main|stress|heavy|ticks:s1k|…|ticks:burst> <輪次> <輸出資料夾>`。另有 `chrome-baseline.js`（空白 Chrome 記憶體）、`layers-smoke.js`（圖層冒煙測試）、`ime-web.sh`（注音）、`webgpu-try.js`（WebGPU 試跑）。
 - 原始數據：`docs/bench/web/`（`results.jsonl` 每場一行、`summary.json` 中位數、`progress.log`、每場瀏覽器 console log、`contention.log` 每 10 秒的系統負載）。
+
+## 手機版（Android）（2026-10-23 新增，egui 和 GPUI 一起做）
+
+> 程式在 `mobile/` 資料夾（2026-10-24 合併到 main）。原始數據在 [`docs/bench/mobile/2026-10-23/`](docs/bench/mobile/2026-10-23/)（`summary.md` 是中位數表，`results.jsonl` 是每一輪原始值）。
+
+### 結論先看
+
+1. **兩個都能在 Android 上跑，功能一樣**：5 萬列報價表（手指甩動捲動）、點一列進走勢圖、雙指縮放、單指平移、長按出十字線、1000 條畫線／100 層的重圖表、中文字型、搜尋框。GPUI 用的是長橋（Longbridge）社群版 `gpui-mobile`，**不是 Zed 官方**；圖表邏輯照搬，沒有改寫。
+2. **在這台模擬器上，egui 幾乎每一項都贏** 🏆：畫面更新快 2～4 倍、記憶體約一半、APK 約一半、每秒 1 千筆時的報價延遲約 1/4。啟動速度差不多（egui 12.2 秒、GPUI 13.7 秒）。
+3. **不只是 GL 和 Vulkan 的差別**：egui 改用和 GPUI 一樣的 wgpu／Vulkan 畫圖（下表「egui（wgpu）」），大部分項目還是比 GPUI 快。
+4. **重圖表 GPUI 只有約 1.4 fps，在模擬器上等於不能用**；egui 約 5 fps，也不順。
+5. ⚠️ **這些都不是手機上的真實數字**。這台機器**沒有顯示卡**，硬體虛擬化（KVM）也壞了，所以：
+   - 模擬器整顆手機 CPU 都是用軟體模擬，比真的慢很多倍；
+   - 每一幀都由 CPU 用軟體畫（SwiftShader），沒有 GPU。
+
+   真手機有 GPU。GPUI 又是靠 GPU 吃重活的設計，**到真機上差距可能縮小，甚至反過來**。這裡只能看「同一個環境下誰比較快」，而且這個排名到真機上也要重測才算數。
+
+### 數字（3 輪取中位數；括號內 n＝有效輪數，不到 3 的原因見下面「沒做到／要注意」）
+
+| 項目 | egui（glow） | egui（wgpu） | GPUI | 誰好 |
+|---|---|---|---|---|
+| APK 大小 x86_64（模擬器用） | **7.9 MB** | 13.7 MB | 17.0 MB | egui |
+| APK 大小 arm64（真手機用） | **6.7 MB** | — | 15.4 MB | egui |
+| 啟動 → 第一筆報價 | **12.2 秒** | 26.9 秒 | 13.7 秒 | 差不多 |
+| 記憶體 PSS（報價表） | **58 MB**（n=1） | 69 MB（n=1） | 105 MB（n=2） | egui |
+| 記憶體 PSS（走勢圖） | **53 MB**（n=2） | 64 MB（n=1） | 101 MB | egui |
+| 畫面更新 fps：報價表跳價 | **6.3** | 5.5 | 3.3（n=2） | egui |
+| 　報價表手指甩動 | **7.7** | 4.9 | 3.9（n=2） | egui |
+| 　走勢圖跳價 | **13.3** | 5.1 | 3.1（n=2） | egui |
+| 　走勢圖平移／雙指縮放／長按十字線 | **8.7／10.6／8.6** | 5.1／5.8／4.6 | 3.7／3.5／3.0（n=2） | egui |
+| 重圖表（1000 畫線／100 層）跳價 fps | **5.0** | 3.6 | 1.4 | egui |
+| 　重圖表每幀繪圖時間 | **55 ms** | 97 ms | 207 ms | egui |
+| 耗電參考：app 每分鐘用掉的 CPU 秒（報價表） | **70 秒** | 81 秒 | 98 秒（n=2） | egui |
+| 　同上（走勢圖） | **64 秒** | 72 秒 | 66 秒（n=2） | 差不多 |
+| 模擬器整體 CPU（含軟體畫圖），報價表 | **202%** | 598% | 649%（n=2） | egui |
+| 報價→畫面延遲，每秒 1 千筆（中位數／最慢 5%） | **101／164 ms** | 270／547 ms（n=2） | 443／600 ms | egui |
+| 　每秒 1 萬筆 | 320／741 ms | **271／421 ms**（n=2） | 565／849 ms | egui |
+| 　每秒 10 萬筆 | 8.9 秒 | 17.8 秒 | 10.0 秒（n=2） | 都跟不上 |
+| 指標計算：每筆 tick 只補最後一根 | 19.6 µs | 20.0 µs | 22.3 µs | 一樣（同一份程式） |
+| 指標計算：整段重算（1200 根、20 疊加＋8 副圖） | 122 ms | 210 ms | 189 ms | 見說明 |
+
+怎麼看這張表：
+- **fps**：每秒畫幾張畫面，越高越順。手機一般要 60。這裡全部都很低，原因就是上面講的軟體模擬。
+- **PSS**：這個 app 真正分到的記憶體，Android 判斷要不要砍背景 app 就看它。
+- **耗電參考**：app 每分鐘用掉幾秒 CPU。CPU 用越多越耗電。但模擬器裡畫圖是外面的主機代畫，**這個數字不含畫圖的電**。含畫圖的成本要看「模擬器整體 CPU」那一列：egui（glow）約 2 顆核心，wgpu 那兩個約 6 顆。
+- **延遲**：從行情送出到畫面出現的時間。模擬器和主機的時鐘對不準，所以用「所有封包裡最快那一包」當基準來校正，數字算是**下界**（實際只會更長）。另外記了一個只用模擬器時鐘的「收到→畫面」，排名一樣，見 `summary.md` 的 `recvToPresent*`。
+- **每秒 10 萬筆**：三個都積壓到好幾秒，產生器也被 TCP 擋住送不完（三邊中位數 168～193 萬筆／應送 200 萬）。資料最後都有收到，沒有掉，只是慢。這一項在模擬器上沒有參考價值。
+- **指標計算**：兩邊是**同一份 Rust 程式**（`model.rs`），所以：
+  - 每筆 tick 只補最後一根的時間三邊一樣，約 20 µs，跳價時指標不是瓶頸；
+  - 「整段重算」是在 app 剛啟動、圖表剛建好時量的，那時候 GPUI／wgpu 還在初始化 Vulkan、載字型，CPU 被搶，所以比較慢。這個差距**反映的是當時 CPU 多忙，不是指標程式的快慢**。
+
+截圖（左三張 egui：報價表、縮放後走勢圖、重圖表；右三張 GPUI 同樣三個畫面）：
+
+![手機版截圖](docs/bench/mobile/2026-10-23/shots/mobile-shots.png)
+
+GPUI 長按出十字線（左：長按中；右：放開後）：
+
+![GPUI 十字線](docs/bench/mobile/2026-10-23/shots/gpui-crosshair.png)
+
+### 兩邊怎麼做的
+
+| | egui | GPUI |
+|---|---|---|
+| Android 支援 | eframe 官方支援（`android-native-activity`） | 社群：長橋 `gpui-mobile`（rev c24a130）＋ `gpui-pre` 0.3.9 |
+| 畫圖 | glow（OpenGL ES）；可選 wgpu（Vulkan） | wgpu（Vulkan）；GLES 在模擬器上開不起來（見下） |
+| 觸控 | egui 內建：甩動慣性、雙指 `zoom_delta`；長按 400ms 自己判斷 | 0.3.9 內建手勢：拖曳→捲動事件（含甩動慣性）、`on_pinch`、`LongPressEvent` |
+| 中文字型 | 直接 mmap 系統的 NotoSansCJK（不吃記憶體） | gpui-mobile 啟動時把所有系統字型**整個讀進記憶體**（光 CJK 就 32 MB），這是 PSS 高的原因之一 |
+| 輸入法 | NativeActivity 沒有組字（中文輸入法候選字）介面 | `GpuiInputActivity` 有 InputConnection，理論上可組字 |
+
+### 沒做到／要注意
+
+- **沒有真手機測試**，全部是模擬器。box 上的 KVM 一開就讓主機核心報錯（`kvm_spurious_fault`，vCPU 直接當掉），只能用純軟體模擬（`-accel off`）。
+- **GPUI 不能改用 OpenGL ES**：設 `XQ_GPU=gl` 時，wgpu 要求的 `max_compute_workgroups_per_dimension=65535` 超過模擬器 GLES 的上限，視窗開不起來（log：`docs/bench/mobile/2026-10-23/gpui-gles-fail.log`）。所以 GPUI 只有 Vulkan。模擬器的 Vulkan 和 GLES 其實都是外面主機的 SwiftShader 代畫。
+- **GPUI 第 3 輪畫面停住**：報價照收（每秒約 20 次更新），但畫面 0 fps；後面重圖表也停在 drag 段，跑不完。原因沒查到（可能是 gpui-mobile 的問題，也可能是模擬器螢幕狀態），要重現才知道。這幾列都**排除不算**，所以 GPUI 很多項是 n=2。
+- **egui（wgpu）第 3 輪**每秒 1 千／1 萬筆兩項沒收到延遲樣本，排除不算（n=2）。
+- 有幾次讀記憶體（dumpsys）逾時，所以部分 PSS 是 n=1。
+- 測試期間（2026-10-23 12:45～20:08，Asia/Taipei）box 重開機兩次：
+  - 第 1、2 輪的行情來自 box 上原本在跑的 127.0.0.1:47631 行情服務；
+  - 第 3 輪是重開機後另外開的 `WryFeedHost --demo-ticks`；
+  - 同一台 box 上還有別的工作在編譯／壓測，主機負載不固定，每一列都記了 `load1`。
+- 「卡頓（jank）」沒有放進表：幀率低於每秒 4 張時這個定義沒意義。
+- **中文輸入法沒測**：模擬器映像只有英文 LatinIME。搜尋框的比對功能有做，但沒用輸入法實際打中文。
+- 第 1～2 輪原本有在跑的行情服務是哪種模式（真實或模擬）沒有記錄到，只確定是 127.0.0.1:47631 上的 dotnet 服務。
+
+### iOS 呢？
+
+- 需要 macOS＋Xcode，這台 Linux box 不能建。
+- GPUI：Zed 官方已合併實驗性的 `gpui_ios`（zed PR #63068，2026-10-15 合併，Asia/Taipei），有 UIKit 觸控、手勢、輸入法橋接，但官方說明還不是完整功能。
+- egui：官方沒有 iOS 目標（egui issue #3117 還開著），要靠社群補丁（winit／eframe 分支），鍵盤輸入過去一直有問題。
+
+### 建置／執行
+
+```bash
+# 需要：Android SDK（platform 35、build-tools 35）、NDK 28.2、JDK 17 以上、cargo-ndk、
+#       rustup target add x86_64-linux-android aarch64-linux-android
+cd mobile
+./build-apk.sh x86_64                 # 模擬器；真手機用 arm64-v8a；兩個都要用 "x86_64,arm64-v8a"
+adb install -r android/app/build/outputs/apk/release/app-release.apk
+adb reverse tcp:47631 tcp:47631       # 讓手機連到電腦上的行情服務（127.0.0.1:47631）
+# 設定用 system property 傳（debug.xq.e0～e9 各放一個 KEY=VAL），例如：
+adb shell setprop debug.xq.e0 XQ_METRICS=1     # 每秒在 logcat（tag xq）印 FRAMES|{fps, 記憶體, 指標計算時間…}
+```
+
+- egui 要 wgpu 版：`CARGO_FEATURES=wgpu ./build-apk.sh x86_64`，再設 `XQ_RENDERER=wgpu`。
+- GPUI 要試 GLES：`XQ_GPU=gl`。真機可以試，模擬器開不起來。
+- 壓測：`scripts/mobile/bench-android.py`，需要 adb root。觸控手勢用 `scripts/mobile/mt.c`，用 NDK 編成靜態執行檔，直接寫多點觸控事件，所以能做雙指縮放。
+- 統計：`scripts/mobile/summarize.py docs/bench/mobile/2026-10-23` 產生中位數表。排除規則寫在程式開頭：畫面停住、沒有延遲樣本、重圖表沒跑完。
+
+## 設計 token：一套設計規範，egui／GPUI 兩版共用（2026-10-23）
+
+### 結論先看
+
+- ✅ **可行，而且畫面完全沒變**：兩版的顏色、字級、圓角、線寬、版面尺寸都改成讀**同一份** token 檔
+  （放在 gpui-xq-demo 的 [`crates/xq-tokens/tokens/`](https://github.com/tina-moneydj/gpui-xq-demo/tree/main/crates/xq-tokens/tokens)，W3C DTCG 2025.10 格式，Figma 原生就能匯入／匯出）。
+  用預設 token 截圖和 main 逐像素比對：**除了狀態列每秒變動的 RSS 數字，其他 0 個像素不同**（兩版都是）。
+- ✅ **改一個 token，兩個 App 一起變**：只把 `color.chart.up`（K 棒漲色）從 `#e5484d` 改成 `#a855f7`，兩版都沒改程式，K 棒和成交量柱的漲色一起變紫（約 1.8 萬個像素）。
+- ✅ **深色／淺色主題**：按 **F8** 即時切換，或 `XQ_THEME=light` 啟動；切換後的畫面和直接用淺色啟動一樣（只差每秒變的計數）。
+- ✅ **熱更新**：`XQ_TOKENS_DIR=資料夾 XQ_TOKENS_WATCH=1` 執行時，程式每 0.3 秒檢查一次檔案，設計師存檔後畫面就換色（實測存檔後 2.5 秒截圖已是新顏色），不用重編。
+- ✅ **效能沒變差**：主視窗中位數 GPUI 52.0→50.2 FPS、egui 61.3→60.9 FPS，每幀 CPU、走勢圖繪製時間、記憶體的差距都比同一版每輪之間的起伏小（記憶體多約 0.4–0.7 MB，是兩份主題的 token 表）。
+- ✅ **改錯會被擋**：token 少一個或格式錯，`cargo build` 直接失敗並寫出是哪個 token（例：`[light] token「color.market.up」缺少`）。
+- ⚠️ **盤點時發現兩版本來就不一致**：按鈕圓角 GPUI 4px、egui 2px；K 棒漲色（`#e5484d`）和報價表漲色（`#ff4d4f`）也是兩個不同的紅。先各給一個 token 保持畫面不變，之後由設計師決定要不要統一。
+
+### 設計師怎麼改（不用懂程式）
+
+1. 打開 gpui-xq-demo 的 `crates/xq-tokens/tokens/`：`color.dark.tokens.json`（深色）、`color.light.tokens.json`（淺色）、`base.tokens.json`（字級、間距、圓角、尺寸）。
+2. **用 Figma**：第一次把這三個檔拖進 Figma 的 Variables 視窗匯入（名稱會變成 `color/market/up` 這種斜線分層）。之後在 Figma 改，
+   在 collection 上按右鍵 → **Export modes**，每個 mode 一個 JSON，改成上面的檔名蓋回去、送 PR。
+   **不用 Figma**：直接改 JSON 裡的 `"hex": "#ff4d4f"`（和旁邊的 `components`）也可以。
+3. 想先看效果：`XQ_TOKENS_DIR=你的資料夾 XQ_TOKENS_WATCH=1 ./target/release/gpui-xq-demo`（egui 版同樣），邊改邊看。
+4. 合進去後兩個 App 重編就會帶新值（token 內嵌在執行檔裡，不用另外附檔案）。
+
+### 兩個 App 怎麼拿到
+
+- GPUI 版直接依賴 workspace 裡的 `crates/xq-tokens`；egui 版用 Cargo git 依賴同一個 crate（鎖定 rev，和 `xq-feed` 的做法一樣）。
+- 程式裡原本寫死的 `0xff4d4f`、`px(11.)`、`ROW_H = 22.0` 等，改成 `tk().market.up`、`tk().font.sm`、`tk().layout.table_row`。
+  讀一個 token 只是一次原子讀取，沒有鎖、沒有查表。
+- 換主題或熱更新時版本號 +1；App 看到就把烤了顏色的快取（走勢圖畫線、報價表列）丟掉重畫。
+- 詳細格式、Figma 限制、完整盤點表：[`crates/xq-tokens/README.md`](https://github.com/tina-moneydj/gpui-xq-demo/blob/main/crates/xq-tokens/README.md)。
+
+### 截圖（[docs/bench/2026-10-23-tokens/](docs/bench/2026-10-23-tokens/)）
+
+| | GPUI | egui |
+|---|---|---|
+| 預設 token（和 main 一樣） | ![](docs/bench/2026-10-23-tokens/gpui-tokens-default.png) | ![](docs/bench/2026-10-23-tokens/egui-tokens-default.png) |
+| 只改 `color.chart.up` → 紫色 | ![](docs/bench/2026-10-23-tokens/gpui-up-token.png) | ![](docs/bench/2026-10-23-tokens/egui-up-token.png) |
+| 淺色主題（F8） | ![](docs/bench/2026-10-23-tokens/gpui-f8.png) | ![](docs/bench/2026-10-23-tokens/egui-f8.png) |
+
+逐像素比對數字在 `shots-diff.json`；行情用 `xq-tickgen --rate 0 --seed 1`（只送一次快照，畫面固定才能逐像素比）。
+
+### 效能（主視窗、每秒 2000 筆跳價、量 30 秒，main 與 token 版交錯跑 5 輪取中位數）
+
+| 指標（中位數） | GPUI main | GPUI token | egui main | egui token |
+|---|---|---|---|---|
+| FPS | 52.0 | 50.2 | 61.3 | 60.9 |
+| 記憶體 RSS (MB) | 190.5 | 191.2 | 124.8 | 125.2 |
+| CPU（100%＝1 核） | 350.2% | 350.2% | 133.8% | 137.9% |
+| 每幀 CPU (ms) | 60.89 | 61.70 | 21.83 | 22.63 |
+| 走勢圖繪製 (µs/次) | 66 | 64 | 58 | 60 |
+
+怎麼看：**差距都在雜訊內**。這台測試機沒有 GPU（軟體繪圖），而且同時跑著其他測試，GPUI 同一版 5 輪的 FPS 就在 31–61 之間跳（token 版 32–61），
+所以 FPS 要看「每幀 CPU」比較穩：GPUI 差 1.3%、egui 差 3.7%，而 egui 同一版每輪自己就在 20.6–24.7 ms 之間。
+egui 被螢幕更新率卡在約 60 FPS。原始資料：`docs/bench/2026-10-23-tokens/perf.json`；量測腳本 `tokbench.py`（獨立 Xvfb :73、行情埠 47793）。
+
+### 還沒做的
+
+- 間距 token 已定義，但 GPUI 的 `px_2()`／`gap_1()` 這類簡寫和 egui 的 `item_spacing` 還沒全部換；畫布上的小幾何（標籤高 16、控制點 9×9）和透明度係數也還寫在程式裡。
+- egui 的字型是讀字型**檔**，字型名稱 token 目前只有 GPUI 用。
+- 淺色主題的配色是我先排的初稿，要請設計師定稿。
+- 網頁版、Android 版合併後也讀同一份 token（共用的報價表、走勢圖顏色都跟著變）；但手機版自己的版面（字級、列高等）還寫在 `mobile/src/` 裡，沒有換成 token。
+
+## 功能（與 GPUI 版對照）
+
+- 版面：上＝走勢圖、左下＝報價表、右下＝資訊／效能格；**上下、左右分隔線都可拖曳**；底部狀態列（連線、FPS、RSS、封包→套用）。
+- 報價表：代號／名稱／成交／漲跌／幅度／總量，漲紅跌綠；自己做的虛擬化（`ScrollArea::show_viewport`，只為可見列產生圖元），
+  「壓力 5 萬」加 5 萬列合成資料；點列切換走勢圖代號。
+- 走勢圖：分時／日K／週K／月K、滾輪縮放、拖曳平移、重設縮放；主圖疊加最多 20 個（MA／EMA／布林／SAR）、副圖 8 種；
+  「指標 ▾」選單（項目、勾選、參數欄與 GPUI 版相同，靠左對齊；▾ 用畫的，因為 Noto CJK 沒有這個字）；十字線＋讀值；每個「代號｜週期」的設定與畫線存到
+  `~/.local/share/egui-xq-demo/state.json`（`XQ_EGUI_STATE` 可改）。
+- 畫線：左側工具列 8 種工具＋刪除／全部清除；點選、拖曳整條或控制點、Delete、Esc、文字輸入。
+  壓測注入的 1000 條畫線會畫出來、也能 hit-test（同 GPUI 的 64px 格狀空間索引）。
+
+- 畫線圖層與上下順序（最多 200 層，顯示／隱藏、鎖定、上下移；`Ctrl+]`／`Ctrl+[`／`Ctrl+Shift+]`／`Ctrl+Shift+[`）：見[下面一節](#畫線圖層與上下順序2026-10-23-新增三版一起做)。
+- 成交明細（`XQ_TAPE=1`）：與 GPUI main 同一個 `xq-tape` crate（Cargo git 依賴、鎖 rev）、同樣的行為——右側 276px 一欄、
+  逐筆成交（總量差推導）、固定容量 5000 筆、`B` 只看大單、`[`／`]` 調門檻、`Home` 回最新、設定存 `~/.local/share/egui-xq-demo/tick_tape.json`；
+  每幀最多套用一次（整批合併），可見列快取成 Mesh。
+- 多視窗（`XQ_WINDOWS=N`）：immediate viewport，共用同一條行情連線與同一個報價表（含 Mesh 快取），每個視窗自己的走勢圖。
+
+### 和 GPUI 版的對等狀況
+
+完整的功能 × 三版對照清單在 [docs/parity.md](docs/parity.md)（含截圖）。目前只剩框架本身的差異：
+
+| 項目 | 狀況 |
+|---|---|
+| 右下網頁格 | 同 GPUI，不做（放資訊格） |
+| 局部重畫 | **做不到**：egui 每次重畫都是整個視窗重新送 GPU。這版做的是「沒事不重畫」＋「沒變的圖層沿用快取的三角形」 |
+| `XQ_NO_VIEW_CACHE` | egui 沒有 view cache；對應成「每幀重建走勢圖／報價表的 Mesh 快取」 |
+| `XQ_LAYER_MODE=split` | 對應成 egui 子圖層（`set_sublayer`）分開畫 |
+| 搜尋框 | 網頁版預設開；原生版預設關（版面和壓測不變），`XQ_SEARCH=1` 才開 |
+
+## 建置／執行
+
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
+cargo build --release                      # rust-toolchain.toml＝stable（eframe 0.37 要 rustc ≥ 1.95）
+DISPLAY=:2 XQ_METRICS=1 ./target/release/egui-xq-demo
+XQ_RENDERER=wgpu ./target/release/egui-xq-demo   # 預設 glow（OpenGL），見下方「glow vs wgpu」
+```
+
+環境變數（與 GPUI 版同名同義，所以 `gpui-xq-demo/scripts/bench-*.sh` 可以直接驅動）：
+
+| 變數 | 用途 |
+|---|---|
+| `XQ_FEED_ADDR` | 行情位址（預設 127.0.0.1:47631） |
+| `XQ_METRICS=1` | 每秒印 fps／rss／封包／套用耗時 |
+| `XQ_BENCH=1` | 第一幀／第一筆報價／第一個重圖表畫出後印 `BENCH ...` |
+| `XQ_PERIOD=T/D/W/M` | 啟動週期 |
+| `XQ_TOP_FRAC=0.56` | 上方走勢圖佔比 |
+| `XQ_GROUP_STRESS=1`（＋`XQ_STRESS_TICK_HZ`／`_TICK_MS`／`_SCROLL_MS`） | 5 萬列＋合成跳價＋捲動壓測，印 `GROUPPERF|{json}` |
+| `XQ_CHART_STRESS=1`（＋`XQ_CHART_DRAWINGS`／`_WARM_MS`／`_PHASE_MS`） | 重圖表壓測，印 `CHARTPERF|{json}`、`CHARTPHASE|...` |
+| `XQ_TICK_BENCH=1` | 高頻進價量測（搭配 `xq-tickgen`），印 `TICKBENCH|{json}` |
+| `XQ_RENDERER=glow/wgpu` | 繪圖後端（預設 glow） |
+| `XQ_DEBUG_REPAINT=1` | 印每一幀是誰要求重畫的（找多餘重畫用） |
+| `XQ_TAPE=1`（＋`XQ_TAPE_STATE`） | 成交明細面板（預設關閉，壓測版面不變） |
+| `XQ_DEBUG=1` | 印滑鼠按下（同 GPUI） |
+| `XQ_NO_VIEW_CACHE=1` | 每幀重建 Mesh 快取（對照用） |
+| `XQ_LAYER_MODE=split` | 走勢圖圖層分子圖層畫（實驗） |
+| `XQ_WINDOWS=N` | 開 N 個看盤視窗（最多 8）；`WINIT_X11_SCALE_FACTOR=2` 可開 2 倍縮放 |
+
+## 架構與效能做法
+
+```
+src/bridge.rs     ← 背景執行緒合併（同代號只留最新）；Inbox 由空變非空才喚醒 UI，UI ≥16ms 才套用一次
+src/table.rs      ← 報價表：自己虛擬化、可見列整批三角化成一個 Mesh 快取（列、捲動位置、選取、hover 沒變就沿用）
+src/chart.rs      ← 走勢圖：plot／draw／live 三層各自快取 Mesh；平移時畫線層整批位移不重建；壓測驅動
+src/model.rs …    ← 從 GPUI 版移植（版面、互動、指標增量、畫線幾何／空間索引）
+src/gfx.rs        ← Sink：把矩形／線段／文字收集起來，一次三角化成 egui Mesh
+src/tickbench.rs  ← 高頻量測（present＝下一幀開始，同 GPUI on_next_frame／wry 兩次 rAF，都是上界）
+src/main.rs       ← 版面、分隔線、狀態列、資訊格、FPS/RSS 取樣、GROUPPERF 壓測
+```
+
+- **沒事不重畫**：沒有行情、沒有輸入就不畫（只有每秒一次的狀態列取樣）。行情進來時背景執行緒用
+  `request_repaint_after(距離上次套用滿 16ms 的時間)` 叫醒 UI，所以行情再快也最多 ~60 次/秒。
+- **避開 egui 的「多畫一幀」**：egui 的 `request_repaint()`（延遲 0）會排**兩次**重畫（讓東西穩定用），
+  所以本程式一律用 `request_repaint_after(1µs)`；報價表也關掉 egui 的慣性捲動／捲軸動畫——實測跳價時約 60% 的幀是 `ScrollArea` 的慣性計算叫的。
+  修掉後一般看盤 FPS 從 37 降到 19（＝每秒行情包數，一包一幀）。
+- **快取三角形**：egui 每幀都要把圖形變成三角形（tessellate）。這版把沒變的圖層（K 棒＋指標、1000 條畫線、報價表可見列）
+  三角化一次存成 `Arc<Mesh>`，下一幀直接沿用；只有資料、尺度、版面或字型改了才重建。
+- 字型：Noto Sans CJK TC（mmap，不複製進記憶體）。
+
+### glow vs wgpu
+
+eframe 0.37 兩個後端都編進去，用 `XQ_RENDERER` 切換。同一台機器（沒有 GPU：glow＝Mesa llvmpipe OpenGL，wgpu＝Vulkan lavapipe）
+重圖表壓測 2 次中位數（原始檔：[docs/bench/2026-10-21/renderer/](docs/bench/2026-10-21/renderer/)）：
+
+| 重圖表 | glow | wgpu |
+|---|---|---|
+| FPS 跳價／十字線／平移 | **56.1／55.2／55.6** | 51.1／48.6／57.1 |
+| CPU 扣軟體繪圖 (%) | **49.7／50.0／49.4** | 55.7／57.0／46.1 |
+| RSS (MB) | **134／142／141** | 169／162／169 |
+
+glow 記憶體少約 30 MB、FPS 大多較高，所以**預設 glow**，三方比較也用 glow。
+（GPUI 在這台走 Vulkan lavapipe；egui 用 wgpu 時一樣走 lavapipe，數字差不多，可用 `EGUI_RENDERER=wgpu` 重跑比較。）
+
+## 畫線圖層與上下順序（2026-10-23 新增，三版一起做）
+
+像一般技術分析軟體一樣：畫線可以點選、拖曳，**可以調上下順序**，也可以分**圖層**（最多 200 層，可顯示／隱藏、鎖定、上下移）。
+
+### 結論先看
+
+- **三版功能對等，畫面順序正確。** 下層的線被上層蓋住、上層的線畫在下層之上、選取的控制點永遠在最上面；點選時抓「看得到的最上面那條」，隱藏或鎖定的圖層點不到。三版截圖見下。
+- **100 層不會比較慢。** 1000 條畫線分 100 層 vs 全放 1 層，改順序／選取時重建畫面的時間幾乎一樣（差距 < 0.05 ms；wry 在 1 ms 內）。FPS 的差距比同一設定重測的誤差還小（例外：wry 跳價／十字線時 100 層慢約 15%，見下面「有沒有退步」）。
+- **拖曳不重建。** 拖曳一條線時，其他 999 條用快取的「下層／上層」兩片，三版拖曳期間重建次數都是 0（只有開始時 1 次）。
+- **反應最快：egui。** 點選或改順序到畫面更新：egui ≈ 17 ms、wry ≈ 47 ms、GPUI ≈ 64–80 ms。重建本身 egui、GPUI 都約 0.3 ms，wry 約 4–5 ms。
+- **拖曳 FPS：egui 56 ＞ wry 28 ＞ GPUI 10**（這台沒顯卡，GPUI 的軟體繪圖最貴；而且這次 box 被另一個工作同時佔滿，GPUI 受影響最大，見下面注意事項）。
+
+### 測了什麼、為什麼重要
+
+壓測場景和「重圖表」相同（1000 條畫線＋20 個疊加指標＋8 個副圖、持續跳價），多加四段，每段 10 秒：
+
+| 段落 | 做什麼 | 為什麼重要 |
+|---|---|---|
+| drag（拖曳） | 拖著第 500 條（在中間的第 50 層）來回移動 | 拖曳要順，不能每動一下就把 1000 條重畫 |
+| select（選取） | 一直點選／取消選取中間那條 | 選取時那條要「浮」到上面並顯示控制點，其他線要拆成上下兩片快取 |
+| reorder（改順序） | 一直 上移一層／下移一層／移到最上／移到最下、整個圖層上下移、圖層隱藏／顯示 | 這就是使用者按 Ctrl+] 等快捷鍵時的成本 |
+| zshot（正確性） | 7 條互相重疊、分 3 層的畫線，拿中間那條當選取 | 截圖檢查誰蓋誰 |
+
+同一套測法跑兩種設定：**100 層**（1000 條平均分到 100 層）和**不分層**（`XQ_CHART_LAYERS=1`，全部在 1 層），比較 100 層多花多少。
+
+### 數字（交錯測 3 輪取中位數；括號內是不分層）
+
+| 項目 | wry | GPUI | egui | 最好 |
+|---|---|---|---|---|
+| 拖曳 FPS | 27.7（40.9） | 9.9（11.0） | 55.8（49.7） | **egui** |
+| 拖曳期間重建次數 | 0 | 0 | 0 | 三版相同 |
+| 選取：重建 p50／p99 (ms) | 4／7（3／6） | 0.34／1.60（0.37／0.75） | 0.34／0.60（0.33／0.62） | **egui ≈ GPUI** |
+| 選取：到畫面更新 p50／p99 (ms) | 47／67（33／73） | 80／145（96／144） | 17／37（19／28） | **egui** |
+| 改順序：重建 p50／p99 (ms) | 5／12（5／9） | 0.32／0.58（0.36／0.57） | 0.36／0.55（0.32／0.51） | **egui ≈ GPUI** |
+| 改順序：到畫面更新 p50／p99 (ms) | 49／73（51／76） | 64／131（81／128） | 18／25（17／26） | **egui** |
+| 選取／改順序時 FPS | 21／20 | 13／14 | 56／54 | **egui** |
+| 記憶體 RSS (MB) | 703（704） | 219（219） | 137（141） | **egui** |
+| 重圖表 跳價／十字線／平移 FPS | 34.6／34.3／30.5 | 13.2／12.7／9.8 | 51.6／51.4／51.0 | **egui** |
+
+- 「重建」＝改了順序或選取之後，把 1000 條重新排成上下兩片快取的 CPU 時間；「到畫面更新」＝從動作到下一幀開始（含等下一幀）。
+- **100 層 vs 不分層：重建時間一樣**（排序用「圖層位置、陣列位置」兩個數字，100 層不會多跑迴圈）。表裡 FPS 的高低（例如 wry 拖曳 28 vs 41）在另一組完整重測裡是反過來的（43 vs 17），所以只是 box 雜訊，不是圖層造成的。
+- wry 的時間是整數：WebKit 的 `performance.now()` 只精確到 1 ms。
+
+### 和 10-21 重圖表比有沒有退步
+
+| 跳價／十字線／平移 FPS | wry | GPUI | egui |
+|---|---|---|---|
+| 2026-10-21（安靜時） | 36.1／36.5／26.2 | 20.5／20.7／20.8 | 41.8／39.6／41.7 |
+| 2026-10-23（box 被佔滿） | 34.6／34.3／30.5 | 13.2／12.7／9.8 | 51.6／51.4／51.0 |
+
+上面兩列是不同時間測的，box 忙閒不同，不能直接比。下面是**同一時段、改版前後輪流跑**的對照（2026-10-23 早上，合成行情，1000 條畫線分 100 層，每段 6 秒，3 輪取中位數）。
+
+**GPUI：確實退步過，已修好。**
+
+| GPUI 跳價／十字線／平移 | FPS | CPU（整個程式，含軟體繪圖） | 每幀畫線批次 |
+|---|---|---|---|
+| 改版前（360cb93，沒有圖層） | 20.8／20.8／20.8 | 311%／323%／313% | 4 |
+| 圖層版（0eeca4e） | 20.2／20.2／20.4（較忙時 17.9／18.2／18.3） | **480%／480%／473%** | 14 |
+| 修正後（目前 main） | **20.8／20.8／20.8** | **298%／301%／307%** | **4** |
+
+- 這台機器上 GPUI 重圖表最多約 21 FPS，改版前和修正後都頂到這個上限，所以要看 CPU：圖層版每秒多花約 1.6 顆 CPU，修正後回到改版前的水準（還略低一點）。
+- 原因不是「上層那片多畫一次」（沒選取時那片本來就是空的），而是**畫線被切成很多批**：GPUI 每一批線條都要把整個視窗大小的暫存畫布清掉、畫、再貼回去，沒有顯卡時很貴。圖層版的價格軸標籤（水平線的價格）一個個夾在畫線中間，整個畫面每幀從 4 批變成 14 批。
+- 修法：價格軸標籤整組放同一層；畫線開始前先放一個「隔板」，讓所有畫線的順位都排在圖上其他東西之上，連成一批。另外沒有選取時不再通知「選取那條」和「上層那片」重畫。
+- 上下順序照樣正確：重跑正確性截圖，選取的中間層方框仍在上層文字框和線之下、下層線之上，控制點在最上面（和下面的截圖一致）。
+
+**egui：沒有退步。** 改版前（3c5d06d）60.3／60.5／60.8 FPS、CPU 286%／289%／284%；圖層版 61.3／60.4／60.1 FPS、CPU 288%／289%／288%。egui 沒選取時本來就只畫一份畫線快取，不用改。
+
+**wry：平移沒退步，但「100 層」時跳價、十字線變慢約 15%，原因不同、還沒修。**
+
+| wry 跳價／十字線／平移 FPS | 中位數 |
+|---|---|
+| 改版前（d9e06ec，8 輪） | 23.5／21.9／33.0 |
+| 圖層版，1000 條分 100 層（8 輪） | 19.0／19.3／34.8 |
+| 圖層版，全部 1 層（4 輪） | 22.4／22.4／34.4 |
+
+- wry 沒有 GPUI 那個「多一層」的問題（沒選取時上層那片本來就不畫）。
+- 慢的只有「分 100 層」：壓測把 1000 條輪流分到 100 層，照順序畫時線、填色、文字、虛線一直交錯，瀏覽器畫布每條都要換一次畫筆設定；跳價和十字線時價格範圍一直變、整份畫線每幀重畫，所以吃到這個成本。平移只位移快取，不受影響；全部放 1 層就和改版前一樣。
+- 實際使用時一個圖層裡通常是同類型的線，影響會比這個壓測小。要修可以學 GPUI：不重疊的同色線先併成一筆再畫。
+
+### 正確性截圖
+
+| wry | GPUI | egui |
+|---|---|---|
+| ![wry](docs/bench/2026-10-23-layers/layers100/wry-zshot.png) | ![GPUI](docs/bench/2026-10-23-layers/layers100/gpui-zshot.png) | ![egui](docs/bench/2026-10-23-layers/layers100/egui-zshot.png) |
+
+看法：中間被選取的白框矩形（第 2 層）邊線被上層（第 3 層）的兩個文字框蓋住；上層的趨勢線畫在白框之上、下層的在白框之下；白色控制點在最上面。三版一致。
+拖曳中截圖：`docs/bench/2026-10-23-layers/ilv/r3-<程式>-L100/<程式>-drag.png`。
+
+### 還不一樣的地方（框架限制）
+
+- **GPUI**：同一個區段裡的文字一定畫在線條上面（GPUI 把文字放在自己的圖層）。換到上一個區段（例如上層的線）就會正確蓋住。
+- **wry**：平移時，水平線往兩邊延伸的部分在快取邊緣會晚一幀補上（其他種畫線也一樣）。
+- **wry**：時間只精確到 1 ms（見上）。
+
+### 注意事項
+
+- **這台沒有顯卡**：畫面全靠 CPU 模擬（wry＝WebKit＋llvmpipe、GPUI＝Vulkan lavapipe、egui＝OpenGL llvmpipe），FPS 主要是軟體繪圖的速度；有顯卡時 FPS 會高很多，但「重建時間」這種 CPU 端數字不受影響。
+- **這次 box 很吵**：測試時另一個工作同時在建置與壓測網頁版，系統負載一直在 6–10（8 核）。所以用**交錯測**：每輪內同一個程式 100 層／不分層緊接著跑，3 輪取中位數。**請看同一輪的相對高低與「重建時間」，不要拿 FPS 絕對值跟其他輪比。**
+- 測試在 Xvfb `:5`、行情用獨立的 WryFeedHost（埠 47651，`FEED_PORT`／`XQ_FEED_ADDR`），不和其他工作搶連線。
+- 原始資料：[docs/bench/2026-10-23-layers/](docs/bench/2026-10-23-layers/)（`ilv/summary-ilv.json` 是上表；`layers100/`、`flat/` 是第一次一口氣跑完的完整版，雜訊更大，僅供參考）。
+
+### 怎麼用
+
+- 選一條線 → `Ctrl+]` 上移一層、`Ctrl+[` 下移一層、`Ctrl+Shift+]` 移到最上、`Ctrl+Shift+[` 移到最下（mac 用 ⌘）；工具列「圖層 ▾」開圖層面板：同樣四個順序按鈕、「+ 新圖層」、每層的 顯示／隱藏、鎖定、▲▼ 上下移，點圖層名稱設為作用中圖層（新畫的線放這層），「移到作用中圖層」把選取的線搬過去。順序調整都在該線自己的圖層內。
+- 存檔多一個 `layers` 欄位；舊存檔沒有這欄照樣能讀（全部放在預設圖層）。
+- 壓測：`XQ_CHART_STRESS=1 XQ_CHART_LAYERS=100`（`1`＝不分層）；`scripts/bench-main-window.sh 3 heavy` 會多跑 drag／select／reorder／zshot。
 
 ## 效能比較（wry vs GPUI vs egui）
 
