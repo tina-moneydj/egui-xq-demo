@@ -340,6 +340,24 @@ pub fn setup_fonts(ctx: &egui::Context) {
             Err(e) => eprintln!("[fonts] {e}"),
         }
     }
+    // 補字：iOS 26 的蘋方（PingFangUI.ttc）是 egui 畫不出來的 hvgl 格式，華文黑體也被系統導到蘋方，
+    // 系統裡 egui 能用的只剩冬青黑體（日文字集，缺「檔」等繁中字）。所以 app 裡帶一份 Noto Sans TC（5.4 MB，OFL 授權），
+    // 一樣 mmap，排在系統字型後面，只有系統字型缺的字才用它。
+    let bundled = std::env::current_exe().ok().and_then(|e| e.parent().map(|d| d.join("NotoSansTC-Regular.otf")));
+    if let Some(path) = bundled {
+        match std::fs::File::open(&path).and_then(|f| unsafe { memmap2::Mmap::map(&f) }) {
+            Ok(mm) => {
+                eprintln!("[fonts] 補字 NotoSansTC-Regular.otf（app 內附，{:.1} MB，mmap）", mm.len() as f64 / 1048576.0);
+                let blob: egui::epaint::text::Blob = Arc::new(mm);
+                defs.font_data.insert("cjk-noto-tc".into(), Arc::new(egui::FontData::from_blob(blob, 0)));
+                let k = used.len();
+                defs.families.entry(egui::FontFamily::Proportional).or_default().insert(k, "cjk-noto-tc".into());
+                defs.families.entry(egui::FontFamily::Monospace).or_default().push("cjk-noto-tc".into());
+                used.push("NotoSansTC-Regular（app 內附）".into());
+            }
+            Err(e) => eprintln!("[fonts] app 內附的 Noto Sans TC 讀不到：{e}"),
+        }
+    }
     if used.is_empty() {
         eprintln!("[fonts] 找不到能用的中文字型（中文會變方塊）");
     } else {
