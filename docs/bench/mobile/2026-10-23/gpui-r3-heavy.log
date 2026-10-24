@@ -1,0 +1,32 @@
+--------- beginning of main
+         1792741360.915  8404  8434 I xq      : [xq] android start, env from props: ["XQ_BENCH=1", "XQ_METRICS=1", "XQ_CHART_STRESS=1", "XQ_CHART_DRAWINGS=1000", "XQ_CHART_LAYERS=100", "XQ_PERIOD=D", "XQ_IND_BENCH=20", "XQ_CHART_PHASE_MS=8000"]
+         1792741362.608  8404  8434 I xq      : [gpui] android_main: starting Application
+         1792741370.523  8404  8434 I xq      : [xq-feed] 已連上 127.0.0.1:47631
+         1792741374.341  8404  8434 I xq      : INDPERF|{"bars":1200,"reps":20,"medianMs":188.574,"minMs":145.836,"maxMs":247.727}
+         1792741375.511  8404  8434 I xq      : BENCH first-frame
+         1792741377.705  8404  8434 I xq      : CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":215.04}
+         1792741377.707  8404  8434 I xq      : BENCH first-quote
+         1792741379.747  8404  8434 I xq      : BENCH heavy-frame
+         1792741379.777  8404  8434 I xq      : CHARTPERF|{"phase":"setup","cssW":446,"cssH":907,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":196,"drawVertices":3372,"drawPaths":89,"bars":1200,"sinceStartMs":9255,"rebuildMs":190.74,"paintMsTotal":1053.90,"rssMb":196.2}
+         1792741379.778  8404  8434 I xq      : CHARTPHASE|warm|start
+         1792741381.332  8404  8434 I xq      : FRAMES|{"t":1792741381247357,"fps":4,"jank":0,"maxMs":0.0,"rssMb":198.2,"rowsIn":7033,"applies":2,"applyUs":41103,"screen":"chart","indFull":24,"indFullMs":168.71,"indPatch":1,"indPatchUs":359.59}
+         1792741383.308  8404  8434 I xq      : CHARTPHASE|ticks|start
+         1792741384.018  8404  8434 I xq      : FRAMES|{"t":1792741384016908,"fps":3,"jank":0,"maxMs":0.0,"rssMb":198.2,"rowsIn":1678,"applies":1,"applyUs":478,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":4,"indPatchUs":119.97}
+         1792741386.485  8404  8434 I xq      : FRAMES|{"t":1792741386470589,"fps":3,"jank":0,"maxMs":0.0,"rssMb":198.3,"rowsIn":1679,"applies":3,"applyUs":2017,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":6,"indPatchUs":901.23}
+         1792741388.888  8404  8434 I xq      : FRAMES|{"t":1792741388886568,"fps":3,"jank":0,"maxMs":0.0,"rssMb":199.9,"rowsIn":1488,"applies":1,"applyUs":537,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":4,"indPatchUs":113.18}
+         1792741391.704  8404  8434 I xq      : FRAMES|{"t":1792741391697466,"fps":3,"jank":0,"maxMs":0.0,"rssMb":200.2,"rowsIn":1807,"applies":3,"applyUs":452,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":6,"indPatchUs":116.16}
+         1792741391.723  8404  8434 I xq      : CHARTPERF|{"phase":"ticks","seconds":8.39,"frames":10,"fps":1.2,"steps":9,"avgPaintMs":367.343,"plotPaints":10,"plotMs":207.200,"drawPaints":10,"drawMs":103.307,"livePaints":10,"liveMs":56.799,"selPaints":10,"selMs":0.021,"abovePaints":10,"aboveMs":0.016,"drawRebuilds":10,"rebuildMsTotal":252.56,"rssMb":200.2}
+         1792741391.724  8404  8434 I xq      : CHARTPHASE|ticks|end
+         1792741391.724  8404  8434 I xq      : CHARTPHASE|crosshair|start
+         1792741395.355  8404  8434 I xq      : FRAMES|{"t":1792741395353557,"fps":3,"jank":0,"maxMs":0.0,"rssMb":200.4,"rowsIn":2961,"applies":2,"applyUs":475,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":4,"indPatchUs":135.72}
+         1792741397.772  8404  8434 I xq      : FRAMES|{"t":1792741397769900,"fps":2,"jank":0,"maxMs":0.0,"rssMb":200.3,"rowsIn":1512,"applies":2,"applyUs":613,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":4,"indPatchUs":140.14}
+         1792741400.078  8404  8434 I xq      : FRAMES|{"t":1792741400064818,"fps":2,"jank":0,"maxMs":0.0,"rssMb":200.5,"rowsIn":1408,"applies":1,"applyUs":471,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":3,"indPatchUs":132.37}
+         1792741400.159  8404  8434 I xq      : CHARTPERF|{"phase":"crosshair","seconds":8.40,"frames":7,"fps":0.8,"steps":6,"avgPaintMs":449.687,"plotPaints":7,"plotMs":247.759,"drawPaints":7,"drawMs":122.072,"livePaints":7,"liveMs":79.818,"selPaints":7,"selMs":0.021,"abovePaints":7,"aboveMs":0.017,"drawRebuilds":7,"rebuildMsTotal":318.79,"rssMb":200.5}
+         1792741400.188  8404  8434 I xq      : CHARTPHASE|crosshair|end
+         1792741400.189  8404  8434 I xq      : CHARTPHASE|pan|start
+         1792741402.409  8404  8434 I xq      : FRAMES|{"t":1792741402397335,"fps":3,"jank":0,"maxMs":0.0,"rssMb":202.5,"rowsIn":1502,"applies":2,"applyUs":7561,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":4,"indPatchUs":124.31}
+         1792741404.939  8404  8434 I xq      : FRAMES|{"t":1792741404913261,"fps":3,"jank":0,"maxMs":0.0,"rssMb":201.7,"rowsIn":1522,"applies":3,"applyUs":7675,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":6,"indPatchUs":120.30}
+         1792741407.507  8404  8434 I xq      : FRAMES|{"t":1792741407499776,"fps":3,"jank":0,"maxMs":0.0,"rssMb":200.3,"rowsIn":1931,"applies":1,"applyUs":408,"screen":"chart","indFull":0,"indFullMs":0.00,"indPatch":4,"indPatchUs":111.52}
+         1792741408.301  8404  8434 I xq      : CHARTPERF|{"phase":"pan","seconds":8.11,"frames":10,"fps":1.2,"steps":9,"avgPaintMs":254.636,"plotPaints":10,"plotMs":157.438,"drawPaints":10,"drawMs":37.818,"livePaints":10,"liveMs":59.340,"selPaints":10,"selMs":0.023,"abovePaints":10,"aboveMs":0.017,"drawRebuilds":1,"rebuildMsTotal":9.28,"rssMb":201.0}
+         1792741408.301  8404  8434 I xq      : CHARTPHASE|pan|end
+         1792741408.301  8404  8434 I xq      : CHARTPHASE|drag|start

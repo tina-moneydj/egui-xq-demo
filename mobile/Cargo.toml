@@ -1,0 +1,40 @@
+[package]
+name = "xq-mobile-egui"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "XQ 風格看盤 demo 手機版（Android，egui/eframe）：與桌面版共用 ../src 的行情、報價表、走勢圖、畫線程式碼"
+
+[lib]
+name = "xq_mobile_egui"
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+xq-feed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
+xq-tape = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
+# 共用設計 token（與桌面版同一個 rev）
+xq-tokens = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "dc4f0a80bf571b646480c05ebb71ddba139a0752" }
+egui = "0.37"
+parking_lot = "0.12"
+memmap2 = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+
+[features]
+# wgpu：多帶 egui-wgpu（Vulkan）渲染器，XQ_RENDERER=wgpu 時用；預設只有 glow（APK 較小）
+wgpu = ["eframe/wgpu"]
+
+[target.'cfg(target_os = "android")'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "android-native-activity", "default_fonts"] }
+winit = { version = "0.30", default-features = false, features = ["android-native-activity"] }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "x11", "default_fonts"] }
+
+[profile.release]
+strip = true
+debug = false
+lto = "thin"
+codegen-units = 4

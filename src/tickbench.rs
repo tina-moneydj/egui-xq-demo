@@ -5,7 +5,8 @@
 //! 跟 GPUI 的 `on_next_frame`、wry 的兩次 rAF 一樣是上界（最多多算約 1 幀）。
 //! 有待量的樣本時會 `request_repaint_after(16ms)`，保證下一幀一定會來。
 
-use xq_feed::{unix_us, Stamp};
+use crate::plat::unix_us;
+use xq_feed::Stamp;
 
 #[derive(Default)]
 pub struct TickBench {

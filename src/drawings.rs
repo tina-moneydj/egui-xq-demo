@@ -82,9 +82,10 @@ impl Drawing {
 }
 
 pub const FIB: [f64; 7] = [0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0];
-pub const FIB_COLORS: [u32; 7] = [0x9e9e9e, 0xe5484d, 0xf5a623, 0x4caf50, 0x26a69a, 0x4fc3f7, 0x9e9e9e];
-pub const DRAW_COLOR: u32 = 0xffb000;
-pub const SEL_COLOR: u32 = 0xffffff;
+// 畫線配色：來自設計 token（color.drawing.*）
+pub fn fib_color(k: usize) -> u32 { let f = &xq_tokens::t().drawing.fib; f[k % f.len()] }
+pub fn draw_color() -> u32 { xq_tokens::t().drawing.stroke }
+pub fn sel_color() -> u32 { xq_tokens::t().drawing.selected }
 
 /// 價格窗格的座標轉換（與 wry xOf / yOf 相同）
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -445,31 +446,31 @@ fn fmt_p(v: f64) -> String {
 /// 結尾 seal()：這條的填色／線／字在下一條之前畫完（嚴格 z 順序）。控制點另外畫（live 層）。
 pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
     let w: f32 = if sel { 2.0 } else { 1.4 };
-    let main_c = rgb(if sel { SEL_COLOR } else { DRAW_COLOR });
+    let main_c = rgb(if sel { sel_color() } else { draw_color() });
     if let Some(f) = &g.fill {
-        let c = if d.kind == Tool::Rect { rgba(DRAW_COLOR, 0.10) } else { rgba(DRAW_COLOR, 0.07) };
+        let c = if d.kind == Tool::Rect { rgba(draw_color(), 0.10) } else { rgba(draw_color(), 0.07) };
         s.poly(f, c);
     }
     match d.kind {
         Tool::Fib => {
             for (n, lv) in g.levels.iter().enumerate() {
-                let c = FIB_COLORS[lv.k];
+                let c = fib_color(lv.k);
                 if n > 0 {
                     let prev = &g.levels[n - 1];
                     let (ya, yb) = (lv.y.min(prev.y), lv.y.max(prev.y));
                     s.rect(lv.x1, ya, lv.x2 - lv.x1, yb - ya, rgba(c, 0x14 as f32 / 255.0));
                 }
                 s.seg(p(lv.x1, lv.y), p(lv.x2, lv.y), w.min(1.4), if sel { main_c } else { rgb(c) });
-                s.text(format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, 11.0, rgb(c));
+                s.text(format!("{} ({})", FIB[lv.k], fmt_p(lv.p)), lv.x1 + 3.0, lv.y - 7.0, xq_tokens::t().font.sm, rgb(c));
             }
             if let Some([a, b]) = g.diag {
-                s.dashed(a, b, 1.0, rgb(DRAW_COLOR), 4.0, 4.0);
+                s.dashed(a, b, 1.0, rgb(draw_color()), 4.0, 4.0);
             }
         }
         Tool::Text => {
             if let Some([x, y, bw, bh]) = g.text_box {
-                s.boxed(x, y, bw, bh, rgba(0x1e1e1e, 0.85), main_c, if sel { 2.0 } else { 1.0 });
-                s.text(d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, 13.0, rgb(DRAW_COLOR));
+                s.boxed(x, y, bw, bh, rgba(xq_tokens::t().drawing.text_bg.rgb, xq_tokens::t().drawing.text_bg.a), main_c, if sel { 2.0 } else { 1.0 });
+                s.text(d.text.clone(), x + 6.0, y + bh / 2.0 + 1.0, xq_tokens::t().font.lg, rgb(draw_color()));
             }
         }
         Tool::Hline if hline_ext > 0.0 => {
@@ -481,7 +482,7 @@ pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
                 s.seg(sg[0], sg[1], w, main_c);
             }
             if let Some([a, b]) = g.mid {
-                s.dashed(a, b, 1.0, rgb(DRAW_COLOR), 4.0, 4.0);
+                s.dashed(a, b, 1.0, rgb(draw_color()), 4.0, 4.0);
             }
         }
     }
@@ -491,14 +492,14 @@ pub fn emit(s: &mut Sink, d: &Drawing, g: &Geom, sel: bool, hline_ext: f32) {
 /// 選取畫線的控制點（live 層，永遠在最上面）
 pub fn emit_handles(s: &mut Sink, hs: &[P]) {
     for h in hs {
-        s.boxed(h.x - 4.5, h.y - 4.5, 9.0, 9.0, rgb(SEL_COLOR), rgb(0x000000), 1.0);
+        s.boxed(h.x - 4.5, h.y - 4.5, 9.0, 9.0, rgb(sel_color()), rgb(xq_tokens::t().drawing.handle_border), 1.0);
     }
 }
 
 impl PaintCache {
     /// 由幾何快取建出一段（idxs = 由下到上的畫線索引）的圖元：只處理可見畫線
     pub fn build(ctx: &egui::Context, list: &[Drawing], gc: &GeomCache, xf: &Xf, idxs: &[u32]) -> PaintCache {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         let mut main = Sink::default();
         let mut tags = Sink::default();
         let ext = xf.plot_r - xf.plot_l;
@@ -508,8 +509,8 @@ impl PaintCache {
             if d.kind == Tool::Hline {
                 let y = g.segs[0][0].y;
                 if y > xf.pane_top + 8.0 && y < xf.pane_top + xf.pane_h - 8.0 {
-                    tags.rect(xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, rgb(0x8a6a00));
-                    tags.text(fmt_p(d.pts[0].p), xf.plot_r + 5.0, y, 11.0, rgb(0xffffff));
+                    tags.rect(xf.plot_r + 1.0, y - 8.0, 66.0 - 2.0, 16.0, rgb(xq_tokens::t().chart.label_bg_hline));
+                    tags.text(fmt_p(d.pts[0].p), xf.plot_r + 5.0, y, xq_tokens::t().font.sm, rgb(xq_tokens::t().chart.tag_text));
                 }
             }
             emit(&mut main, d, g, false, ext);

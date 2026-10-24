@@ -1,0 +1,40 @@
+10-23 12:36:29.498  9453  9486 I xq      : [xq] android start, env from props: ["XQ_BENCH=1", "XQ_METRICS=1", "XQ_GPU=gl"]
+10-23 12:36:29.499  9453  9486 I xq      : [gpui] XQ_GPU=gl → GLES backend
+10-23 12:36:29.514  9453  9485 I gpui-android: gpui_mobile::android: gpui-android logger initialised
+10-23 12:36:29.871  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/Roboto-Regular.ttf (2371712 bytes)
+10-23 12:36:29.969  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/RobotoFlex-Regular.ttf (1775480 bytes)
+10-23 12:36:30.000  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/DroidSans.ttf (2371712 bytes)
+10-23 12:36:30.038  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/DroidSans-Bold.ttf (2371712 bytes)
+10-23 12:36:30.040  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/DroidSansMono.ttf (108128 bytes)
+10-23 12:36:30.542  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/NotoSansCJK-Regular.ttc (32355424 bytes)
+10-23 12:36:30.543  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/NotoSansHebrew-Regular.ttf (17352 bytes)
+10-23 12:36:30.556  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/NotoSansThai-Regular.ttf (21380 bytes)
+10-23 12:36:30.576  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/NotoColorEmojiFlags.ttf (912352 bytes)
+10-23 12:36:30.579  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/NotoSerif-Regular.ttf (246740 bytes)
+10-23 12:36:30.586  9453  9485 I gpui-android: gpui_mobile::android::platform: loaded system font: /system/fonts/NotoSerif-Bold.ttf (247892 bytes)
+10-23 12:36:30.711  9453  9485 I gpui-android: gpui_mobile::android::platform: system emoji font is COLR v1 (no CBDT) — will try bundled fallback
+10-23 12:36:30.726  9453  9485 W gpui-android: gpui_mobile::android::platform: failed to load bundled emoji font from assets: asset not found: fonts/NotoColorEmoji.ttf
+10-23 12:36:30.805  9453  9485 W gpui-android: gpui_mobile::android::platform: no compatible emoji font loaded — emoji glyphs may not render
+10-23 12:36:30.811  9453  9485 I gpui-android: gpui_mobile::android::platform: AndroidPlatform::new — headless=false
+10-23 12:36:30.811  9453  9485 I gpui-android: gpui_mobile::android::jni: init_platform: AndroidPlatform created
+10-23 12:36:30.826  9453  9486 I xq      : [gpui] android_main: starting Application
+10-23 12:36:30.974  9453  9485 I gpui-android: gpui_mobile::android::platform: AndroidPlatform::run — callback stored, entering event loop
+10-23 12:36:30.975  9453  9485 I gpui-android: gpui_mobile::android::jni: run_event_loop: entering main loop
+10-23 12:36:31.039  9453  9485 I gpui-android: gpui_mobile::android::jni: MainEvent::Start
+10-23 12:36:31.293  9453  9485 I gpui-android: gpui_mobile::android::jni: MainEvent::Resume
+10-23 12:36:31.294  9453  9485 I gpui-android: gpui_mobile::android::jni: deferred: Resume (iter=2)
+10-23 12:36:31.398  9453  9485 E gpui-android: gpui_mobile::android::jni: loadClass(dev.gpui.mobile.GpuiPlatformView) failed: Java exception was thrown
+10-23 12:36:32.351  9453  9485 I gpui-android: gpui_mobile::android::jni: MainEvent::InitWindow
+10-23 12:36:32.351  9453  9485 I gpui-android: gpui_mobile::android::jni: deferred: InitWindow (iter=4)
+10-23 12:36:32.352  9453  9485 I gpui-android: gpui_mobile::android::jni: InitWindow: 1080×2400
+10-23 12:36:32.390  9453  9485 I gpui-android: gpui_mobile::android::window: AndroidWindow::new — 1080×2400 scale=2.2
+10-23 12:36:33.195  9453  9485 I gpui-android: wgpu_hal::gles::egl: EGL says it can present to the window but not natively
+10-23 12:36:34.563  9453  9485 I gpui-android: gpui_wgpu::wgpu_context: Found 1 GPU adapter(s):
+10-23 12:36:34.563  9453  9485 I gpui-android: gpui_wgpu::wgpu_context:   - Android Emulator OpenGL ES Translator (Google SwiftShader) (vendor=0x0000, device=0x0000, backend=Gl, type=Cpu)
+10-23 12:36:34.576  9453  9485 I gpui-android: gpui_wgpu::wgpu_context: Testing adapter: Android Emulator OpenGL ES Translator (Google SwiftShader) (Gl)...
+10-23 12:36:34.581  9453  9485 W gpui-android: gpui_wgpu::wgpu_context: Dual-source blending not available on this GPU. Subpixel text antialiasing will be disabled.
+10-23 12:36:34.583  9453  9485 I gpui-android: gpui_wgpu::wgpu_context:   Adapter Android Emulator OpenGL ES Translator (Google SwiftShader) (Gl) failed: Failed to create wgpu device: Limit 'max_compute_workgroups_per_dimension' value 65535 is better than allowed 0, trying next...
+10-23 12:36:34.610  9453  9485 E gpui-android: gpui_mobile::android::jni: failed to open window: failed to create gpui_wgpu renderer: No GPU adapter found that can configure the display surface
+10-23 12:36:34.611  9453  9485 I gpui-android: gpui_mobile::android::jni: MainEvent::GainedFocus
+10-23 12:36:34.612  9453  9485 I gpui-android: gpui_mobile::android::jni: deferred: Resume (iter=8)
+10-23 12:36:34.656  9453  9485 E gpui-android: gpui_mobile::android::jni: loadClass(dev.gpui.mobile.GpuiPlatformView) failed: Java exception was thrown
