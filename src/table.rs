@@ -12,11 +12,11 @@ use xq_feed::Quote;
 use crate::gfx::{self, Align, Sink};
 use crate::theme::*;
 
-pub const ROW_H: f32 = 22.0;
+pub fn row_h() -> f32 { xq_tokens::t().layout.table_row }
 const COLS: [(&str, f32); 6] = [("代號", 58.0), ("名稱", 92.0), ("成交", 76.0), ("漲跌", 70.0), ("幅度", 64.0), ("總量", 92.0)];
 pub const STRESS_ROWS: usize = 50_000;
-const HEAD_H: f32 = 26.0;
-const COLHEAD_H: f32 = 22.0;
+fn head_h() -> f32 { xq_tokens::t().layout.table_header }
+fn colhead_h() -> f32 { xq_tokens::t().layout.table_col_header }
 
 pub struct Row {
     pub symbol: String,
@@ -57,6 +57,11 @@ pub struct QuoteTable {
 }
 
 impl QuoteTable {
+    /// 換主題／token 熱更新：清掉烤了顏色的列快取
+    pub fn tokens_changed(&mut self) {
+        self.cache = None;
+    }
+
     pub fn new(watch: &[(&str, &str)]) -> Self {
         let rows: Vec<Row> = watch
             .iter()
@@ -179,7 +184,7 @@ impl QuoteTable {
             return;
         }
         let ix = ((n - 1) as f64 * frac.clamp(0.0, 1.0)) as usize;
-        self.scroll_to = Some(ix as f32 * ROW_H);
+        self.scroll_to = Some(ix as f32 * row_h());
     }
 
     fn select(&mut self, ix: usize) -> Option<String> {
@@ -189,11 +194,11 @@ impl QuoteTable {
         self.selected = ix;
         // Nearest：在可見範圍外才捲
         let (y0, h) = self.view;
-        let top = ix as f32 * ROW_H;
+        let top = ix as f32 * row_h();
         if top < y0 {
             self.scroll_to = Some(top);
-        } else if top + ROW_H > y0 + h {
-            self.scroll_to = Some(top + ROW_H - h);
+        } else if top + row_h() > y0 + h {
+            self.scroll_to = Some(top + row_h() - h);
         }
         Some(self.rows[ix].symbol.clone())
     }
@@ -201,29 +206,29 @@ impl QuoteTable {
     /// 畫在 rect 裡；點選（滑鼠按下就選取）回傳代號
     pub fn show(&mut self, ui: &mut Ui, rect: Rect) -> Option<String> {
         let painter = ui.painter_at(rect);
-        painter.rect_filled(rect, 0.0, PANEL);
+        painter.rect_filled(rect, 0.0, panel());
         // 標頭
-        let hr = Rect::from_min_size(rect.min, vec2(rect.width(), HEAD_H));
-        painter.rect_filled(hr, 0.0, HEADER);
-        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, BORDER));
-        let f12 = egui::FontId::proportional(12.0);
-        let tw = painter.text(pos2(hr.min.x + 8.0, hr.center().y), egui::Align2::LEFT_CENTER, "報價", f12.clone(), TEXT).width();
-        painter.text(pos2(hr.min.x + 16.0 + tw, hr.center().y), egui::Align2::LEFT_CENTER, format!("{} 檔", fmt_int(self.rows.len() as i64)), f12.clone(), DIM);
-        let br = Rect::from_min_size(pos2(hr.max.x - 80.0, hr.min.y + 4.0), vec2(72.0, HEAD_H - 8.0));
+        let hr = Rect::from_min_size(rect.min, vec2(rect.width(), head_h()));
+        painter.rect_filled(hr, 0.0, header());
+        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, border()));
+        let f12 = egui::FontId::proportional(tk().font.md);
+        let tw = painter.text(pos2(hr.min.x + 8.0, hr.center().y), egui::Align2::LEFT_CENTER, "報價", f12.clone(), text()).width();
+        painter.text(pos2(hr.min.x + 16.0 + tw, hr.center().y), egui::Align2::LEFT_CENTER, format!("{} 檔", fmt_int(self.rows.len() as i64)), f12.clone(), dim());
+        let br = Rect::from_min_size(pos2(hr.max.x - 80.0, hr.min.y + 4.0), vec2(72.0, head_h() - 8.0));
         let bresp = ui.interact(br, ui.scope_id().with("stress-btn"), Sense::click());
         let on = self.stress;
-        painter.rect(br, 2.0, if bresp.hovered() { SELECTED } else { Color32::TRANSPARENT }, (1.0, if on { ACCENT } else { BORDER }), egui::StrokeKind::Inside);
-        painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { ACCENT } else { DIM });
+        painter.rect(br, 2.0, if bresp.hovered() { selected() } else { Color32::TRANSPARENT }, (1.0, if on { accent() } else { border() }), egui::StrokeKind::Inside);
+        painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { accent() } else { dim() });
         if bresp.clicked() {
             self.toggle_stress();
         }
         // 欄位標頭
-        let cr = Rect::from_min_size(pos2(rect.min.x, hr.max.y), vec2(rect.width(), COLHEAD_H));
-        painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, BORDER));
+        let cr = Rect::from_min_size(pos2(rect.min.x, hr.max.y), vec2(rect.width(), colhead_h()));
+        painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, border()));
         let mut x = cr.min.x;
         for (i, (label, w)) in COLS.iter().enumerate() {
             let (px, al) = if i >= 2 { (x + w - 4.0, egui::Align2::RIGHT_CENTER) } else { (x + 4.0, egui::Align2::LEFT_CENTER) };
-            painter.text(pos2(px, cr.center().y), al, *label, f12.clone(), DIM);
+            painter.text(pos2(px, cr.center().y), al, *label, f12.clone(), dim());
             x += w;
         }
         // 列（虛擬化）
@@ -249,13 +254,13 @@ impl QuoteTable {
         sa.show_viewport(&mut child, |ui, vp| {
             let origin = ui.max_rect().min;
             let w = ui.available_width();
-            ui.allocate_rect(Rect::from_min_size(origin, vec2(w, n as f32 * ROW_H)), Sense::hover());
+            ui.allocate_rect(Rect::from_min_size(origin, vec2(w, n as f32 * row_h())), Sense::hover());
             self.view = (vp.min.y, vp.height());
             let clip = ui.clip_rect();
-            let i0 = ((vp.min.y / ROW_H).floor().max(0.0) as usize).min(n);
-            let i1 = ((vp.max.y / ROW_H).ceil().max(0.0) as usize).min(n);
+            let i0 = ((vp.min.y / row_h()).floor().max(0.0) as usize).min(n);
+            let i1 = ((vp.max.y / row_h()).ceil().max(0.0) as usize).min(n);
             let resp = ui.interact(clip, ui.scope_id().with("rows"), Sense::click());
-            let row_at = |y: f32| ((y - origin.y) / ROW_H).floor();
+            let row_at = |y: f32| ((y - origin.y) / row_h()).floor();
             let hover = resp.hover_pos().map(|q| row_at(q.y)).filter(|r| *r >= 0.0 && (*r as usize) < n).map(|r| r as usize);
             if resp.contains_pointer() && ui.input(|i| i.pointer.primary_pressed()) {
                 if let Some(ix) = hover {
@@ -284,46 +289,46 @@ impl QuoteTable {
         let mut s = Sink::default();
         for ix in i0..i1 {
             let r = &self.rows[ix];
-            let y = oy + ix as f32 * ROW_H;
-            let ym = y + ROW_H / 2.0;
+            let y = oy + ix as f32 * row_h();
+            let ym = y + row_h() / 2.0;
             if ix == self.selected {
-                s.rect(x0, y, w, ROW_H, SELECTED);
+                s.rect(x0, y, w, row_h(), selected());
             } else if hover == Some(ix) {
-                s.rect(x0, y, w, ROW_H, HEADER);
+                s.rect(x0, y, w, row_h(), header());
             }
             let color = dir_color(r.change);
             let has = r.price > 0.0;
             let mut x = x0;
             let cells: [(String, Color32); 6] = if has {
                 [
-                    (r.symbol.clone(), TEXT),
-                    (r.name.clone(), TEXT),
+                    (r.symbol.clone(), text()),
+                    (r.name.clone(), text()),
                     (format!("{:.2}", r.price), color),
                     (fmt_change(r.change), color),
                     (format!("{:+.2}%", pct(r.price, r.change)), color),
-                    (fmt_int(r.volume), VOL),
+                    (fmt_int(r.volume), vol()),
                 ]
             } else {
                 [
-                    (r.symbol.clone(), TEXT),
-                    (r.name.clone(), TEXT),
+                    (r.symbol.clone(), text()),
+                    (r.name.clone(), text()),
                     ("--".into(), color),
                     ("--".into(), color),
                     ("--".into(), color),
-                    ("--".into(), VOL),
+                    ("--".into(), vol()),
                 ]
             };
             for (i, (txt, c)) in cells.into_iter().enumerate() {
                 let cw = COLS[i].1;
                 if i == 2 {
                     match r.tick {
-                        1 => s.rect(x, y, cw, ROW_H, Color32::from_rgba_unmultiplied(0xff, 0x4d, 0x4f, 0x22)),
-                        -1 => s.rect(x, y, cw, ROW_H, Color32::from_rgba_unmultiplied(0x22, 0xc5, 0x5e, 0x22)),
+                        1 => s.rect(x, y, cw, row_h(), tok(tk().market.up_flash)),
+                        -1 => s.rect(x, y, cw, row_h(), tok(tk().market.down_flash)),
                         _ => {}
                     }
                 }
                 if i >= 2 {
-                    s.text_at(txt, x + cw - 4.0, ym, 12.0, c, Align::Right);
+                    s.text_at(txt, x + cw - 4.0, ym, tk().font.md, c, Align::Right);
                 } else {
                     s.text_ui(txt, x + 4.0, ym, 12.0, c, Align::Left);
                 }

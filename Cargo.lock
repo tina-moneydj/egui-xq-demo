@@ -498,6 +498,7 @@ dependencies = [
  "serde_json",
  "xq-feed",
  "xq-tape",
+ "xq-tokens",
 ]
 
 [[package]]
@@ -2870,6 +2871,14 @@ version = "0.1.0"
 source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea#c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea"
 dependencies = [
  "xq-feed",
+]
+
+[[package]]
+name = "xq-tokens"
+version = "0.1.0"
+source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=dc4f0a80bf571b646480c05ebb71ddba139a0752#dc4f0a80bf571b646480c05ebb71ddba139a0752"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

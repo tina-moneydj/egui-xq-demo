@@ -36,9 +36,9 @@ use theme::*;
 
 /// egui 的 request_repaint()（delay=0）會多排一幀「讓東西穩定」；我們的狀態是自己管的，用 1µs 避開那一幀
 const ONE_US: Duration = Duration::from_micros(1);
-const TITLE_H: f32 = 26.0;
-const STATUS_H: f32 = 22.0;
-const SPLIT: f32 = 5.0;
+fn title_h() -> f32 { xq_tokens::t().layout.title_bar }
+fn status_h() -> f32 { xq_tokens::t().layout.status_bar }
+fn split() -> f32 { xq_tokens::t().layout.splitter }
 
 #[derive(Default, Clone)]
 struct Stats {
@@ -118,6 +118,10 @@ fn window_count() -> usize {
 }
 
 struct Terminal {
+    /// 上次看到的設計 token 版本（F8 換主題／熱更新後清快取）
+    tok_gen: u64,
+    /// 換主題後下一幀再清一次快取：egui 的 Visuals 深↔淺會讓字型貼圖在下一幀重建，這一幀做的 Mesh 字 UV 會錯
+    tok_rebuild: bool,
     peers: Vec<Peer>,
     debug_repaint: bool,
     /// XQ_DEBUG：印滑鼠按下（與 gpui 版 on_any_mouse_down 相同）
@@ -158,10 +162,12 @@ struct Terminal {
 impl Terminal {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         setup_fonts(&cc.egui_ctx);
-        let mut vis = egui::Visuals::dark();
-        vis.panel_fill = BG;
-        vis.window_fill = PANEL;
-        cc.egui_ctx.set_visuals(vis);
+        apply_visuals(&cc.egui_ctx);
+        // token 熱更新（XQ_TOKENS_DIR＋debug 版或 XQ_TOKENS_WATCH=1）：背景執行緒重載後叫醒 UI；release 預設不開
+        if xq_tokens::watch() {
+            let ctx = cc.egui_ctx.clone();
+            xq_tokens::on_change(move || ctx.request_repaint());
+        }
         let (sym, name) = names::WATCH[0];
         let tape_feed = std::env::var_os("XQ_TAPE").is_some_and(|v| v != "0").then(|| TapeFeed::new(sym));
         let tape = tape_feed.clone().map(|f| TickTape::new(f, sym, &cc.egui_ctx));
@@ -203,6 +209,8 @@ impl Terminal {
             })
             .collect();
         let mut t = Terminal {
+            tok_gen: xq_tokens::generation(),
+            tok_rebuild: false,
             peers,
             debug_repaint: std::env::var("XQ_DEBUG_REPAINT").is_ok_and(|v| v == "1"),
             debug: std::env::var_os("XQ_DEBUG").is_some(),
@@ -443,6 +451,28 @@ impl eframe::App for Terminal {
             }
         }
         let ctx = ui.ctx().clone();
+        if ctx.input(|i| i.key_pressed(egui::Key::F8)) {
+            let m = xq_tokens::toggle_mode();
+            eprintln!("[xq-tokens] 主題：{}", m.name());
+        }
+        let g = xq_tokens::generation();
+        let changed = g != self.tok_gen;
+        if changed {
+            self.tok_gen = g;
+            apply_visuals(&ctx);
+        }
+        if changed || std::mem::take(&mut self.tok_rebuild) {
+            self.tok_rebuild = changed;
+            self.chart.tokens_changed();
+            self.table.tokens_changed();
+            if let Some(t) = self.tape.as_mut() {
+                t.tokens_changed();
+            }
+            for p in &mut self.peers {
+                p.chart.tokens_changed();
+            }
+            ctx.request_repaint();
+        }
         if self.debug {
             ctx.input(|i| {
                 for e in &i.events {
@@ -622,31 +652,31 @@ fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
     let ctx = ui.ctx().clone();
     let full = ui.max_rect();
     let painter = ui.painter().clone();
-    painter.rect_filled(full, 0.0, BG);
-    let title = Rect::from_min_size(full.min, vec2(full.width(), TITLE_H));
-    let status = Rect::from_min_max(pos2(full.min.x, full.max.y - STATUS_H), full.max);
-    let avail = full.height() - TITLE_H - STATUS_H - SPLIT;
+    painter.rect_filled(full, 0.0, bg());
+    let title = Rect::from_min_size(full.min, vec2(full.width(), title_h()));
+    let status = Rect::from_min_max(pos2(full.min.x, full.max.y - status_h()), full.max);
+    let avail = full.height() - title_h() - status_h() - split();
     let top_h = (avail * *top_frac).floor();
     let chart_r = Rect::from_min_size(pos2(full.min.x, title.max.y), vec2(full.width(), top_h));
-    let hsplit = Rect::from_min_size(pos2(full.min.x, chart_r.max.y), vec2(full.width(), SPLIT));
+    let hsplit = Rect::from_min_size(pos2(full.min.x, chart_r.max.y), vec2(full.width(), split()));
     let bottom = Rect::from_min_max(pos2(full.min.x, hsplit.max.y), pos2(full.max.x, status.min.y));
     let lw = left_w.min(full.width() - 200.0).max(200.0);
     let table_r = Rect::from_min_size(bottom.min, vec2(lw, bottom.height()));
-    let vsplit = Rect::from_min_size(pos2(table_r.max.x, bottom.min.y), vec2(SPLIT, bottom.height()));
+    let vsplit = Rect::from_min_size(pos2(table_r.max.x, bottom.min.y), vec2(split(), bottom.height()));
     let mut info_r = Rect::from_min_max(pos2(vsplit.max.x, bottom.min.y), bottom.max);
     // 成交明細：右下多一欄（分隔線 + 276px），與 gpui 版相同
     let tape_r = tape.as_ref().map(|_| {
-        let tr = Rect::from_min_max(pos2(bottom.max.x - tick_tape::PANEL_W, bottom.min.y), bottom.max);
-        info_r.max.x = tr.min.x - SPLIT;
+        let tr = Rect::from_min_max(pos2(bottom.max.x - tick_tape::panel_w(), bottom.min.y), bottom.max);
+        info_r.max.x = tr.min.x - split();
         tr
     });
 
     // 標題列
-    painter.rect_filled(title, 0.0, HEADER);
-    painter.hline(title.x_range(), title.max.y - 0.5, (1.0, BORDER));
-    let f12 = FontId::proportional(12.0);
+    painter.rect_filled(title, 0.0, header());
+    painter.hline(title.x_range(), title.max.y - 0.5, (1.0, border()));
+    let f12 = FontId::proportional(tk().font.md);
     let mut x = title.min.x + 12.0;
-    for (s, c) in [("XQ", UP), ("風格測試 · egui 立即模式版", TEXT), ("同一個 WryFeedHost 行情（demo-ticks 為合成測試資料）", DIM)] {
+    for (s, c) in [("XQ", up()), ("風格測試 · egui 立即模式版", text()), ("同一個 WryFeedHost 行情（demo-ticks 為合成測試資料）", dim())] {
         x += painter.text(pos2(x, title.center().y), Align2::LEFT_CENTER, s, f12.clone(), c).width() + 12.0;
     }
 
@@ -667,7 +697,7 @@ fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
     }
     if hs.dragged() {
         if let Some(q) = hs.interact_pointer_pos() {
-            *top_frac = ((q.y - full.min.y - TITLE_H) / avail).clamp(0.15, 0.85);
+            *top_frac = ((q.y - full.min.y - title_h()) / avail).clamp(0.15, 0.85);
         }
     }
     if vs.dragged() {
@@ -675,8 +705,8 @@ fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
             *left_w = (q.x - full.min.x).clamp(200.0, full.width() - 200.0);
         }
     }
-    painter.rect_filled(hsplit, 0.0, if hs.hovered() || hs.dragged() { ACCENT } else { BORDER });
-    painter.rect_filled(vsplit, 0.0, if vs.hovered() || vs.dragged() { ACCENT } else { BORDER });
+    painter.rect_filled(hsplit, 0.0, if hs.hovered() || hs.dragged() { accent() } else { border() });
+    painter.rect_filled(vsplit, 0.0, if vs.hovered() || vs.dragged() { accent() } else { border() });
 
     // 報價表
     let pick = table.show(ui, table_r);
@@ -684,28 +714,28 @@ fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
     // 資訊格
     paint_info(&painter, info_r, info, stats);
     if let (Some(t), Some(tr)) = (tape, tape_r) {
-        painter.rect_filled(Rect::from_min_max(pos2(info_r.max.x, tr.min.y), pos2(tr.min.x, tr.max.y)), 0.0, BORDER);
+        painter.rect_filled(Rect::from_min_max(pos2(info_r.max.x, tr.min.y), pos2(tr.min.x, tr.max.y)), 0.0, border());
         t.show(ui, tr);
     }
 
     // 狀態列
-    painter.rect_filled(status, 0.0, HEADER);
-    painter.hline(status.x_range(), status.min.y + 0.5, (1.0, BORDER));
+    painter.rect_filled(status, 0.0, header());
+    painter.hline(status.x_range(), status.min.y + 0.5, (1.0, border()));
     let (conn_text, conn_color) = match conn {
-        Conn::Connecting => ("連線中…", DIM),
-        Conn::Up => ("已連線，等待行情", ACCENT),
-        Conn::Ready => ("行情連線", DOWN),
-        Conn::Down => ("行情中斷，重連中", UP),
+        Conn::Connecting => ("連線中…", dim()),
+        Conn::Up => ("已連線，等待行情", accent()),
+        Conn::Ready => ("行情連線", down()),
+        Conn::Down => ("行情中斷，重連中", up()),
     };
-    let f11 = FontId::proportional(11.0);
-    let m11 = FontId::monospace(11.0);
+    let f11 = FontId::proportional(tk().font.sm);
+    let m11 = FontId::monospace(tk().font.sm);
     painter.text(pos2(status.min.x + 12.0, status.center().y), Align2::LEFT_CENTER, format!("● {conn_text} {}", xq_feed::feed_addr()), f11, conn_color);
     let s = stats;
     let mut rx = status.max.x - 12.0;
     for (t, c) in [
-        (format!("封包 {}/s → 套用 {}/s", s.frames_in, s.applies), DIM),
-        (format!("RSS {:.1} MB", s.rss_mb), TEXT),
-        (format!("FPS {}", s.fps), TEXT),
+        (format!("封包 {}/s → 套用 {}/s", s.frames_in, s.applies), dim()),
+        (format!("RSS {:.1} MB", s.rss_mb), text()),
+        (format!("FPS {}", s.fps), text()),
     ] {
         rx -= painter.text(pos2(rx, status.center().y), Align2::RIGHT_CENTER, t, m11.clone(), c).width() + 16.0;
     }
@@ -714,36 +744,36 @@ fn draw(ui: &mut egui::Ui, v: View<'_>) -> (Option<Period>, Option<String>) {
 
 fn paint_info(painter: &egui::Painter, r: Rect, i: &Info, s: &Stats) {
         let painter = painter.with_clip_rect(r);
-        painter.rect_filled(r, 0.0, PANEL);
+        painter.rect_filled(r, 0.0, panel());
         let hr = Rect::from_min_size(r.min, vec2(r.width(), 26.0));
-        painter.rect_filled(hr, 0.0, HEADER);
-        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, BORDER));
-        let f12 = FontId::proportional(12.0);
-        let m12 = FontId::monospace(12.0);
-        painter.text(pos2(hr.min.x + 8.0, hr.center().y), Align2::LEFT_CENTER, "資訊", f12.clone(), TEXT);
+        painter.rect_filled(hr, 0.0, header());
+        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, border()));
+        let f12 = FontId::proportional(tk().font.md);
+        let m12 = FontId::monospace(tk().font.md);
+        painter.text(pos2(hr.min.x + 8.0, hr.center().y), Align2::LEFT_CENTER, "資訊", f12.clone(), text());
         let has = i.price > 0.0;
         let color = dir_color(i.change);
         let x0 = r.min.x + 12.0;
         let mut y = hr.max.y + 12.0;
-        painter.text(pos2(x0, y + 8.0), Align2::LEFT_CENTER, format!("{} {}", i.symbol, i.name), FontId::proportional(15.0), TEXT);
+        painter.text(pos2(x0, y + 8.0), Align2::LEFT_CENTER, format!("{} {}", i.symbol, i.name), FontId::proportional(tk().font.xl), text());
         y += 24.0;
         let kv = |y: f32, x: f32, w: f32, k: &str, v: String, c: Color32| {
-            painter.text(pos2(x, y + 10.0), Align2::LEFT_CENTER, k, f12.clone(), DIM);
+            painter.text(pos2(x, y + 10.0), Align2::LEFT_CENTER, k, f12.clone(), dim());
             painter.text(pos2(x + w, y + 10.0), Align2::RIGHT_CENTER, v, m12.clone(), c);
         };
         let rows = [
             ("成交", if has { format!("{:.2}", i.price) } else { "--".into() }, color),
             ("漲跌", if has { fmt_change(i.change) } else { "--".into() }, color),
             ("幅度", if has { format!("{:+.2}%", pct(i.price, i.change)) } else { "--".into() }, color),
-            ("昨收", if has { format!("{:.2}", i.price - i.change) } else { "--".into() }, TEXT),
-            ("總量", if has { fmt_int(i.volume) } else { "--".into() }, TEXT),
+            ("昨收", if has { format!("{:.2}", i.price - i.change) } else { "--".into() }, text()),
+            ("總量", if has { fmt_int(i.volume) } else { "--".into() }, text()),
         ];
         for (k, (a, b, c)) in rows.into_iter().enumerate() {
             kv(y + k as f32 * 20.0, x0, 220.0, a, b, c);
         }
         let x1 = x0 + 236.0;
         let y1 = hr.max.y + 12.0;
-        painter.text(pos2(x1, y1 + 8.0), Align2::LEFT_CENTER, "效能（每秒取樣）", FontId::proportional(13.0), DIM);
+        painter.text(pos2(x1, y1 + 8.0), Align2::LEFT_CENTER, "效能（每秒取樣）", FontId::proportional(tk().font.lg), dim());
         let perf = [
             ("引擎封包", format!("{}/s", s.frames_in)),
             ("報價筆數（未合併）", format!("{}/s", fmt_int(s.quote_rows_in as i64))),
@@ -752,18 +782,26 @@ fn paint_info(painter: &egui::Painter, r: Rect, i: &Info, s: &Stats) {
             ("走勢圖重建", format!("{}/s · {} µs", s.chart_paints, s.chart_paint_us_avg)),
         ];
         for (k, (a, b)) in perf.into_iter().enumerate() {
-            kv(y1 + 24.0 + k as f32 * 20.0, x1, 240.0, a, b, TEXT);
+            kv(y1 + 24.0 + k as f32 * 20.0, x1, 240.0, a, b, text());
         }
         painter.text(
             pos2(x0, y + 5.0 * 20.0 + 16.0),
             Align2::LEFT_CENTER,
             "右下網頁格：egui 版不內嵌 WebView，此格先做資訊／效能面板。",
-            FontId::proportional(11.0),
-            DIM,
+            FontId::proportional(tk().font.sm),
+            dim(),
         );
 }
 
 /// 中文字型：直接 mmap 系統的 Noto Sans CJK（.ttc 一份檔案兩個字面：TC＝index 3、Mono TC＝index 8），不複製進記憶體
+/// egui 內建元件（彈出選單、捲軸…）的底色也跟 token 走
+fn apply_visuals(ctx: &egui::Context) {
+    let mut vis = if xq_tokens::mode() == xq_tokens::Mode::Light { egui::Visuals::light() } else { egui::Visuals::dark() };
+    vis.panel_fill = bg();
+    vis.window_fill = panel();
+    ctx.set_visuals(vis);
+}
+
 fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
     let path = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc".into());
