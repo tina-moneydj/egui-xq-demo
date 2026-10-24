@@ -1,4 +1,4 @@
-# Windows 預先編譯版：egui-xq-demo.exe，並組成完整的 Windows 壓測包（本 repo 私人；release 只有有權限的人看得到）
+# Windows 預先編譯版：egui-xq-demo.exe，並組成完整的 Windows 壓測包（本 repo 公開；release 不用登入就能下載）
 # 完整包 = gpui-xq-demo 公開 release windows-bench-latest 的 xq-bench-windows-gpui.zip（工具包＋GPUI＋行情產生器）＋ 這裡編的 egui-xq-demo.exe
 name: windows
 
@@ -60,7 +60,7 @@ jobs:
         with:
           name: xq-bench-windows
           path: dist/*
-      - name: Publish windows-bench-latest pre-release（私人）
+      - name: Publish windows-bench-latest pre-release
         if: github.ref == 'refs/heads/windows-bench-ci'
         shell: pwsh
         env:
@@ -70,4 +70,4 @@ jobs:
           $global:LASTEXITCODE = 0
           gh release create windows-bench-latest dist/xq-bench-windows.zip dist/egui-xq-demo.exe --prerelease --target $env:GITHUB_SHA `
             --title "Windows 壓測包完整版（GPUI＋egui，windows-bench-ci $($env:GITHUB_SHA.Substring(0,7))）" `
-            --notes "下載 xq-bench-windows.zip → 解壓 → 雙擊 run-bench.cmd → 把結果 zip 傳回來。私人 repo，需登入 GitHub 才能下載。說明：gpui-xq-demo 的 bench/windows/README.md"
+            --notes "下載 xq-bench-windows.zip → 解壓 → 雙擊 run-bench.cmd → 把結果 zip 傳回來。說明：gpui-xq-demo 的 bench/windows/README.md"
