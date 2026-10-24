@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		10C6F9A6824B94B4C3B6AE17 /* NotoSansTC-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 475098E30DB317CB46A7A867 /* NotoSansTC-Regular.otf */; };
+		300491A89E350E8A4B15FEDF /* NotoSansTC-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 23FBFE0D8C59496B2A0F5D78 /* NotoSansTC-OFL.txt */; };
 		7D603156698F6664C03EDF43 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1B5490B39C17EAA271364B1 /* Assets.xcassets */; };
 		CA458E43A5CBBC6B7B5974EC /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 454ADE89879964F69FCC9BBF /* App.swift */; };
 		D57C5AB4AE146B649F58E7E2 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C398444F2F22820A940A97BC /* LaunchScreen.storyboard */; };
@@ -14,13 +16,15 @@
 
 /* Begin PBXFileReference section */
 		17ADB4F8F5D6D2D9E63C43B7 /* XQEGUI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = XQEGUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		23FBFE0D8C59496B2A0F5D78 /* NotoSansTC-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NotoSansTC-OFL.txt"; sourceTree = "<group>"; };
 		454ADE89879964F69FCC9BBF /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+		475098E30DB317CB46A7A867 /* NotoSansTC-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "NotoSansTC-Regular.otf"; sourceTree = "<group>"; };
 		5CD8A647C4BA128ED13103EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		72843BF38877C3F6F450B2E8 /* Bridging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Bridging.h; sourceTree = "<group>"; };
 		A1B5490B39C17EAA271364B1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A9EEE665E4BA9B3F2DA94896 /* build-rust.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "build-rust.sh"; sourceTree = "<group>"; };
 		C398444F2F22820A940A97BC /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		"TEMP_466B8DBA-ADA6-4F72-82F7-E85A4959C4B3" /* XQ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XQ.xcconfig; sourceTree = "<group>"; };
+		"TEMP_C19A8C85-B06D-4DCE-8D1D-CB67DD2991E2" /* XQ.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = XQ.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -32,6 +36,7 @@
 				72843BF38877C3F6F450B2E8 /* Bridging.h */,
 				5CD8A647C4BA128ED13103EF /* Info.plist */,
 				C398444F2F22820A940A97BC /* LaunchScreen.storyboard */,
+				BCD6DE369858374CB227EC43 /* Fonts */,
 			);
 			path = XQ;
 			sourceTree = "<group>";
@@ -45,6 +50,15 @@
 			);
 			sourceTree = "<group>";
 		};
+		BCD6DE369858374CB227EC43 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				23FBFE0D8C59496B2A0F5D78 /* NotoSansTC-OFL.txt */,
+				475098E30DB317CB46A7A867 /* NotoSansTC-Regular.otf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
 		FFAC5FD0DE88EBAA26D738EF /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -53,10 +67,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		"TEMP_F2C22266-B344-4930-886E-BD362345E33B" /* ios */ = {
+		"TEMP_05C37F9A-4900-4330-B533-F26AB9449195" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_466B8DBA-ADA6-4F72-82F7-E85A4959C4B3" /* XQ.xcconfig */,
+				"TEMP_C19A8C85-B06D-4DCE-8D1D-CB67DD2991E2" /* XQ.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -124,6 +138,8 @@
 			files = (
 				7D603156698F6664C03EDF43 /* Assets.xcassets in Resources */,
 				D57C5AB4AE146B649F58E7E2 /* LaunchScreen.storyboard in Resources */,
+				300491A89E350E8A4B15FEDF /* NotoSansTC-OFL.txt in Resources */,
+				10C6F9A6824B94B4C3B6AE17 /* NotoSansTC-Regular.otf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -165,7 +181,7 @@
 /* Begin XCBuildConfiguration section */
 		32C1FC2A77C5E527C3CFCF70 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_466B8DBA-ADA6-4F72-82F7-E85A4959C4B3" /* XQ.xcconfig */;
+			baseConfigurationReference = "TEMP_C19A8C85-B06D-4DCE-8D1D-CB67DD2991E2" /* XQ.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -274,7 +290,7 @@
 		};
 		C2B2C6C23160C2D8BD59F5BB /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_466B8DBA-ADA6-4F72-82F7-E85A4959C4B3" /* XQ.xcconfig */;
+			baseConfigurationReference = "TEMP_C19A8C85-B06D-4DCE-8D1D-CB67DD2991E2" /* XQ.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
