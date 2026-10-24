@@ -499,7 +499,7 @@ pub fn emit_handles(s: &mut Sink, hs: &[P]) {
 impl PaintCache {
     /// 由幾何快取建出一段（idxs = 由下到上的畫線索引）的圖元：只處理可見畫線
     pub fn build(ctx: &egui::Context, list: &[Drawing], gc: &GeomCache, xf: &Xf, idxs: &[u32]) -> PaintCache {
-        let t0 = std::time::Instant::now();
+        let t0 = crate::plat::Instant::now();
         let mut main = Sink::default();
         let mut tags = Sink::default();
         let ext = xf.plot_r - xf.plot_l;

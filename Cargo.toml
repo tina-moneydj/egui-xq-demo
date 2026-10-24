@@ -13,13 +13,24 @@ xq-feed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac536
 xq-tape = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
 # 共用設計 token（W3C DTCG JSON → 型別化 Theme），與 GPUI 版讀同一份
 xq-tokens = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "dc4f0a80bf571b646480c05ebb71ddba139a0752" }
-# 兩種 renderer 都編進去，執行時用 XQ_RENDERER=glow|wgpu 選（預設見 README）
-eframe = { version = "0.37", default-features = false, features = ["glow", "wgpu", "x11", "default_fonts"] }
 egui = "0.37"
 parking_lot = "0.12"
-memmap2 = "0.9"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# 兩種 renderer 都編進去，執行時用 XQ_RENDERER=glow|wgpu 選（預設見 README）
+eframe = { version = "0.37", default-features = false, features = ["glow", "wgpu", "x11", "default_fonts"] }
+memmap2 = "0.9"
+
+# 網頁版（wasm32-unknown-unknown）：WebGL2（glow）；行情走 WebSocket（xq-ws-bridge），解碼仍是 xq-feed
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "default_fonts"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-time = "1"
+web-sys = { version = "0.3", features = ["Window", "Document", "Location", "UrlSearchParams", "Performance", "console", "HtmlCanvasElement", "WebSocket", "MessageEvent", "BinaryType"] }
 
 [profile.release]
 strip = true

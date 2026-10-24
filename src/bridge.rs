@@ -7,9 +7,9 @@
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::mpsc::Sender;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use parking_lot::Mutex;
 use xq_feed::{Bar, Event, Msg, Quote, Stamp, Subscribe};
@@ -52,7 +52,7 @@ pub struct FeedBridge {
     last_apply: Arc<AtomicU64>,
     epoch: Instant,
     pub counters: Arc<Counters>,
-    cmd: Sender<Subscribe>,
+    cmd: crate::plat::FeedTx,
     last_sub: Option<Subscribe>,
 }
 
@@ -64,13 +64,12 @@ impl FeedBridge {
         let last_apply = Arc::new(AtomicU64::new(0));
         let epoch = Instant::now();
         let counters = Arc::new(Counters { frames: AtomicU64::new(0), quote_rows: AtomicU64::new(0) });
-        let (cmd_tx, cmd_rx) = std::sync::mpsc::channel();
-        {
+        let cmd_tx = {
             let inbox = inbox.clone();
             let pending = pending.clone();
             let counters = counters.clone();
             let last_apply = last_apply.clone();
-            xq_feed::spawn_client(xq_feed::feed_addr(), cmd_rx, move |ev| {
+            crate::plat::spawn_feed(move |ev| {
                 merge(&inbox, &counters, tape.as_ref(), ev);
                 if !pending.swap(true, Ordering::AcqRel) {
                     let now = epoch.elapsed().as_micros() as u64;
@@ -78,8 +77,8 @@ impl FeedBridge {
                     // 注意：egui 的 delay=0 會排「兩次」重畫（outstanding=1），所以下限 1µs，一包只畫一幀
                     ctx.request_repaint_after(Duration::from_micros(due.saturating_sub(now).max(1)));
                 }
-            });
-        }
+            })
+        };
         FeedBridge { inbox, pending, last_apply, epoch, counters, cmd: cmd_tx, last_sub: None }
     }
 
@@ -106,7 +105,7 @@ impl FeedBridge {
             return;
         }
         self.last_sub = Some(sub.clone());
-        let _ = self.cmd.send(sub);
+        self.cmd.send(sub);
     }
 }
 
