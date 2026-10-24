@@ -51,7 +51,12 @@ impl Host {
         }))
         .map_err(|e| format!("request_adapter: {e}"))?;
         eprintln!("[egui-ios] adapter: {:?}", adapter.get_info().name);
-        let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor { label: Some("xq-egui"), ..Default::default() })).map_err(|e| format!("request_device: {e}"))?;
+        let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+            label: Some("xq-egui"),
+            // 用這張顯示卡實際的上限（模擬器 GPU 有些上限比 wgpu 預設值還低）
+            required_limits: adapter.limits(),
+            ..Default::default()
+        })).map_err(|e| format!("request_device: {e}"))?;
         let mut config = surface.get_default_config(&adapter, w.max(1), h.max(1)).ok_or("surface 不支援這張顯示卡")?;
         let caps = surface.get_capabilities(&adapter);
         // egui 的著色器輸出的是 gamma 空間顏色：選非 sRGB 格式，顏色才跟桌面版一樣
