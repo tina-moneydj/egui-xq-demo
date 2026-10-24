@@ -1,0 +1,27 @@
+==== stress 2026-10-24T23:25:44
+   0.014 [egui] renderer=Glow
+   0.107 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.108 [xq-feed] 已連上 127.0.0.1:47631
+   0.149 BENCH first-frame
+   0.185 BENCH first-quote
+   1.462 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.486 GROUPPERF|{"phase":"tick-end","elapsedMs":30024,"fps":53.5,"paints":1557,"avgPaintMs":0.367,"avgCellsPerPaint":72,"cellUpdates":112104}
+  41.495 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":53.5,"scrollFps":88.4,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":88.4,"paints":876,"avgPaintMs":0.135,"avgCellsPerPaint":71,"cellUpdates":62910}
+==== stress 2026-10-24T23:50:33
+   0.014 [egui] renderer=Glow
+   0.113 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.113 [xq-feed] 已連上 127.0.0.1:47631
+   0.153 BENCH first-frame
+   0.191 BENCH first-quote
+   1.479 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.507 GROUPPERF|{"phase":"tick-end","elapsedMs":30028,"fps":54.0,"paints":1564,"avgPaintMs":0.362,"avgCellsPerPaint":72,"cellUpdates":112608}
+  41.511 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":54.0,"scrollFps":82.9,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":82.9,"paints":809,"avgPaintMs":0.340,"avgCellsPerPaint":71,"cellUpdates":58026}
+==== stress 2026-10-25T00:15:21
+   0.016 [egui] renderer=Glow
+   0.119 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.119 [xq-feed] 已連上 127.0.0.1:47631
+   0.157 BENCH first-frame
+   0.194 BENCH first-quote
+   1.474 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.488 GROUPPERF|{"phase":"tick-end","elapsedMs":30013,"fps":53.4,"paints":1554,"avgPaintMs":0.367,"avgCellsPerPaint":72,"cellUpdates":111888}
+  41.500 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":53.5,"scrollFps":85.4,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":85.4,"paints":842,"avgPaintMs":0.236,"avgCellsPerPaint":71,"cellUpdates":60402}

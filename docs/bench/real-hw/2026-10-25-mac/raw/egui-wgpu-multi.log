@@ -1,0 +1,36 @@
+==== multi-egui-wgpu-1w 2026-10-24T23:23:15
+   0.010 [egui] renderer=Wgpu
+   0.103 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.104 [xq-feed] 已連上 127.0.0.1:47631
+   0.142 BENCH first-frame
+   0.142 BENCH first-quote
+==== multi-egui-wgpu-4w 2026-10-24T23:23:57
+   0.010 [egui] renderer=Wgpu
+   0.099 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.100 [xq-feed] 已連上 127.0.0.1:47631
+   0.160 BENCH first-frame
+   0.160 BENCH first-quote
+==== multi-egui-wgpu-1w 2026-10-24T23:48:03
+   0.011 [egui] renderer=Wgpu
+   0.099 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.099 [xq-feed] 已連上 127.0.0.1:47631
+   0.135 BENCH first-frame
+   0.135 BENCH first-quote
+==== multi-egui-wgpu-4w 2026-10-24T23:48:46
+   0.010 [egui] renderer=Wgpu
+   0.107 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.108 [xq-feed] 已連上 127.0.0.1:47631
+   0.173 BENCH first-frame
+   0.173 BENCH first-quote
+==== multi-egui-wgpu-1w 2026-10-25T00:12:51
+   0.013 [egui] renderer=Wgpu
+   0.115 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.115 [xq-feed] 已連上 127.0.0.1:47631
+   0.156 BENCH first-frame
+   0.156 BENCH first-quote
+==== multi-egui-wgpu-4w 2026-10-25T00:13:34
+   0.015 [egui] renderer=Wgpu
+   0.113 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.114 [xq-feed] 已連上 127.0.0.1:47631
+   0.172 BENCH first-frame
+   0.172 BENCH first-quote
