@@ -240,7 +240,7 @@ impl Sink {
 /// 成交明細可見列每幀都重建（gpui 版是關掉 `.cached()` 的 view 快取，每幀重新 render／paint）。量快取省了多少用。
 pub fn no_view_cache() -> bool {
     static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *V.get_or_init(|| std::env::var_os("XQ_NO_VIEW_CACHE").is_some())
+    *V.get_or_init(|| crate::plat::var_os("XQ_NO_VIEW_CACHE").is_some())
 }
 
 /// XQ_LAYER_MODE=split（與 gpui 版同名）：走勢圖三層（底圖／畫線／即時）各畫在自己的 egui 子圖層
@@ -248,7 +248,7 @@ pub fn no_view_cache() -> bool {
 /// egui 每個圖層×裁切區各一批 draw call，所以 split 會多幾批，但不像 gpui 那樣多清 MSAA 中介貼圖。
 pub fn split_layers() -> bool {
     static V: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *V.get_or_init(|| std::env::var("XQ_LAYER_MODE").as_deref() == Ok("split"))
+    *V.get_or_init(|| crate::plat::var("XQ_LAYER_MODE").as_deref() == Ok("split"))
 }
 
 pub fn tessellator(ctx: &Context) -> Tessellator {

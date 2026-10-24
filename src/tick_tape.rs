@@ -15,7 +15,8 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use crate::plat::Instant;
 
 use egui::epaint::{Mesh, Shape};
 use egui::{pos2, vec2, Align2, Color32, FontId, Key, Rect, Sense, Ui};
@@ -32,13 +33,13 @@ pub const TAPE_CAP: usize = 5000;
 /// 背景佇列容量：UI 一幀內最多收幾筆；超過擠掉最舊的並計數
 pub const PENDING_CAP: usize = 4096;
 /// 面板寬（與 GPUI 版 `w(px(276.))` 相同）
-pub const PANEL_W: f32 = 276.0;
-const ROW_H: f32 = 20.0;
-const HEAD_H: f32 = 26.0;
-const COLS_H: f32 = 20.0;
-const FOOT_H: f32 = 18.0;
+pub fn panel_w() -> f32 { xq_tokens::t().layout.tape_width }
+fn row_h() -> f32 { xq_tokens::t().layout.tape_row }
+fn head_h() -> f32 { xq_tokens::t().layout.table_header }
+fn cols_h() -> f32 { xq_tokens::t().layout.tape_col_header }
+fn foot_h() -> f32 { xq_tokens::t().layout.tape_footer }
 const COLS: [(&str, f32); 4] = [("時間", 96.0), ("成交", 72.0), ("單量", 64.0), ("", 28.0)];
-const BIG_FG: Color32 = rgb(0xf0c674);
+fn big_fg() -> Color32 { rgb(tk().market.volume) }
 
 // ───────────────── 【模式 A】背景執行緒 → UI ─────────────────
 
@@ -57,7 +58,7 @@ impl TapeFeed {
 
     /// **在行情執行緒上**被 `bridge::merge` 呼叫（合併前、每包一次）：O(1)／筆、不配置、不碰 UI。
     pub fn on_quotes(&self, quotes: &[Quote]) {
-        let now = xq_feed::unix_us() / 1000;
+        let now = crate::plat::unix_us() / 1000;
         let mut s = self.0.lock();
         let TapeShared { core, pending } = &mut *s;
         for q in quotes {
@@ -104,7 +105,7 @@ impl TapeSettings {
 }
 
 fn settings_path() -> Option<PathBuf> {
-    if let Some(p) = std::env::var_os("XQ_TAPE_STATE") {
+    if let Some(p) = crate::plat::var_os("XQ_TAPE_STATE") {
         return Some(PathBuf::from(p));
     }
     let base = crate::data_dir()?;
@@ -162,10 +163,15 @@ pub struct TickTape {
 }
 
 impl TickTape {
+    /// 換主題／token 熱更新：清掉烤了顏色的列快取
+    pub fn tokens_changed(&mut self) {
+        self.cache = None;
+    }
+
     pub fn new(feed: TapeFeed, symbol: &str, ctx: &egui::Context) -> Self {
         let persist = !["XQ_BENCH", "XQ_TICK_BENCH", "XQ_CHART_STRESS", "XQ_GROUP_STRESS"]
             .iter()
-            .any(|k| std::env::var_os(k).is_some_and(|v| v != "0"));
+            .any(|k| crate::plat::var_os(k).is_some_and(|v| v != "0"));
         let loaded = persist.then(|| {
             let slot = Arc::new(Mutex::new(None));
             let (s2, ctx) = (slot.clone(), ctx.clone());
@@ -268,8 +274,8 @@ impl TickTape {
 
     /// 可見列範圍（純函式，好測）：位移 `offset`、可見高度 `h`、共 `n` 列
     pub fn visible_range(offset: f32, h: f32, n: usize) -> std::ops::Range<usize> {
-        let i0 = ((offset / ROW_H).floor().max(0.0) as usize).min(n);
-        let i1 = (((offset + h) / ROW_H).ceil().max(0.0) as usize).min(n);
+        let i0 = ((offset / row_h()).floor().max(0.0) as usize).min(n);
+        let i1 = (((offset + h) / row_h()).ceil().max(0.0) as usize).min(n);
         i0..i1
     }
 
@@ -325,43 +331,43 @@ impl TickTape {
         }
 
         let painter = ui.painter_at(r);
-        painter.rect_filled(r, 0.0, PANEL);
-        let f12 = FontId::proportional(12.0);
+        painter.rect_filled(r, 0.0, panel());
+        let f12 = FontId::proportional(tk().font.md);
         // 標頭
-        let hr = Rect::from_min_size(r.min, vec2(r.width(), HEAD_H));
-        painter.rect_filled(hr, 0.0, HEADER);
-        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, BORDER));
+        let hr = Rect::from_min_size(r.min, vec2(r.width(), head_h()));
+        painter.rect_filled(hr, 0.0, header());
+        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, border()));
         let count = self.rows().len();
         let mut x = hr.min.x + 8.0;
-        for (s, c) in [("成交明細".to_string(), TEXT), (self.symbol.clone(), DIM), (format!("{} 筆", fmt_int(count as i64)), DIM)] {
+        for (s, c) in [("成交明細".to_string(), text()), (self.symbol.clone(), dim()), (format!("{} 筆", fmt_int(count as i64)), dim())] {
             x += painter.text(pos2(x, hr.center().y), Align2::LEFT_CENTER, s, f12.clone(), c).width() + 8.0;
         }
         let label = format!("大單 ≥ {}", fmt_int(self.settings.big_qty));
-        let lw = ctx.fonts_mut(|f| f.layout_no_wrap(label.clone(), f12.clone(), TEXT).size().x);
+        let lw = ctx.fonts_mut(|f| f.layout_no_wrap(label.clone(), f12.clone(), text()).size().x);
         let br = Rect::from_min_max(pos2(hr.max.x - 8.0 - lw - 16.0, hr.min.y + 4.0), pos2(hr.max.x - 8.0, hr.max.y - 4.0));
         let bresp = ui.interact(br, ui.scope_id().with("tape-big"), Sense::click());
         let on = self.settings.big_only;
-        painter.rect(br, 2.0, if bresp.hovered() { SELECTED } else { Color32::TRANSPARENT }, (1.0, if on { ACCENT } else { BORDER }), egui::StrokeKind::Inside);
-        painter.text(br.center(), Align2::CENTER_CENTER, label, f12.clone(), if on { ACCENT } else { DIM });
+        painter.rect(br, 2.0, if bresp.hovered() { selected() } else { Color32::TRANSPARENT }, (1.0, if on { accent() } else { border() }), egui::StrokeKind::Inside);
+        painter.text(br.center(), Align2::CENTER_CENTER, label, f12.clone(), if on { accent() } else { dim() });
         if bresp.clicked() {
             self.focused = true;
             self.toggle_big_only();
         }
         // 欄名
-        let cr = Rect::from_min_size(pos2(r.min.x, hr.max.y), vec2(r.width(), COLS_H));
-        painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, BORDER));
+        let cr = Rect::from_min_size(pos2(r.min.x, hr.max.y), vec2(r.width(), cols_h()));
+        painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, border()));
         let mut cx = cr.min.x;
         for (i, (l, w)) in COLS.iter().enumerate() {
             if i == 0 {
-                painter.text(pos2(cx + 4.0, cr.center().y), Align2::LEFT_CENTER, *l, f12.clone(), DIM);
+                painter.text(pos2(cx + 4.0, cr.center().y), Align2::LEFT_CENTER, *l, f12.clone(), dim());
             } else {
-                painter.text(pos2(cx + w - 4.0, cr.center().y), Align2::RIGHT_CENTER, *l, f12.clone(), DIM);
+                painter.text(pos2(cx + w - 4.0, cr.center().y), Align2::RIGHT_CENTER, *l, f12.clone(), dim());
             }
             cx += w;
         }
         // 列表（虛擬化）【模式 C】
-        let body = Rect::from_min_max(pos2(r.min.x, cr.max.y), pos2(r.max.x, r.max.y - FOOT_H));
-        let max_off = (count as f32 * ROW_H - body.height()).max(0.0);
+        let body = Rect::from_min_max(pos2(r.min.x, cr.max.y), pos2(r.max.x, r.max.y - foot_h()));
+        let max_off = (count as f32 * row_h() - body.height()).max(0.0);
         if resp.hovered() || resp.contains_pointer() {
             let dy = ui.input(|i| i.smooth_scroll_delta().y);
             if dy != 0.0 {
@@ -381,10 +387,10 @@ impl TickTape {
             pos2(fr.min.x + 8.0, fr.center().y),
             Align2::LEFT_CENTER,
             if self.focused { "b 只看大單 · [ ] 門檻 · Home 回最新" } else { "點一下面板啟用快捷鍵" },
-            FontId::proportional(10.0),
-            DIM,
+            FontId::proportional(tk().font.xs),
+            dim(),
         );
-        painter.rect_stroke(r.shrink(0.5), 0.0, (1.0, if self.focused { ACCENT } else { BORDER }), egui::StrokeKind::Inside);
+        painter.rect_stroke(r.shrink(0.5), 0.0, (1.0, if self.focused { accent() } else { border() }), egui::StrokeKind::Inside);
     }
 
     fn build_rows(&self, ctx: &egui::Context, body: Rect) -> Mesh {
@@ -394,25 +400,25 @@ impl TickTape {
         for ix in range {
             let Some(t) = rows.newest(ix) else { continue };
             let row = format_row(&t, self.utc_offset_sec);
-            let y = body.min.y + ix as f32 * ROW_H - self.offset;
-            let ym = y + ROW_H / 2.0;
+            let y = body.min.y + ix as f32 * row_h() - self.offset;
+            let ym = y + row_h() / 2.0;
             let big = t.qty >= self.settings.big_qty;
             if big {
-                s.rect(body.min.x, y, body.width(), ROW_H, Color32::from_rgba_unmultiplied(0xf0, 0xc6, 0x74, 0x18));
+                s.rect(body.min.x, y, body.width(), row_h(), tok(tk().market.big_trade_bg));
             }
             let color = match row.color {
-                "up" => UP,
-                "down" => DOWN,
-                _ => FLAT,
+                "up" => up(),
+                "down" => down(),
+                _ => flat(),
             };
             let mut x = body.min.x;
-            s.text_at(row.time, x + 4.0, ym, 12.0, DIM, Align::Left);
+            s.text_at(row.time, x + 4.0, ym, tk().font.md, dim(), Align::Left);
             x += COLS[0].1;
-            s.text_at(row.price, x + COLS[1].1 - 4.0, ym, 12.0, color, Align::Right);
+            s.text_at(row.price, x + COLS[1].1 - 4.0, ym, tk().font.md, color, Align::Right);
             x += COLS[1].1;
-            s.text_at(row.qty, x + COLS[2].1 - 4.0, ym, 12.0, if big { BIG_FG } else { TEXT }, Align::Right);
+            s.text_at(row.qty, x + COLS[2].1 - 4.0, ym, tk().font.md, if big { big_fg() } else { text() }, Align::Right);
             x += COLS[2].1;
-            s.text_at(row.side, x + COLS[3].1 - 4.0, ym, 12.0, color, Align::Right);
+            s.text_at(row.side, x + COLS[3].1 - 4.0, ym, tk().font.md, color, Align::Right);
         }
         s.finish(ctx)
     }

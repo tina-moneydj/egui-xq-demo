@@ -12,11 +12,11 @@ use xq_feed::Quote;
 use crate::gfx::{self, Align, Sink};
 use crate::theme::*;
 
-pub const ROW_H: f32 = 22.0;
+pub fn row_h() -> f32 { xq_tokens::t().layout.table_row }
 const COLS: [(&str, f32); 6] = [("代號", 58.0), ("名稱", 92.0), ("成交", 76.0), ("漲跌", 70.0), ("幅度", 64.0), ("總量", 92.0)];
 pub const STRESS_ROWS: usize = 50_000;
-const HEAD_H: f32 = 26.0;
-const COLHEAD_H: f32 = 22.0;
+fn head_h() -> f32 { xq_tokens::t().layout.table_header }
+fn colhead_h() -> f32 { xq_tokens::t().layout.table_col_header }
 
 pub struct Row {
     pub symbol: String,
@@ -54,9 +54,23 @@ pub struct QuoteTable {
     pub paints: u64,
     pub paint_us: u64,
     pub cells: u64,
+    /// 股名／代號搜尋（IME 測試）
+    query: String,
+    last_query: String,
+    matches: Vec<usize>,
+    match_sel: usize,
+    /// IME 組字中（收到非空 Preedit、還沒 Commit）：組字中不搜尋
+    composing: bool,
+    /// 自動化測試用：XQ_IME_LOG=1 時把 IME 事件印到 stderr
+    ime_log: bool,
 }
 
 impl QuoteTable {
+    /// 換主題／token 熱更新：清掉烤了顏色的列快取
+    pub fn tokens_changed(&mut self) {
+        self.cache = None;
+    }
+
     pub fn new(watch: &[(&str, &str)]) -> Self {
         let rows: Vec<Row> = watch
             .iter()
@@ -76,6 +90,12 @@ impl QuoteTable {
             paints: 0,
             paint_us: 0,
             cells: 0,
+            query: String::new(),
+            last_query: String::new(),
+            matches: Vec::new(),
+            match_sel: 0,
+            composing: false,
+            ime_log: crate::plat::var("XQ_IME_LOG").is_ok_and(|v| v == "1"),
         }
     }
 
@@ -179,7 +199,109 @@ impl QuoteTable {
             return;
         }
         let ix = ((n - 1) as f64 * frac.clamp(0.0, 1.0)) as usize;
-        self.scroll_to = Some(ix as f32 * ROW_H);
+        self.scroll_to = Some(ix as f32 * row_h());
+    }
+
+    fn show_search(&mut self, ui: &mut Ui, sr: Rect) -> Option<String> {
+        let id = ui.scope_id().with("quote-search");
+        // 先看這一幀的 IME 事件，決定是否在組字中
+        let log = self.ime_log;
+        ui.input(|i| {
+            for e in &i.events {
+                if let egui::Event::Ime(ime) = e {
+                    if log {
+                        eprintln!("[ime] {ime:?}");
+                    }
+                    match ime {
+                        egui::ImeEvent::Preedit { text: t, .. } => self.composing = !t.is_empty(),
+                        egui::ImeEvent::Commit(_) => self.composing = false,
+                        _ => {}
+                    }
+                }
+            }
+        });
+        let te = egui::TextEdit::singleline(&mut self.query)
+            .id(id)
+            .hint_text("股名／代號 搜尋")
+            .font(egui::FontId::proportional(12.0))
+            .text_color(text())
+            .background_color(bg())
+            .margin(egui::vec2(4.0, 1.0));
+        let resp = ui.put(sr, te);
+        if log && resp.changed() {
+            eprintln!("[search] text={:?} composing={}", self.query, self.composing);
+        }
+        if !self.composing && self.query != self.last_query {
+            self.last_query = self.query.clone();
+            self.matches = find_matches(self.rows.iter().enumerate().map(|(i, r)| (i, r.symbol.as_str(), r.name.as_str())), &self.query, 8);
+            self.match_sel = 0;
+            if log {
+                eprintln!("[search] query={:?} matches={:?}", self.query, self.matches.iter().map(|&i| &self.rows[i].symbol).collect::<Vec<_>>());
+            }
+        }
+        let focused = resp.has_focus();
+        let (down, up, enter, esc) = ui.input(|i| {
+            (i.key_pressed(egui::Key::ArrowDown), i.key_pressed(egui::Key::ArrowUp), i.key_pressed(egui::Key::Enter), i.key_pressed(egui::Key::Escape))
+        });
+        let mut pick = None;
+        if focused || resp.lost_focus() {
+            let n = self.matches.len();
+            if n > 0 && down {
+                self.match_sel = (self.match_sel + 1) % n;
+            }
+            if n > 0 && up {
+                self.match_sel = (self.match_sel + n - 1) % n;
+            }
+            if enter && !self.composing {
+                pick = self.matches.get(self.match_sel).copied();
+            }
+            if esc {
+                self.query.clear();
+            }
+        }
+        // 建議清單（浮在最上層）
+        if !self.matches.is_empty() && !self.query.is_empty() {
+            let area = egui::Area::new(id.with("list")).fixed_pos(pos2(sr.min.x, sr.max.y + 2.0)).order(egui::Order::Foreground);
+            area.show(ui.ctx(), |ui| {
+                egui::Frame::popup(ui.style()).fill(header()).stroke((1.0, accent())).inner_margin(2.0).show(ui, |ui| {
+                    ui.set_width(220.0);
+                    for (k, &ix) in self.matches.iter().enumerate() {
+                        let r = &self.rows[ix];
+                        let text = egui::RichText::new(format!("{:<8} {}", r.symbol, r.name)).font(egui::FontId::monospace(12.0)).color(text());
+                        if ui.add(egui::Button::selectable(k == self.match_sel, text).min_size(egui::vec2(216.0, 18.0))).clicked() {
+                            pick = Some(ix);
+                        }
+                    }
+                });
+            });
+        }
+        let ix = pick?;
+        self.query.clear();
+        self.last_query.clear();
+        self.matches.clear();
+        self.select(ix)
+    }
+
+    /// 搜尋框：代號開頭或名稱包含（不分大小寫），最多 max 筆，回傳（代號, 名稱）
+    pub fn search(&self, q: &str, max: usize) -> Vec<(String, String)> {
+        let q = q.trim();
+        if q.is_empty() {
+            return Vec::new();
+        }
+        let ql = q.to_lowercase();
+        self.rows
+            .iter()
+            .filter(|r| r.symbol.to_lowercase().starts_with(&ql) || r.name.contains(q))
+            .take(max)
+            .map(|r| (r.symbol.clone(), r.name.clone()))
+            .collect()
+    }
+
+    /// 直接選某個代號（搜尋結果點選用）
+    pub fn select_symbol(&mut self, symbol: &str) -> Option<String> {
+        let ix = *self.index.get(symbol)?;
+        self.gen += 1;
+        self.select(ix)
     }
 
     fn select(&mut self, ix: usize) -> Option<String> {
@@ -189,11 +311,11 @@ impl QuoteTable {
         self.selected = ix;
         // Nearest：在可見範圍外才捲
         let (y0, h) = self.view;
-        let top = ix as f32 * ROW_H;
+        let top = ix as f32 * row_h();
         if top < y0 {
             self.scroll_to = Some(top);
-        } else if top + ROW_H > y0 + h {
-            self.scroll_to = Some(top + ROW_H - h);
+        } else if top + row_h() > y0 + h {
+            self.scroll_to = Some(top + row_h() - h);
         }
         Some(self.rows[ix].symbol.clone())
     }
@@ -201,29 +323,36 @@ impl QuoteTable {
     /// 畫在 rect 裡；點選（滑鼠按下就選取）回傳代號
     pub fn show(&mut self, ui: &mut Ui, rect: Rect) -> Option<String> {
         let painter = ui.painter_at(rect);
-        painter.rect_filled(rect, 0.0, PANEL);
+        painter.rect_filled(rect, 0.0, panel());
         // 標頭
-        let hr = Rect::from_min_size(rect.min, vec2(rect.width(), HEAD_H));
-        painter.rect_filled(hr, 0.0, HEADER);
-        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, BORDER));
-        let f12 = egui::FontId::proportional(12.0);
-        let tw = painter.text(pos2(hr.min.x + 8.0, hr.center().y), egui::Align2::LEFT_CENTER, "報價", f12.clone(), TEXT).width();
-        painter.text(pos2(hr.min.x + 16.0 + tw, hr.center().y), egui::Align2::LEFT_CENTER, format!("{} 檔", fmt_int(self.rows.len() as i64)), f12.clone(), DIM);
-        let br = Rect::from_min_size(pos2(hr.max.x - 80.0, hr.min.y + 4.0), vec2(72.0, HEAD_H - 8.0));
+        let hr = Rect::from_min_size(rect.min, vec2(rect.width(), head_h()));
+        painter.rect_filled(hr, 0.0, header());
+        painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, border()));
+        let f12 = egui::FontId::proportional(tk().font.md);
+        let tw = painter.text(pos2(hr.min.x + 8.0, hr.center().y), egui::Align2::LEFT_CENTER, "報價", f12.clone(), text()).width();
+        painter.text(pos2(hr.min.x + 16.0 + tw, hr.center().y), egui::Align2::LEFT_CENTER, format!("{} 檔", fmt_int(self.rows.len() as i64)), f12.clone(), dim());
+        let br = Rect::from_min_size(pos2(hr.max.x - 80.0, hr.min.y + 4.0), vec2(72.0, head_h() - 8.0));
         let bresp = ui.interact(br, ui.scope_id().with("stress-btn"), Sense::click());
         let on = self.stress;
-        painter.rect(br, 2.0, if bresp.hovered() { SELECTED } else { Color32::TRANSPARENT }, (1.0, if on { ACCENT } else { BORDER }), egui::StrokeKind::Inside);
-        painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { ACCENT } else { DIM });
+        painter.rect(br, 2.0, if bresp.hovered() { selected() } else { Color32::TRANSPARENT }, (1.0, if on { accent() } else { border() }), egui::StrokeKind::Inside);
+        painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { accent() } else { dim() });
         if bresp.clicked() {
             self.toggle_stress();
         }
+        // 搜尋框（egui 內建 TextEdit；IME 由 egui-winit 處理）
+        let sx = hr.min.x + 24.0 + tw + 60.0;
+        let sr = Rect::from_min_max(pos2(sx, hr.min.y + 3.0), pos2((sx + 150.0).min(br.min.x - 8.0), hr.max.y - 3.0));
+        let mut search_pick = None;
+        if sr.width() > 40.0 && crate::plat::search_enabled() {
+            search_pick = self.show_search(ui, sr);
+        }
         // 欄位標頭
-        let cr = Rect::from_min_size(pos2(rect.min.x, hr.max.y), vec2(rect.width(), COLHEAD_H));
-        painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, BORDER));
+        let cr = Rect::from_min_size(pos2(rect.min.x, hr.max.y), vec2(rect.width(), colhead_h()));
+        painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, border()));
         let mut x = cr.min.x;
         for (i, (label, w)) in COLS.iter().enumerate() {
             let (px, al) = if i >= 2 { (x + w - 4.0, egui::Align2::RIGHT_CENTER) } else { (x + 4.0, egui::Align2::LEFT_CENTER) };
-            painter.text(pos2(px, cr.center().y), al, *label, f12.clone(), DIM);
+            painter.text(pos2(px, cr.center().y), al, *label, f12.clone(), dim());
             x += w;
         }
         // 列（虛擬化）
@@ -244,20 +373,32 @@ impl QuoteTable {
         let mut child = ui.new_child(egui::UiBuilder::new().max_rect(body));
         // 關掉慣性／橡皮筋：預設的 physics.step 每幀都會 request_repaint()（實測跳價中約 60% 的幀是它叫的），
         // 看盤表格只要滾輪＋捲軸
-        child.spacing_mut().scroll.kinetic =
-            egui::style::KineticScrollStyle { decay_time: 0.0, stop_distance: 0.5, rubber_band: false };
+        // 手機版（android）：手指拖曳＋放開後慣性滑動（fling）要保留，用 egui 預設的慣性設定
+        #[cfg(not(target_os = "android"))]
+        {
+            child.spacing_mut().scroll.kinetic =
+                egui::style::KineticScrollStyle { decay_time: 0.0, stop_distance: 0.5, rubber_band: false };
+        }
         sa.show_viewport(&mut child, |ui, vp| {
             let origin = ui.max_rect().min;
             let w = ui.available_width();
-            ui.allocate_rect(Rect::from_min_size(origin, vec2(w, n as f32 * ROW_H)), Sense::hover());
+            ui.allocate_rect(Rect::from_min_size(origin, vec2(w, n as f32 * row_h())), Sense::hover());
             self.view = (vp.min.y, vp.height());
             let clip = ui.clip_rect();
-            let i0 = ((vp.min.y / ROW_H).floor().max(0.0) as usize).min(n);
-            let i1 = ((vp.max.y / ROW_H).ceil().max(0.0) as usize).min(n);
+            let i0 = ((vp.min.y / row_h()).floor().max(0.0) as usize).min(n);
+            let i1 = ((vp.max.y / row_h()).ceil().max(0.0) as usize).min(n);
             let resp = ui.interact(clip, ui.scope_id().with("rows"), Sense::click());
-            let row_at = |y: f32| ((y - origin.y) / ROW_H).floor();
+            let row_at = |y: f32| ((y - origin.y) / row_h()).floor();
+            #[cfg_attr(target_os = "android", allow(unused_variables))]
             let hover = resp.hover_pos().map(|q| row_at(q.y)).filter(|r| *r >= 0.0 && (*r as usize) < n).map(|r| r as usize);
-            if resp.contains_pointer() && ui.input(|i| i.pointer.primary_pressed()) {
+            // 桌面：滑鼠按下就選取；手機：按下可能是要捲動，放開且沒拖動（tap）才選取
+            #[cfg(not(target_os = "android"))]
+            let pick_now = resp.contains_pointer() && ui.input(|i| i.pointer.primary_pressed());
+            #[cfg(target_os = "android")]
+            let pick_now = resp.clicked();
+            #[cfg(target_os = "android")]
+            let hover = resp.interact_pointer_pos().filter(|_| pick_now).map(|q| row_at(q.y)).filter(|r| *r >= 0.0 && (*r as usize) < n).map(|r| r as usize);
+            if pick_now {
                 if let Some(ix) = hover {
                     picked = self.select(ix);
                     self.gen += 1;
@@ -265,7 +406,7 @@ impl QuoteTable {
             }
             let key = Key { clip, origin_y: origin.y, i0, i1, gen: self.gen, selected: self.selected, hover, font: gfx::font_key(&ctx) };
             if gfx::no_view_cache() || !matches!(&self.cache, Some((k, _)) if *k == key) {
-                let t0 = std::time::Instant::now();
+                let t0 = crate::plat::Instant::now();
                 let mesh = self.build_rows(&ctx, origin.x, origin.y, w, i0, i1, hover);
                 if i1 > i0 {
                     self.paints += 1;
@@ -276,7 +417,7 @@ impl QuoteTable {
             }
             ui.painter().add(Shape::Mesh(self.cache.as_ref().unwrap().1.clone()));
         });
-        picked
+        picked.or(search_pick)
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -284,46 +425,46 @@ impl QuoteTable {
         let mut s = Sink::default();
         for ix in i0..i1 {
             let r = &self.rows[ix];
-            let y = oy + ix as f32 * ROW_H;
-            let ym = y + ROW_H / 2.0;
+            let y = oy + ix as f32 * row_h();
+            let ym = y + row_h() / 2.0;
             if ix == self.selected {
-                s.rect(x0, y, w, ROW_H, SELECTED);
+                s.rect(x0, y, w, row_h(), selected());
             } else if hover == Some(ix) {
-                s.rect(x0, y, w, ROW_H, HEADER);
+                s.rect(x0, y, w, row_h(), header());
             }
             let color = dir_color(r.change);
             let has = r.price > 0.0;
             let mut x = x0;
             let cells: [(String, Color32); 6] = if has {
                 [
-                    (r.symbol.clone(), TEXT),
-                    (r.name.clone(), TEXT),
+                    (r.symbol.clone(), text()),
+                    (r.name.clone(), text()),
                     (format!("{:.2}", r.price), color),
                     (fmt_change(r.change), color),
                     (format!("{:+.2}%", pct(r.price, r.change)), color),
-                    (fmt_int(r.volume), VOL),
+                    (fmt_int(r.volume), vol()),
                 ]
             } else {
                 [
-                    (r.symbol.clone(), TEXT),
-                    (r.name.clone(), TEXT),
+                    (r.symbol.clone(), text()),
+                    (r.name.clone(), text()),
                     ("--".into(), color),
                     ("--".into(), color),
                     ("--".into(), color),
-                    ("--".into(), VOL),
+                    ("--".into(), vol()),
                 ]
             };
             for (i, (txt, c)) in cells.into_iter().enumerate() {
                 let cw = COLS[i].1;
                 if i == 2 {
                     match r.tick {
-                        1 => s.rect(x, y, cw, ROW_H, Color32::from_rgba_unmultiplied(0xff, 0x4d, 0x4f, 0x22)),
-                        -1 => s.rect(x, y, cw, ROW_H, Color32::from_rgba_unmultiplied(0x22, 0xc5, 0x5e, 0x22)),
+                        1 => s.rect(x, y, cw, row_h(), tok(tk().market.up_flash)),
+                        -1 => s.rect(x, y, cw, row_h(), tok(tk().market.down_flash)),
                         _ => {}
                     }
                 }
                 if i >= 2 {
-                    s.text_at(txt, x + cw - 4.0, ym, 12.0, c, Align::Right);
+                    s.text_at(txt, x + cw - 4.0, ym, tk().font.md, c, Align::Right);
                 } else {
                     s.text_ui(txt, x + 4.0, ym, 12.0, c, Align::Left);
                 }
@@ -332,4 +473,28 @@ impl QuoteTable {
         }
         s.finish(ctx)
     }
+}
+
+/// 搜尋比對（與 gpui 版相同）：代號前綴（不分大小寫）或名稱包含；完全相符的排前面。最多 `limit` 筆。
+pub fn find_matches<'a>(rows: impl Iterator<Item = (usize, &'a str, &'a str)>, q: &str, limit: usize) -> Vec<usize> {
+    let q = q.trim();
+    if q.is_empty() {
+        return Vec::new();
+    }
+    let qu = q.to_ascii_uppercase();
+    let mut exact = Vec::new();
+    let mut out = Vec::new();
+    for (i, sym, name) in rows {
+        if sym.eq_ignore_ascii_case(q) || name == q {
+            exact.push(i);
+        } else if (sym.to_ascii_uppercase().starts_with(&qu) || name.contains(q)) && out.len() < limit {
+            out.push(i);
+        }
+        if exact.len() >= limit {
+            break;
+        }
+    }
+    exact.extend(out);
+    exact.truncate(limit);
+    exact
 }

@@ -492,13 +492,19 @@ version = "0.1.0"
 dependencies = [
  "eframe",
  "egui",
+ "js-sys",
  "memmap2",
  "parking_lot",
  "serde",
  "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "web-time",
  "windows-sys 0.59.0",
  "xq-feed",
  "xq-tape",
+ "xq-tokens",
 ]
 
 [[package]]
@@ -2871,6 +2877,14 @@ version = "0.1.0"
 source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea#c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea"
 dependencies = [
  "xq-feed",
+]
+
+[[package]]
+name = "xq-tokens"
+version = "0.1.0"
+source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=dc4f0a80bf571b646480c05ebb71ddba139a0752#dc4f0a80bf571b646480c05ebb71ddba139a0752"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]
