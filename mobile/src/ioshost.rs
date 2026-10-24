@@ -275,37 +275,68 @@ pub unsafe extern "C" fn xq_egui_wake(h: *mut Host) {
 
 // ───────────── 字型：PingFang TC／Menlo，mmap 系統字型檔，不複製進記憶體 ─────────────
 
-/// 用 CoreText 問系統字型檔的路徑，mmap 整個檔案，再用 ttf-parser 找出 .ttc 裡 PostScript 名稱相符的那一個字面
-fn system_font(ps_name: &str) -> Result<egui::FontData, String> {
+/// 用 CoreText 問系統字型檔的路徑，mmap 整個檔案，再用 ttf-parser 找出 .ttc 裡 PostScript 名稱相符的那一個字面。
+/// 還會檢查 `probe` 這個字真的有外框（iOS 26 的 PingFangUI.ttc 用 egui 畫不出來的格式，要換別的字型）。
+fn system_font(ps_name: &str, probe: char) -> Result<egui::FontData, String> {
     let font = core_text::font::new_from_name(ps_name, 16.0).map_err(|_| format!("CoreText 找不到 {ps_name}"))?;
     let path = font.copy_descriptor().font_path().ok_or_else(|| format!("{ps_name} 沒有檔案路徑"))?;
     let file = std::fs::File::open(&path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mm = unsafe { memmap2::Mmap::map(&file) }.map_err(|e| format!("mmap {}: {e}", path.display()))?;
     let n = ttf_parser::fonts_in_collection(&mm).unwrap_or(1);
-    let index = (0..n)
-        .find(|&i| {
-            ttf_parser::Face::parse(&mm, i).ok().is_some_and(|f| {
-                f.names().into_iter().any(|nm| nm.name_id == ttf_parser::name_id::POST_SCRIPT_NAME && nm.to_string().is_some_and(|s| s == ps_name))
-            })
-        })
-        .unwrap_or(0);
-    eprintln!("[fonts] {ps_name} ← mmap {}（{:.1} MB 檔案，第 {index} 個字面；只有用到的頁面會進記憶體）", path.display(), mm.len() as f64 / 1048576.0);
+    let ps_of = |i: u32| {
+        ttf_parser::Face::parse(&mm, i).ok().and_then(|f| f.names().into_iter().find(|nm| nm.name_id == ttf_parser::name_id::POST_SCRIPT_NAME).and_then(|nm| nm.to_string()))
+    };
+    let found = (0..n).find(|&i| ps_of(i).as_deref() == Some(ps_name));
+    let index = found.unwrap_or(0);
+    let file_name = path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
+    let face = ttf_parser::Face::parse(&mm, index).map_err(|e| format!("{file_name} 解析失敗：{e}"))?;
+    struct Nop;
+    impl ttf_parser::OutlineBuilder for Nop {
+        fn move_to(&mut self, _: f32, _: f32) {}
+        fn line_to(&mut self, _: f32, _: f32) {}
+        fn quad_to(&mut self, _: f32, _: f32, _: f32, _: f32) {}
+        fn curve_to(&mut self, _: f32, _: f32, _: f32, _: f32, _: f32, _: f32) {}
+        fn close(&mut self) {}
+    }
+    let outline = face.glyph_index(probe).and_then(|g| face.outline_glyph(g, &mut Nop)).is_some();
+    let tables = face.raw_face().table_records.into_iter().map(|t| String::from_utf8_lossy(&t.tag.to_bytes()).into_owned()).collect::<Vec<_>>().join(",");
+    eprintln!(
+        "[fonts] {ps_name} ← {file_name}（{:.1} MB，{n} 個字面，用第 {index} 個{}；「{probe}」有外框：{outline}；tables={tables}）",
+        mm.len() as f64 / 1048576.0,
+        if found.is_some() { "" } else { "＝名稱沒對到" }
+    );
+    if !outline {
+        return Err(format!("{ps_name}（{file_name}）的「{probe}」沒有 egui 畫得出來的外框"));
+    }
     let blob: egui::epaint::text::Blob = Arc::new(mm);
     Ok(egui::FontData::from_blob(blob, index))
 }
 
 pub fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
-    let ui = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "PingFangTC-Regular".into());
-    match system_font(&ui) {
-        Ok(fd) => {
-            defs.font_data.insert("pingfang".into(), Arc::new(fd));
-            defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "pingfang".into());
-            defs.families.entry(egui::FontFamily::Monospace).or_default().push("pingfang".into());
-        }
-        Err(e) => eprintln!("[fonts] {e}（中文會變方塊）"),
+    // 依序試：蘋方 → 冬青黑體 → 華文黑體（都是 iPhone 內建、有繁中字）；只 mmap，不複製進記憶體
+    let mut names: Vec<String> = ["PingFangTC-Regular", "HiraginoSans-W3", "STHeitiTC-Light", "STHeitiSC-Light"].iter().map(|s| s.to_string()).collect();
+    if let Ok(v) = std::env::var("XQ_CJK_FONT") {
+        names.insert(0, v);
     }
-    match system_font("Menlo-Regular") {
+    let mut ok = false;
+    for name in &names {
+        match system_font(name, '中') {
+            Ok(fd) => {
+                eprintln!("[fonts] 中文字型用 {name}");
+                defs.font_data.insert("cjk".into(), Arc::new(fd));
+                defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "cjk".into());
+                defs.families.entry(egui::FontFamily::Monospace).or_default().push("cjk".into());
+                ok = true;
+                break;
+            }
+            Err(e) => eprintln!("[fonts] {e}"),
+        }
+    }
+    if !ok {
+        eprintln!("[fonts] 找不到能用的中文字型（中文會變方塊）");
+    }
+    match system_font("Menlo-Regular", '0') {
         Ok(fd) => {
             defs.font_data.insert("menlo".into(), Arc::new(fd));
             defs.families.entry(egui::FontFamily::Monospace).or_default().insert(0, "menlo".into());
