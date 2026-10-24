@@ -1,17 +1,24 @@
-//! XQ 風格看盤 demo 手機版（Android，egui／eframe，NativeActivity）。
+//! XQ 風格看盤 demo 手機版（Android＋iOS，egui）。Android：eframe／NativeActivity；iOS：ioshost.rs（egui-wgpu 畫在 Swift 的 CAMetalLayer 上）。
 //!
 //! 行情、報價表、走勢圖、指標、畫線、圖層、壓測程式碼全部直接用桌面版 `../src/*.rs`（#[path]），
 //! 只有版面換成手機單一畫面：上＝狀態列＋搜尋框，中間＝報價表（5 萬列虛擬化、手指 fling）或走勢圖（點一列進入），
 //! 下＝封包／套用計數。觸控：走勢圖單指平移、長按十字線、雙指縮放（chart.rs 的 handle_touch）。
-//! 設定：`adb shell setprop debug.xq.e0 KEY=VAL`（見 droid.rs），桌面版的 XQ_* 壓測開關原樣可用。
-#![cfg(target_os = "android")]
+//! 設定：Android `adb shell setprop debug.xq.e0 KEY=VAL`（見 droid.rs）；iOS 用 Xcode Scheme 的環境變數（見 ios.rs）。
+//! 桌面版的 XQ_* 壓測開關原樣可用。
+#![cfg(any(target_os = "android", target_os = "ios"))]
 #![allow(dead_code)]
 
 #[path = "../../src/bridge.rs"]
 mod bridge;
 #[path = "../../src/chart.rs"]
 mod chart;
+#[cfg(target_os = "android")]
 mod droid;
+#[cfg(target_os = "ios")]
+mod ios;
+#[cfg(target_os = "ios")]
+mod ioshost;
+mod mstats;
 #[path = "../../src/drawings.rs"]
 mod drawings;
 #[path = "../../src/gfx.rs"]
@@ -42,7 +49,6 @@ mod tickbench;
 #[path = "../../src/zstress.rs"]
 mod zstress;
 
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use egui::{pos2, vec2, Align2, FontId, Rect, Sense};
@@ -108,8 +114,8 @@ struct MobileApp {
     last_sample: Instant,
     stats: Stats,
     metrics_log: bool,
-    flog: droid::FrameLog,
-    ind: droid::IndDelta,
+    flog: mstats::FrameLog,
+    ind: mstats::IndDelta,
     bench: bool,
     bench_frame: u8,
     bench_quote: u8,
@@ -122,22 +128,25 @@ struct MobileApp {
 }
 
 impl MobileApp {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        setup_fonts(&cc.egui_ctx);
+    fn new(ctx: &egui::Context) -> Self {
+        #[cfg(target_os = "android")]
+        setup_fonts(ctx);
+        #[cfg(target_os = "ios")]
+        ioshost::setup_fonts(ctx);
         let mut vis = egui::Visuals::dark();
         vis.panel_fill = bg();
         vis.window_fill = panel();
         vis.extreme_bg_color = panel();
-        cc.egui_ctx.set_visuals(vis);
+        ctx.set_visuals(vis);
         let (sym, name) = names::WATCH[0];
-        let bridge = FeedBridge::start(cc.egui_ctx.clone(), None);
+        let bridge = FeedBridge::start(ctx.clone(), None);
         let mut table = QuoteTable::new(names::WATCH);
         let period = std::env::var("XQ_PERIOD").ok().and_then(|v| Period::from_code(&v)).unwrap_or(Period::Intraday);
         #[allow(unused_mut)]
         let mut chart = ChartView::new(sym, name, period);
-        if droid::ind_bench_reps() > 0 {
-            let (b, v) = chart.m.ind_microbench(droid::ind_bench_reps());
-            droid::ind_bench_report(b, v);
+        if mstats::ind_bench_reps() > 0 {
+            let (b, v) = chart.m.ind_microbench(mstats::ind_bench_reps());
+            mstats::ind_bench_report(b, v);
         }
         let tick = xq_feed::tick_bench_enabled().then(tickbench::TickBench::default);
         if tick.is_some() {
@@ -172,8 +181,8 @@ impl MobileApp {
             last_sample: Instant::now(),
             stats: Stats::default(),
             metrics_log: std::env::var_os("XQ_METRICS").is_some(),
-            flog: droid::FrameLog::default(),
-            ind: droid::IndDelta::default(),
+            flog: mstats::FrameLog::default(),
+            ind: mstats::IndDelta::default(),
             bench: std::env::var_os("XQ_BENCH").is_some_and(|v| v != "0"),
             bench_frame: 0,
             bench_quote: 0,
@@ -458,8 +467,16 @@ impl MobileApp {
     }
 }
 
+#[cfg(target_os = "android")]
 impl eframe::App for MobileApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        self.frame_ui(ui);
+    }
+}
+
+impl MobileApp {
+    /// 每一幀（Android 的 eframe、iOS 的 ioshost 都呼叫這個）
+    fn frame_ui(&mut self, ui: &mut egui::Ui) {
         let ctx = ui.ctx().clone();
         let now = Instant::now();
         self.frames += 1;
@@ -533,14 +550,15 @@ impl eframe::App for MobileApp {
 
 /// 中文字型：mmap Android 系統的 Noto Sans CJK（/system/fonts/NotoSansCJK-Regular.ttc，index 3 = TC），不複製進記憶體。
 /// Android 沒有 Mono CJK，等寬字也用同一個字面（數字仍是等寬：Noto CJK 的數字是 tabular）。
+#[cfg(target_os = "android")]
 fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
     let path = std::env::var("XQ_CJK_FONT").unwrap_or_else(|_| "/system/fonts/NotoSansCJK-Regular.ttc".into());
     let index = std::env::var("XQ_CJK_INDEX").ok().and_then(|v| v.parse().ok()).unwrap_or(3);
     match std::fs::File::open(&path).and_then(|f| unsafe { memmap2::Mmap::map(&f) }) {
         Ok(mm) => {
-            let blob: egui::epaint::text::Blob = Arc::new(mm);
-            defs.font_data.insert("noto-tc".into(), Arc::new(egui::FontData::from_blob(blob, index)));
+            let blob: egui::epaint::text::Blob = std::sync::Arc::new(mm);
+            defs.font_data.insert("noto-tc".into(), std::sync::Arc::new(egui::FontData::from_blob(blob, index)));
             defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "noto-tc".into());
             defs.families.entry(egui::FontFamily::Monospace).or_default().push("noto-tc".into());
         }
@@ -549,6 +567,19 @@ fn setup_fonts(ctx: &egui::Context) {
     ctx.set_fonts(defs);
 }
 
+#[cfg(target_os = "ios")]
+pub fn rss_mb() -> f64 {
+    ios::rss_mb()
+}
+
+/// iOS 啟動：panic 印到主控台、環境變數、app 內建合成行情
+#[cfg(target_os = "ios")]
+fn ios_start() {
+    std::panic::set_hook(Box::new(|p| eprintln!("[xq] panic: {p}")));
+    ios::init();
+}
+
+#[cfg(target_os = "android")]
 pub fn rss_mb() -> f64 {
     std::fs::read_to_string("/proc/self/status")
         .ok()
@@ -557,6 +588,7 @@ pub fn rss_mb() -> f64 {
         .unwrap_or(0.0)
 }
 
+#[cfg(target_os = "android")]
 #[no_mangle]
 fn android_main(app: winit::platform::android::activity::AndroidApp) {
     droid::init(app.internal_data_path());
@@ -566,7 +598,7 @@ fn android_main(app: winit::platform::android::activity::AndroidApp) {
     let renderer = eframe::Renderer::Glow;
     eprintln!("[egui] android_main renderer={renderer:?}");
     let opts = eframe::NativeOptions { android_app: Some(app), renderer, ..Default::default() };
-    if let Err(e) = eframe::run_native("XQ egui", opts, Box::new(|cc| Ok(Box::new(MobileApp::new(cc))))) {
+    if let Err(e) = eframe::run_native("XQ egui", opts, Box::new(|cc| Ok(Box::new(MobileApp::new(&cc.egui_ctx))))) {
         eprintln!("[egui] run_native error: {e}");
     }
 }
