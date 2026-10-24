@@ -284,9 +284,15 @@ fn system_font(ps_name: &str, probe: char) -> Result<egui::FontData, String> {
     let mm = unsafe { memmap2::Mmap::map(&file) }.map_err(|e| format!("mmap {}: {e}", path.display()))?;
     let n = ttf_parser::fonts_in_collection(&mm).unwrap_or(1);
     let ps_of = |i: u32| {
-        ttf_parser::Face::parse(&mm, i).ok().and_then(|f| f.names().into_iter().find(|nm| nm.name_id == ttf_parser::name_id::POST_SCRIPT_NAME).and_then(|nm| nm.to_string()))
+        // Apple 的字型常只有 Mac 平台（MacRoman）名稱，ttf-parser 的 to_string() 讀不了，所以也比對原始位元組
+        let utf16: Vec<u8> = ps_name.encode_utf16().flat_map(|u| u.to_be_bytes()).collect();
+        ttf_parser::Face::parse(&mm, i).ok().is_some_and(|f| {
+            f.names().into_iter().any(|nm| {
+                nm.name_id == ttf_parser::name_id::POST_SCRIPT_NAME && (nm.name == ps_name.as_bytes() || nm.name == utf16.as_slice() || nm.to_string().as_deref() == Some(ps_name))
+            })
+        })
     };
-    let found = (0..n).find(|&i| ps_of(i).as_deref() == Some(ps_name));
+    let found = (0..n).find(|&i| ps_of(i));
     let index = found.unwrap_or(0);
     let file_name = path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
     let face = ttf_parser::Face::parse(&mm, index).map_err(|e| format!("{file_name} 解析失敗：{e}"))?;
@@ -314,27 +320,30 @@ fn system_font(ps_name: &str, probe: char) -> Result<egui::FontData, String> {
 
 pub fn setup_fonts(ctx: &egui::Context) {
     let mut defs = egui::FontDefinitions::default();
-    // 依序試：蘋方 → 冬青黑體 → 華文黑體（都是 iPhone 內建、有繁中字）；只 mmap，不複製進記憶體
-    let mut names: Vec<String> = ["PingFangTC-Regular", "HiraginoSans-W3", "STHeitiTC-Light", "STHeitiSC-Light"].iter().map(|s| s.to_string()).collect();
+    // 依序試：蘋方 → 華文黑體（繁）→ 冬青黑體 → 華文黑體（簡）（都是 iPhone 內建、有繁中字）；只 mmap，不複製進記憶體
+    let mut names: Vec<String> = ["PingFangTC-Regular", "STHeitiTC-Light", "HiraginoSans-W3", "STHeitiSC-Light"].iter().map(|s| s.to_string()).collect();
     if let Ok(v) = std::env::var("XQ_CJK_FONT") {
         names.insert(0, v);
     }
-    let mut ok = false;
+    // 全部能用的都載入（都只是 mmap）：第一個缺字時 egui 會往下一個找（例：冬青黑體沒有「檔」，華文黑體有）
+    let mut used = Vec::new();
     for name in &names {
         match system_font(name, '中') {
             Ok(fd) => {
-                eprintln!("[fonts] 中文字型用 {name}");
-                defs.font_data.insert("cjk".into(), Arc::new(fd));
-                defs.families.entry(egui::FontFamily::Proportional).or_default().insert(0, "cjk".into());
-                defs.families.entry(egui::FontFamily::Monospace).or_default().push("cjk".into());
-                ok = true;
-                break;
+                let key = format!("cjk-{name}");
+                defs.font_data.insert(key.clone(), Arc::new(fd));
+                let k = used.len();
+                defs.families.entry(egui::FontFamily::Proportional).or_default().insert(k, key.clone());
+                defs.families.entry(egui::FontFamily::Monospace).or_default().push(key);
+                used.push(name.clone());
             }
             Err(e) => eprintln!("[fonts] {e}"),
         }
     }
-    if !ok {
+    if used.is_empty() {
         eprintln!("[fonts] 找不到能用的中文字型（中文會變方塊）");
+    } else {
+        eprintln!("[fonts] 中文字型（依序）：{used:?}");
     }
     match system_font("Menlo-Regular", '0') {
         Ok(fd) => {
