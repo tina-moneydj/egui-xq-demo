@@ -1,7 +1,7 @@
 # macOS 預先編譯版：egui-xq-demo（Apple Silicon arm64、ad-hoc 簽章），並組成完整的 Mac 壓測包。
-# 本 repo 是私人的：release 只有有權限的人（登入 GitHub）看得到。
+# 本 repo 是公開的：release 不用登入 GitHub 就能下載。
 # 完整包 = gpui-xq-demo 公開 release mac-bench-latest 的 xq-bench-mac-gpui.zip（工具包＋GPUI＋行情產生器）＋ 這裡編的 egui 執行檔。
-# 為了省私人 repo 的 macOS 分鐘數（10 倍計費），預設只編 arm64；Intel Mac 要測請手動執行並勾 universal。
+# 為了省 macOS 建置時間，預設只編 arm64；Intel Mac 要測請手動執行並勾 universal。
 name: macos
 on:
   push:
@@ -74,7 +74,7 @@ jobs:
         with: { name: smoke-mac-egui, path: smoke, if-no-files-found: ignore, retention-days: 14 }
       - uses: actions/upload-artifact@v4
         with: { name: xq-bench-mac, path: "*.zip", retention-days: 30 }
-      - name: Publish mac-bench-latest pre-release（私人）
+      - name: Publish mac-bench-latest pre-release
         if: github.ref == 'refs/heads/mac-bench'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -82,4 +82,4 @@ jobs:
           gh release delete mac-bench-latest --cleanup-tag -y 2>/dev/null || true
           gh release create mac-bench-latest xq-bench-mac.zip egui-xq-demo-macos.zip --prerelease --target "$GITHUB_SHA" \
             --title "Mac 壓測包完整版（GPUI＋egui，mac-bench ${GITHUB_SHA::7}）" \
-            --notes "下載 xq-bench-mac.zip → 解壓 → 終端機執行 xattr -dr com.apple.quarantine 解壓出的資料夾 → ./run-bench.command → 把結果 zip 傳回來。egui 執行檔：${EGUI_TARGETS}。私人 repo，需登入 GitHub 才能下載。"
+            --notes "下載 xq-bench-mac.zip → 解壓 → 終端機執行 xattr -dr com.apple.quarantine 解壓出的資料夾 → ./run-bench.command → 把結果 zip 傳回來。egui 執行檔：${EGUI_TARGETS}。"

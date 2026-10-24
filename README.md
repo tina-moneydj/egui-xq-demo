@@ -575,7 +575,7 @@ glow 記憶體少約 30 MB、FPS 大多較高，所以**預設 glow**，三方�
 
 ## 效能比較（wry vs GPUI vs egui）
 
-本 repo 是 egui／eframe 立即模式版（glow 後端）；對照組是 [GPUI 原生繪圖版](https://github.com/tina-moneydj/gpui-xq-demo) 和 [tao + wry（WebView）版](https://github.com/tina-moneydj/wry-xq-demo)（這兩個 repo 是公開的，本 repo 是私人的）。三版接同一個行情來源、顯示同樣內容。
+本 repo 是 egui／eframe 立即模式版（glow 後端）；對照組是 [GPUI 原生繪圖版](https://github.com/tina-moneydj/gpui-xq-demo) 和 [tao + wry（WebView）版](https://github.com/tina-moneydj/wry-xq-demo)（三個 repo 都是公開的）。三版接同一個行情來源、顯示同樣內容。
 
 > **測試機**：Linux（Debian 13）、8 核、**沒有顯示卡**——畫面全靠 CPU 模擬繪圖（wry＝WebKit＋llvmpipe、GPUI＝Vulkan lavapipe、egui＝OpenGL llvmpipe）。
 > 三版都是 release build、視窗 1200×720，**2026-10-21 22:42–23:55（台北時間）同一時段輪流跑、每項 3 次取中位數**；多視窗 4K 情境 10-22 00:16–00:29。
