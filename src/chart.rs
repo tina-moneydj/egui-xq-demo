@@ -1063,7 +1063,7 @@ impl ChartView {
 
     /// 手機觸控：單指拖曳＝平移（或拖畫線）；按住不動 400ms＝十字線（之後手指移動只移十字線）；
     /// 雙指＝縮放（與滾輪同一個 Model::wheel，每 15% 一階）；放開手指十字線消失（觸控沒有 hover）。
-    #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "android", target_os = "ios"))]
     fn handle_touch(&mut self, ui: &mut Ui, stage: Rect, menu: Option<Rect>) {
         const LONG: Duration = Duration::from_millis(400);
         let _ = ui.interact(stage, ui.scope_id().with("chart-stage"), Sense::click_and_drag());
@@ -1137,13 +1137,13 @@ impl ChartView {
     }
 
     fn handle_input(&mut self, ui: &mut Ui, stage: Rect, menu: Option<Rect>) {
-        #[cfg(target_os = "android")]
+        #[cfg(any(target_os = "android", target_os = "ios"))]
         self.handle_touch(ui, stage, menu);
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         self.handle_mouse(ui, stage, menu);
     }
 
-    #[cfg_attr(target_os = "android", allow(dead_code))]
+    #[cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code))]
     fn handle_mouse(&mut self, ui: &mut Ui, stage: Rect, menu: Option<Rect>) {
         let resp = ui.interact(stage, ui.scope_id().with("chart-stage"), Sense::click_and_drag());
         let (pressed, released, latest, scroll, events) = ui.input(|i| {

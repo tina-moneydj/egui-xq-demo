@@ -3,10 +3,11 @@ name = "xq-mobile-egui"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "XQ 風格看盤 demo 手機版（Android，egui/eframe）：與桌面版共用 ../src 的行情、報價表、走勢圖、畫線程式碼"
+description = "XQ 風格看盤 demo 手機版（Android＝eframe、iOS＝egui-wgpu＋Swift UIScene 外殼）：與桌面版共用 ../src 的行情、報價表、走勢圖、畫線程式碼"
 
 [lib]
 name = "xq_mobile_egui"
+# Android 用 cdylib；iOS 由 ios/build-rust.sh 用 `cargo rustc --crate-type staticlib` 另外編成 .a
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
@@ -30,7 +31,16 @@ wgpu = ["eframe/wgpu"]
 eframe = { version = "0.37", default-features = false, features = ["glow", "android-native-activity", "default_fonts"] }
 winit = { version = "0.30", default-features = false, features = ["android-native-activity"] }
 
-[target.'cfg(not(target_os = "android"))'.dependencies]
+[target.'cfg(target_os = "ios")'.dependencies]
+egui-wgpu = { version = "0.37", default-features = false }
+wgpu = { version = "30", default-features = false, features = ["metal", "wgsl", "std"] }
+pollster = "0.4"
+core-text = "21"
+ttf-parser = "0.25"
+# app 內建合成行情（手機上沒有電腦的行情服務）；跟 GPUI 手機版同一份
+xq-demofeed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "f6bfab52d9078f0bf7f5a4835df04fffa5319060" }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 eframe = { version = "0.37", default-features = false, features = ["glow", "x11", "default_fonts"] }
 
 [profile.release]

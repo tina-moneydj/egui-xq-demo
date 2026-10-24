@@ -374,7 +374,7 @@ impl QuoteTable {
         // 關掉慣性／橡皮筋：預設的 physics.step 每幀都會 request_repaint()（實測跳價中約 60% 的幀是它叫的），
         // 看盤表格只要滾輪＋捲軸
         // 手機版（android）：手指拖曳＋放開後慣性滑動（fling）要保留，用 egui 預設的慣性設定
-        #[cfg(not(target_os = "android"))]
+        #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
             child.spacing_mut().scroll.kinetic =
                 egui::style::KineticScrollStyle { decay_time: 0.0, stop_distance: 0.5, rubber_band: false };
@@ -389,14 +389,14 @@ impl QuoteTable {
             let i1 = ((vp.max.y / row_h()).ceil().max(0.0) as usize).min(n);
             let resp = ui.interact(clip, ui.scope_id().with("rows"), Sense::click());
             let row_at = |y: f32| ((y - origin.y) / row_h()).floor();
-            #[cfg_attr(target_os = "android", allow(unused_variables))]
+            #[cfg_attr(any(target_os = "android", target_os = "ios"), allow(unused_variables))]
             let hover = resp.hover_pos().map(|q| row_at(q.y)).filter(|r| *r >= 0.0 && (*r as usize) < n).map(|r| r as usize);
             // 桌面：滑鼠按下就選取；手機：按下可能是要捲動，放開且沒拖動（tap）才選取
-            #[cfg(not(target_os = "android"))]
+            #[cfg(not(any(target_os = "android", target_os = "ios")))]
             let pick_now = resp.contains_pointer() && ui.input(|i| i.pointer.primary_pressed());
-            #[cfg(target_os = "android")]
+            #[cfg(any(target_os = "android", target_os = "ios"))]
             let pick_now = resp.clicked();
-            #[cfg(target_os = "android")]
+            #[cfg(any(target_os = "android", target_os = "ios"))]
             let hover = resp.interact_pointer_pos().filter(|_| pick_now).map(|q| row_at(q.y)).filter(|r| *r >= 0.0 && (*r as usize) < n).map(|r| r as usize);
             if pick_now {
                 if let Some(ix) = hover {
