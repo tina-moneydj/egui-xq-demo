@@ -3,6 +3,23 @@
 import json, statistics, sys, os
 d = sys.argv[1]
 rows = [json.loads(l) for l in open(os.path.join(d, "results.jsonl")) if l.strip()]
+# 有效性規則（每一列一視同仁）：
+#  - 觸控各段 fpsMean < 0.5：畫面停住（資料照收、沒出幀）→ 排除
+#  - 高頻進價 samples == 0：沒量到延遲 → 排除
+#  - heavy 沒跑完（done=false）：只留跑完的段落 fps 與啟動時的指標計算，牆鐘／CPU／PSS 不算
+TOUCH = {"idle-list", "fling", "chart-idle", "pan", "pinch", "crosshair"}
+excluded = []
+def valid(r):
+    if r.get("phase") in TOUCH and (r.get("fpsMean") or 0) < 0.5:
+        excluded.append((r["app"], r["run"], r["phase"], "畫面停住 fpsMean<0.5")); return False
+    if str(r.get("phase", "")).startswith("tick") and not r.get("samples"):
+        excluded.append((r["app"], r["run"], r["phase"], "沒有延遲樣本")); return False
+    if r.get("phase") == "heavy" and r.get("done") is False:
+        excluded.append((r["app"], r["run"], "heavy(部分)", "沒跑完：只留已完成段落 fps＋指標計算"))
+        for k in ("wallS", "appCpuPct", "emuCpuPct", "pssMb"):
+            r[k] = None
+    return True
+rows = [r for r in rows if "error" in r or valid(r)]
 agg = {}
 for r in rows:
     if "error" in r:
@@ -58,9 +75,30 @@ for (app, ph), m in sorted(agg.items()):
             o["errors"] = v
         else:
             o[k] = {"median": round(statistics.median(v), 2), "n": len(v), "all": v}
+# 指標計算：每筆 tick 只補最後一根（FRAMES indPatchUs），把所有觸控 log 的每秒值合在一起取中位數／p90
+import glob, re
+pooled = {}
+for app in sorted({r["app"] for r in rows}):
+    v = []
+    for fn in sorted(glob.glob(os.path.join(d, f"{app}-r*-touch.log"))):
+        for ln in open(fn, errors="replace"):
+            m = re.search(r"FRAMES\|(\{.*\})", ln)
+            if m:
+                fr = json.loads(m.group(1))
+                if fr.get("indPatch"):
+                    v.append(fr["indPatchUs"])
+    if v:
+        v.sort()
+        pooled[app] = {"n": len(v), "medianUs": round(statistics.median(v), 1), "p90Us": round(v[int(len(v) * 0.9)], 1)}
+out["_indicator_patch_pooled"] = pooled
+out["_excluded"] = excluded
 json.dump(out, open(os.path.join(d, "summary.json"), "w"), ensure_ascii=False, indent=1)
 with open(os.path.join(d, "summary.md"), "w") as f:
     for ph, apps in out.items():
+        if ph == "_indicator_patch_pooled":
+            f.write("\n### 指標每筆 tick 補最後一根（全部觸控 log 合併）\n\n" + "".join(f"- {a}: {v}\n" for a, v in apps.items())); continue
+        if ph == "_excluded":
+            f.write("\n### 排除的列\n\n" + "".join(f"- {e}\n" for e in apps)); continue
         keys = sorted({k for a in apps.values() for k in a if k not in ("errors",)})
         f.write(f"\n### {ph}\n\n| 指標 | " + " | ".join(apps) + " |\n|---|" + "---|" * len(apps) + "\n")
         for k in keys:
