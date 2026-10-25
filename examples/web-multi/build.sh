@@ -14,7 +14,9 @@ if [ -n "$WASM_OPT" ]; then
   "$WASM_OPT" -O3 --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue \
     "$OUT/xq_web_multi_bg.wasm" -o "$OUT/xq_web_multi_bg.wasm"
 fi
-cp index.html page.js "$OUT/"
+cp index.html page.js tokens.html "$OUT/"
+# tokens.html 的網頁字型：和 egui 元件編進 wasm 的是同一份檔案
+cp $ROOT/web/fonts/NotoSansTC-subset.otf $ROOT/web/fonts/NotoSansMonoTC-ascii.otf "$OUT/"
 ls -la "$OUT"
 for f in xq_web_multi_bg.noopt.wasm xq_web_multi_bg.wasm xq_web_multi.js index.html; do
   echo "${f}：原始 $(wc -c < "$OUT/$f") bytes，gzip -9 後 $(gzip -9 -c "$OUT/$f" | wc -c) bytes"

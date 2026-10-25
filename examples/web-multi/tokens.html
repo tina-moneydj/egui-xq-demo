@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>egui 元件與網頁元件共用設計 token</title>
+<!-- 字型和 egui 元件編進 wasm 的是同一份檔案（web/fonts/），build.sh 會一起複製 -->
+<style>
+  @font-face { font-family: "XQ TC"; src: url("NotoSansTC-subset.otf") format("opentype"); }
+  @font-face { font-family: "XQ Mono"; src: url("NotoSansMonoTC-ascii.otf") format("opentype"); }
+  /* 下面只用 var(--xq-…)，值由 wasm 的 tokens_css() 在載入時填進來（和 egui 元件用的是同一份 xq_tokens::t()） */
+  html, body { margin: 0; background: var(--xq-color-ui-bg); color: var(--xq-color-ui-text); font: var(--xq-font-size-md) "XQ TC", sans-serif; }
+  header { padding: var(--xq-space-md) var(--xq-space-lg); }
+  header h1 { font-size: var(--xq-font-size-xl); margin: 0 0 var(--xq-space-xs); font-weight: normal; }
+  header p { margin: 0; color: var(--xq-color-ui-text-dim); font-size: var(--xq-font-size-sm); }
+  #row { display: flex; gap: var(--xq-space-lg); padding: 0 var(--xq-space-lg); align-items: flex-start; flex-wrap: wrap; }
+  .box { width: 460px; }
+  .box h2 { font-size: var(--xq-font-size-sm); color: var(--xq-color-ui-text-dim); font-weight: normal; margin: 0 0 var(--xq-space-xs); }
+  #egui { width: 460px; height: 380px; display: block; border: var(--xq-stroke-hairline) solid var(--xq-color-ui-border); }
+  .tbl { width: 460px; height: 380px; overflow: hidden; background: var(--xq-color-ui-panel); border: var(--xq-stroke-hairline) solid var(--xq-color-ui-border); }
+  .tbl .head { height: var(--xq-layout-table-header); background: var(--xq-color-ui-header); border-bottom: 1px solid var(--xq-color-ui-border);
+               display: flex; align-items: center; padding-left: 8px; gap: 8px; box-sizing: border-box; }
+  .tbl .dim { color: var(--xq-color-ui-text-dim); }
+  .tbl .cols, .tbl .r { display: flex; }
+  .tbl .cols { height: var(--xq-layout-table-col-header); align-items: center; color: var(--xq-color-ui-text-dim); border-bottom: 1px solid var(--xq-color-ui-border); box-sizing: border-box; }
+  .tbl .r { height: var(--xq-layout-table-row); align-items: center; }
+  .tbl .r.sel { background: var(--xq-color-ui-selected); }
+  .tbl span { box-sizing: border-box; padding: 0 4px; white-space: nowrap; overflow: hidden; }
+  .tbl .num { text-align: right; font-family: "XQ Mono", "XQ TC", monospace; }
+  .up { color: var(--xq-color-market-up); } .down { color: var(--xq-color-market-down); } .flat { color: var(--xq-color-ui-text); } .vol { color: var(--xq-color-market-volume); }
+  .ticket { margin-top: var(--xq-space-lg); background: var(--xq-color-ui-panel); border: var(--xq-stroke-hairline) solid var(--xq-color-ui-border);
+            border-radius: var(--xq-radius-md); padding: var(--xq-space-md); width: 360px; box-sizing: border-box; }
+  .ticket .t { font-size: var(--xq-font-size-lg); margin-bottom: var(--xq-space-sm); }
+  .ticket label { color: var(--xq-color-ui-text-dim); display: inline-block; width: 40px; }
+  .ticket input { font: var(--xq-font-size-md) "XQ Mono", monospace; background: var(--xq-color-ui-bg); color: var(--xq-color-ui-text);
+                  border: var(--xq-stroke-hairline) solid var(--xq-color-ui-border); border-radius: var(--xq-radius-sm); height: var(--xq-layout-table-row); width: 150px; padding: 0 var(--xq-space-sm); }
+  .ticket input:focus { outline: none; border-color: var(--xq-color-ui-accent); }
+  .ticket p { margin: 0 0 var(--xq-space-sm); }
+  .ticket button { font: var(--xq-font-size-md) "XQ TC"; border-radius: var(--xq-radius-sm); padding: var(--xq-space-xs) var(--xq-space-lg); cursor: pointer; }
+  .buy { background: var(--xq-color-market-up); color: #fff; border: 0; }
+  .sell { background: transparent; color: var(--xq-color-market-down); border: var(--xq-stroke-hairline) solid var(--xq-color-market-down); }
+  pre { color: var(--xq-color-ui-text-dim); font: var(--xq-font-size-xs) "XQ Mono", monospace; margin: var(--xq-space-sm) var(--xq-space-lg); }
+</style>
+</head>
+<body>
+<header>
+  <h1>egui 元件和網頁元件放在一起：顏色、字型、間距都讀同一份 token</h1>
+  <p id="st">載入中…</p>
+</header>
+<div id="row">
+  <div class="box"><h2>左：egui 元件（canvas，報價表，合成行情）</h2><canvas id="egui"></canvas></div>
+  <div class="box"><h2>右：一般 HTML（只用 var(--xq-…)，不寫色碼）</h2><div class="tbl" id="tbl"></div>
+    <div class="ticket"><div class="t">下單匣（一般 HTML）</div>
+      <p><button class="buy">買進</button> <button class="sell">賣出</button></p>
+      <p><label>價格</label><input value="1,085.00"></p>
+      <p><label>張數</label><input value="1"></p>
+      <p><button class="buy">送出委託</button></p>
+    </div>
+  </div>
+</div>
+<pre id="css"></pre>
+<script type="module">
+  import init, { start, tokens_css } from "./xq_web_multi.js";
+  const t0 = performance.now();
+  await init({ module_or_path: new URL("./xq_web_multi_bg.wasm", import.meta.url) });
+  // 平台層把 token 給網頁：一行 <style>，之後網頁格只用 var(--xq-…)
+  const css = tokens_css();
+  document.head.append(Object.assign(document.createElement("style"), { id: "xq-tokens", textContent: css }));
+  document.getElementById("css").textContent = css;
+
+  // HTML 版報價表：欄寬和 egui 版 src/table.rs 的 COLS 一樣
+  const COLS = [["代號", 58], ["名稱", 92], ["成交", 76], ["漲跌", 70], ["幅度", 64], ["總量", 92]];
+  const ROWS = [["2330", "台積電", 1044.27, 9.27], ["2317", "鴻海", 200.59, 2.09], ["2454", "聯發科", 1280.0, 0], ["0050", "元大台灣50", 184.94, -1.26],
+    ["2303", "聯電", 48.4, -0.2], ["2881", "富邦金", 88.72, 0.32], ["2882", "國泰金", 62.48, 0.18], ["2308", "台達電", 369.78, -2.22], ["2412", "中華電", 126.38, -0.12],
+    ["2382", "廣達", 284.72, -0.28], ["3711", "日月光投控", 157.85, -0.15], ["2891", "中信金", 36.32, 0.12], ["2886", "兆豐金", 40.1, 0], ["1301", "台塑", 52.8, 0.4]];
+  const tbl = document.getElementById("tbl");
+  const cls = (c) => (c > 0 ? "up" : c < 0 ? "down" : "flat");
+  const fmtC = (c) => (c > 0 ? "▲" : c < 0 ? "▼" : "") + Math.abs(c).toFixed(2);
+  tbl.innerHTML =
+    `<div class="head"><span>報價</span><span class="dim">${ROWS.length} 檔</span></div>` +
+    `<div class="cols">${COLS.map(([n, w], i) => `<span style="width:${w}px${i >= 2 ? ";text-align:right" : ""}">${n}</span>`).join("")}</div>` +
+    ROWS.map(([s, n, p, c], k) =>
+      `<div class="r${k === 0 ? " sel" : ""}"><span style="width:58px">${s}</span><span style="width:92px">${n}</span>` +
+      `<span class="num ${cls(c)}" style="width:76px">${p.toFixed(2)}</span><span class="num ${cls(c)}" style="width:70px">${fmtC(c)}</span>` +
+      `<span class="num ${cls(c)}" style="width:64px">${(c >= 0 ? "+" : "") + ((c / (p - c)) * 100).toFixed(2)}%</span><span class="num vol" style="width:92px">1,000,000</span></div>`).join("");
+
+  window.__xq = { css, widget: await start(document.getElementById("egui"), "table") };
+  await document.fonts.ready;
+  window.__xq.fontsOk = document.fonts.check('12px "XQ TC"') && document.fonts.check('12px "XQ Mono"');
+  window.__xq.readyMs = performance.now() - t0;
+  document.getElementById("st").textContent = `啟動 ${window.__xq.readyMs.toFixed(0)} ms｜網頁字型 ${window.__xq.fontsOk ? "已載入（和 egui 同一份檔案）" : "沒載到"}`;
+</script>
+</body>
+</html>
