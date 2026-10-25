@@ -1,0 +1,37 @@
+[package]
+name = "xq-web-multi"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.95"
+publish = false
+description = "可行性範例：同一個 html 頁面嵌 4 個 egui 元件（各一個 eframe::WebRunner，共用同一份 wasm）"
+
+# 獨立 crate（同 mobile/）：不加進根目錄的建置，桌面版／iOS 版不受影響。
+# 報價表、走勢圖直接用桌面版 ../../src/*.rs（#[path]），相依版本與根目錄網頁版相同。
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[dependencies]
+xq-feed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
+xq-tape = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
+xq-tokens = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "dc4f0a80bf571b646480c05ebb71ddba139a0752" }
+egui = "0.37"
+parking_lot = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+eframe = { version = "0.37", default-features = false, features = ["glow", "default_fonts"] }
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-time = "1"
+web-sys = { version = "0.3", features = ["Window", "Document", "Location", "UrlSearchParams", "Performance", "console", "HtmlCanvasElement", "WebSocket", "MessageEvent", "BinaryType"] }
+
+
+[profile.release]
+strip = true
+debug = false
+lto = "thin"
+codegen-units = 4
