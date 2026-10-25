@@ -1,0 +1,30 @@
+﻿==== stress 2026-10-25T11:18:53
+   0.044 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.176 GPUILOG|0.133|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.177 GPUILOG|0.133|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.282 [xq-feed] 已連上 127.0.0.1:47631
+   0.291 BENCH first-frame
+   0.307 BENCH first-quote
+   1.651 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.655 GROUPPERF|{"phase":"tick-end","elapsedMs":30004,"fps":45.9,"paints":1142,"avgPaintMs":0.049,"avgCellsPerPaint":84,"cellUpdates":95928}
+  41.663 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":45.9,"scrollFps":51.1,"scrollJankCount":73,"scrollJankAvgMs":32.7,"fps":51.1,"paints":417,"avgPaintMs":0.049,"avgCellsPerPaint":84,"cellUpdates":35028}
+==== stress 2026-10-25T11:21:15
+   0.034 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.164 GPUILOG|0.130|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.164 GPUILOG|0.130|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.247 [xq-feed] 已連上 127.0.0.1:47631
+   0.265 BENCH first-frame
+   0.282 BENCH first-quote
+   1.629 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.666 GROUPPERF|{"phase":"tick-end","elapsedMs":30037,"fps":46.5,"paints":1130,"avgPaintMs":0.048,"avgCellsPerPaint":84,"cellUpdates":94920}
+  41.673 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":46.5,"scrollFps":51.3,"scrollJankCount":63,"scrollJankAvgMs":32.8,"fps":51.3,"paints":423,"avgPaintMs":0.047,"avgCellsPerPaint":84,"cellUpdates":35532}
+==== stress 2026-10-25T11:23:36
+   0.040 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.184 GPUILOG|0.144|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.185 GPUILOG|0.145|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.274 [xq-feed] 已連上 127.0.0.1:47631
+   0.292 BENCH first-frame
+   0.298 BENCH first-quote
+   1.644 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.653 GROUPPERF|{"phase":"tick-end","elapsedMs":30009,"fps":46.2,"paints":1136,"avgPaintMs":0.040,"avgCellsPerPaint":84,"cellUpdates":95424}
+  41.655 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":46.2,"scrollFps":52.3,"scrollJankCount":58,"scrollJankAvgMs":32.8,"fps":52.3,"paints":425,"avgPaintMs":0.047,"avgCellsPerPaint":84,"cellUpdates":35700}

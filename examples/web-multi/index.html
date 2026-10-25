@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一頁嵌多個 egui 元件（可行性）</title>
+<style>
+  html, body { margin: 0; background: #0b0f14; color: #c8d3de; font: 14px system-ui, sans-serif; }
+  header { padding: 8px 12px; }
+  header h1 { font-size: 16px; margin: 0 0 4px; }
+  header p { margin: 0; color: #8899aa; font-size: 12px; }
+  #grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 380px 380px; gap: 10px; padding: 0 12px 12px; }
+  .cell { display: flex; flex-direction: column; border: 1px solid #263240; min-width: 0; min-height: 0; }
+  .cell h2 { font-size: 13px; margin: 0; padding: 6px 8px; background: #121a23; display: flex; justify-content: space-between; }
+  .cell h2 span { color: #8899aa; font-weight: normal; font-family: monospace; }
+  .cell .slot { flex: 1; min-height: 0; position: relative; }
+  .cell .slot canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; }
+  .cell .gone { flex: 1; display: flex; align-items: center; justify-content: center; color: #8899aa; }
+  .web { flex: 1; min-height: 0; overflow: auto; padding: 8px 10px; font-size: 13px; }
+  .web .big { font: 32px monospace; color: #e8b04a; }
+  .web ul { margin: 6px 0; padding-left: 18px; color: #aab8c6; }
+  .web input { background: #121a23; color: #c8d3de; border: 1px solid #36506a; padding: 4px 6px; width: 120px; }
+  .web button { background: #1d3a5a; color: #c8d3de; border: 1px solid #36506a; padding: 4px 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>一頁嵌多個 egui 元件</h1>
+  <p id="mode">載入中…</p>
+</header>
+<div id="grid"></div>
+<script type="module">
+  // 共用頁面邏輯（版面、網頁格、自動壓測）在 page.js；這裡只有 egui 怎麼啟動。網址參數另外有：
+  //   mode=shared（預設）：一份 wasm、一個 instance，所有 WebRunner 共用記憶體
+  //   mode=separate：同一份 wasm 只下載／編譯一次，但每個元件各自一個 instance（各自的記憶體與 panic hook）
+  //   isolate=0：不換 panic hook（eframe 原本的行為，用來重現「一個 panic 全部停」）
+  import { setupPage, params as q } from "./page.js";
+  const mode = q.get("mode") === "separate" ? "separate" : "shared";
+  const isolate = q.get("isolate") !== "0";
+  setupPage({
+    framework: "egui",
+    mode,
+    async boot({ xq, cells }) {
+      xq.isolate = isolate;
+      xq.modeText = `${mode === "shared" ? "共用一個 wasm instance" : "每個元件各自一個 wasm instance（同一份檔案）"}｜panic 隔離 hook：${isolate ? "開" : "關"}`;
+      const mods = {};
+      xq.wasmBytes = () => [...new Set(Object.values(mods))].reduce((s, m) => s + m.wasm_memory_bytes(), 0);
+      if (!cells.length) return;
+      const wasmUrl = new URL("./xq_web_multi_bg.wasm", import.meta.url);
+      if (mode === "shared") {
+        const m = await import("./xq_web_multi.js");
+        await m.default({ module_or_path: wasmUrl });
+        for (const { id } of cells) mods[id] = m;
+      } else {
+        // 下載＋編譯一次，instance 化 N 次；JS 膠水模組用不同的 query 載入，才會是各自獨立的模組（各有自己的 wasm 變數）
+        const compiled = await WebAssembly.compileStreaming(fetch(wasmUrl));
+        for (const { id } of cells) {
+          const m = await import(`./xq_web_multi.js?inst=${id}`);
+          await m.default({ module_or_path: compiled });
+          mods[id] = m;
+        }
+      }
+      for (const { id, kind, slot } of cells) {
+        const canvas = document.createElement("canvas");
+        slot.append(canvas);
+        const w = await mods[id].start(canvas, kind);
+        xq.widgets[id] = { frames: () => w.frames(), panic: () => w.panic_next_frame(), destroy: () => w.destroy(), hasPanicked: () => w.has_panicked() };
+      }
+      // eframe 每個 WebRunner::new() 都串接一次全域 panic hook；全部啟動後再換掉（shared 才需要，separate 各 instance 本來就分開）
+      if (isolate) for (const m of new Set(Object.values(mods))) m.isolate_panics();
+    },
+  });
+</script>
+</body>
+</html>

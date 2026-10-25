@@ -1,0 +1,414 @@
+{
+ "browser": "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome",
+ "records": [
+  {
+   "framework": "egui",
+   "config": "mixed",
+   "run": 1,
+   "url": "bench=1&XQ_WEB_BACKEND=webgl",
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+   "loadToFpsStartS": 5.69,
+   "downloadBytes": 4197511,
+   "files": [
+    [
+     "/egui/index.html",
+     2033
+    ],
+    [
+     "/egui/page.js",
+     3621
+    ],
+    [
+     "/egui/xq_web_multi.js",
+     13927
+    ],
+    [
+     "/egui/xq_web_multi_bg.wasm",
+     4177930
+    ]
+   ],
+   "browserProcs": 12,
+   "browserRssMb": 1357.4,
+   "browserCpuPct": 339.6,
+   "mode": "shared",
+   "layout": "mixed",
+   "ids": [
+    "table",
+    "webA",
+    "webB",
+    "chart"
+   ],
+   "readyMs": 1442,
+   "gpu": true,
+   "dpr": 1,
+   "screen": "800x600",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "fps": {
+    "webA": 24.2,
+    "webB": 24.2,
+    "table": 24,
+    "chart": 23.2
+   },
+   "memory": {
+    "jsHeapUsedMB": 2,
+    "jsHeapTotalMB": 3.1,
+    "wasmMemoryMB": 8.9
+   },
+   "removed": "webB",
+   "fpsAfterRemove": {
+    "webA": 26.7,
+    "webB": 0,
+    "table": 26.3,
+    "chart": 26.3
+   },
+   "fpsAfterPanic": {
+    "webA": 31.7,
+    "webB": 0,
+    "table": 0,
+    "chart": 31.3
+   },
+   "panicked": {
+    "table": false,
+    "chart": false
+   },
+   "errors": [
+    "Uncaught RuntimeError: unreachable"
+   ]
+  },
+  {
+   "framework": "gpui",
+   "config": "mixed",
+   "run": 1,
+   "url": "bench=1&XQ_WEB_BACKEND=webgl",
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+   "loadToFpsStartS": 9.47,
+   "downloadBytes": 6461468,
+   "files": [
+    [
+     "/gpui/index.html",
+     1893
+    ],
+    [
+     "/gpui/page.js",
+     3621
+    ],
+    [
+     "/gpui/xq_web_multi_gpui_bg.wasm",
+     6407862
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ]
+   ],
+   "browserProcs": 12,
+   "browserRssMb": 1501.5,
+   "browserCpuPct": 359.3,
+   "mode": "separate",
+   "layout": "mixed",
+   "ids": [
+    "table",
+    "webA",
+    "webB",
+    "chart"
+   ],
+   "readyMs": 3876,
+   "gpu": true,
+   "dpr": 1,
+   "screen": "800x600",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "fps": {
+    "webA": 5.4,
+    "webB": 5.4,
+    "table": 5.4,
+    "chart": 5.4
+   },
+   "memory": {
+    "jsHeapUsedMB": 3.5,
+    "jsHeapTotalMB": 6.4,
+    "wasmMemoryMB": 22.3
+   },
+   "removed": "webB",
+   "fpsAfterRemove": {
+    "webA": 5.6,
+    "webB": 0,
+    "table": 5.6,
+    "chart": 5.6
+   },
+   "fpsAfterPanic": {
+    "webA": 9,
+    "webB": 0,
+    "table": 0,
+    "chart": 9
+   },
+   "panicked": {},
+   "errors": [
+    "Uncaught RuntimeError: unreachable",
+    "Uncaught RuntimeError: unreachable"
+   ]
+  },
+  {
+   "framework": "egui",
+   "config": "canvas4",
+   "run": 1,
+   "url": "bench=1&layout=canvas4&XQ_WEB_BACKEND=webgl",
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+   "loadToFpsStartS": 4.61,
+   "downloadBytes": 4197511,
+   "files": [
+    [
+     "/egui/index.html",
+     2033
+    ],
+    [
+     "/egui/page.js",
+     3621
+    ],
+    [
+     "/egui/xq_web_multi.js",
+     13927
+    ],
+    [
+     "/egui/xq_web_multi_bg.wasm",
+     4177930
+    ]
+   ],
+   "browserProcs": 12,
+   "browserRssMb": 1422.2,
+   "browserCpuPct": 339.3,
+   "mode": "shared",
+   "layout": "canvas4",
+   "ids": [
+    "table",
+    "chart",
+    "c1",
+    "c2"
+   ],
+   "readyMs": 1195,
+   "gpu": true,
+   "dpr": 1,
+   "screen": "800x600",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "fps": {
+    "table": 18,
+    "chart": 17.6,
+    "c1": 18.2,
+    "c2": 18.2
+   },
+   "memory": {
+    "jsHeapUsedMB": 2,
+    "jsHeapTotalMB": 4.1,
+    "wasmMemoryMB": 15.1
+   },
+   "removed": "c2",
+   "fpsAfterRemove": {
+    "table": 20.3,
+    "chart": 20,
+    "c1": 20.3,
+    "c2": 0
+   },
+   "fpsAfterPanic": {
+    "table": 0,
+    "chart": 27.7,
+    "c1": 29,
+    "c2": 0
+   },
+   "panicked": {
+    "table": false,
+    "chart": false,
+    "c1": false,
+    "c2": false
+   },
+   "errors": [
+    "Uncaught RuntimeError: unreachable"
+   ]
+  },
+  {
+   "framework": "gpui",
+   "config": "canvas4",
+   "run": 1,
+   "url": "bench=1&layout=canvas4&XQ_WEB_BACKEND=webgl",
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+   "loadToFpsStartS": 12.86,
+   "downloadBytes": 6509560,
+   "files": [
+    [
+     "/gpui/index.html",
+     1893
+    ],
+    [
+     "/gpui/page.js",
+     3621
+    ],
+    [
+     "/gpui/xq_web_multi_gpui_bg.wasm",
+     6407862
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ]
+   ],
+   "browserProcs": 12,
+   "browserRssMb": 1544.9,
+   "browserCpuPct": 358.7,
+   "mode": "separate",
+   "layout": "canvas4",
+   "ids": [
+    "table",
+    "chart",
+    "c1",
+    "c2"
+   ],
+   "readyMs": 8343,
+   "gpu": true,
+   "dpr": 1,
+   "screen": "800x600",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "fps": {
+    "table": 4,
+    "chart": 4,
+    "c1": 4,
+    "c2": 4
+   },
+   "memory": {
+    "jsHeapUsedMB": 5.1,
+    "jsHeapTotalMB": 8.2,
+    "wasmMemoryMB": 39.1
+   },
+   "removed": "c2",
+   "fpsAfterRemove": {
+    "table": 4.7,
+    "chart": 4.7,
+    "c1": 4.7,
+    "c2": 0
+   },
+   "fpsAfterPanic": {
+    "table": 0,
+    "chart": 7.7,
+    "c1": 7.3,
+    "c2": 0
+   },
+   "panicked": {},
+   "errors": [
+    "Uncaught RuntimeError: unreachable",
+    "Uncaught RuntimeError: unreachable"
+   ]
+  },
+  {
+   "framework": "egui",
+   "config": "single",
+   "run": 1,
+   "url": "bench=1&only=table&steps=basic&XQ_WEB_BACKEND=webgl",
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+   "loadToFpsStartS": 4.65,
+   "downloadBytes": 4197511,
+   "files": [
+    [
+     "/egui/index.html",
+     2033
+    ],
+    [
+     "/egui/page.js",
+     3621
+    ],
+    [
+     "/egui/xq_web_multi.js",
+     13927
+    ],
+    [
+     "/egui/xq_web_multi_bg.wasm",
+     4177930
+    ]
+   ],
+   "browserProcs": 12,
+   "browserRssMb": 1350.3,
+   "browserCpuPct": 339.9,
+   "mode": "shared",
+   "layout": "mixed",
+   "ids": [
+    "table"
+   ],
+   "readyMs": 1168,
+   "gpu": true,
+   "dpr": 1,
+   "screen": "800x600",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "fps": {
+    "table": 39.6
+   },
+   "memory": {
+    "jsHeapUsedMB": 2.1,
+    "jsHeapTotalMB": 4.4,
+    "wasmMemoryMB": 7.4
+   },
+   "errors": []
+  },
+  {
+   "framework": "gpui",
+   "config": "single",
+   "run": 1,
+   "url": "bench=1&only=table&steps=basic&XQ_WEB_BACKEND=webgl",
+   "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+   "loadToFpsStartS": 6.51,
+   "downloadBytes": 6437422,
+   "files": [
+    [
+     "/gpui/index.html",
+     1893
+    ],
+    [
+     "/gpui/page.js",
+     3621
+    ],
+    [
+     "/gpui/xq_web_multi_gpui_bg.wasm",
+     6407862
+    ],
+    [
+     "/gpui/xq_web_multi_gpui.js",
+     24046
+    ]
+   ],
+   "browserProcs": 12,
+   "browserRssMb": 1417.2,
+   "browserCpuPct": 378.8,
+   "mode": "separate",
+   "layout": "mixed",
+   "ids": [
+    "table"
+   ],
+   "readyMs": 1702,
+   "gpu": true,
+   "dpr": 1,
+   "screen": "800x600",
+   "webglRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+   "fps": {
+    "table": 10.8
+   },
+   "memory": {
+    "jsHeapUsedMB": 2.7,
+    "jsHeapTotalMB": 4.7,
+    "wasmMemoryMB": 10.2
+   },
+   "errors": []
+  }
+ ],
+ "failures": []
+}

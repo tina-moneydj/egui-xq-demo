@@ -1,0 +1,120 @@
+==== tick-gpui-s1k 2026-10-25T10:17:59
+   0.017 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.017 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.105 [xq-feed] 已連上 127.0.0.1:47631
+   0.121 BENCH first-frame
+   0.121 BENCH first-quote
+  40.368 MARK vmmap-begin
+  41.124 MARK vmmap-end
+==== tick-gpui-s10k 2026-10-25T10:18:42
+   0.012 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.012 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.103 [xq-feed] 已連上 127.0.0.1:47631
+   0.119 BENCH first-frame
+   0.119 BENCH first-quote
+  40.363 MARK vmmap-begin
+  41.092 MARK vmmap-end
+==== tick-gpui-s50k 2026-10-25T10:19:24
+   0.012 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.012 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.098 [xq-feed] 已連上 127.0.0.1:47631
+   0.115 BENCH first-frame
+   0.115 BENCH first-quote
+  40.343 MARK vmmap-begin
+  41.067 MARK vmmap-end
+==== tick-gpui-s100k 2026-10-25T10:20:07
+   0.011 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.011 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.094 [xq-feed] 已連上 127.0.0.1:47631
+   0.109 BENCH first-frame
+   0.109 BENCH first-quote
+  40.325 MARK vmmap-begin
+  41.061 MARK vmmap-end
+==== tick-gpui-burst 2026-10-25T10:20:50
+   0.016 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.016 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.116 [xq-feed] 已連上 127.0.0.1:47631
+   0.132 BENCH first-frame
+   0.132 BENCH first-quote
+  40.350 MARK vmmap-begin
+  41.083 MARK vmmap-end
+==== tick-gpui-s1k 2026-10-25T10:43:04
+   0.018 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.018 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.106 [xq-feed] 已連上 127.0.0.1:47631
+   0.134 BENCH first-frame
+   0.134 BENCH first-quote
+  40.319 MARK vmmap-begin
+  41.034 MARK vmmap-end
+==== tick-gpui-s10k 2026-10-25T10:43:47
+   0.016 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.017 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.107 [xq-feed] 已連上 127.0.0.1:47631
+   0.127 BENCH first-frame
+   0.127 BENCH first-quote
+  40.350 MARK vmmap-begin
+  41.070 MARK vmmap-end
+==== tick-gpui-s50k 2026-10-25T10:44:29
+   0.016 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.016 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.121 [xq-feed] 已連上 127.0.0.1:47631
+   0.137 BENCH first-frame
+   0.137 BENCH first-quote
+  40.373 MARK vmmap-begin
+  41.095 MARK vmmap-end
+==== tick-gpui-s100k 2026-10-25T10:45:12
+   0.012 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.012 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.095 [xq-feed] 已連上 127.0.0.1:47631
+   0.115 BENCH first-frame
+   0.115 BENCH first-quote
+  40.349 MARK vmmap-begin
+  41.073 MARK vmmap-end
+==== tick-gpui-burst 2026-10-25T10:45:55
+   0.016 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.016 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.105 [xq-feed] 已連上 127.0.0.1:47631
+   0.121 BENCH first-frame
+   0.121 BENCH first-quote
+  40.327 MARK vmmap-begin
+  41.049 MARK vmmap-end
+==== tick-gpui-s1k 2026-10-25T11:08:09
+   0.019 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.019 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.108 [xq-feed] 已連上 127.0.0.1:47631
+   0.126 BENCH first-frame
+   0.126 BENCH first-quote
+  40.367 MARK vmmap-begin
+  41.082 MARK vmmap-end
+==== tick-gpui-s10k 2026-10-25T11:08:52
+   0.016 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.016 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.105 [xq-feed] 已連上 127.0.0.1:47631
+   0.121 BENCH first-frame
+   0.121 BENCH first-quote
+  40.324 MARK vmmap-begin
+  41.044 MARK vmmap-end
+==== tick-gpui-s50k 2026-10-25T11:09:34
+   0.012 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.012 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.098 [xq-feed] 已連上 127.0.0.1:47631
+   0.116 BENCH first-frame
+   0.116 BENCH first-quote
+  40.342 MARK vmmap-begin
+  41.057 MARK vmmap-end
+==== tick-gpui-s100k 2026-10-25T11:10:17
+   0.013 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.013 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.098 [xq-feed] 已連上 127.0.0.1:47631
+   0.113 BENCH first-frame
+   0.113 BENCH first-quote
+  40.367 MARK vmmap-begin
+  41.076 MARK vmmap-end
+==== tick-gpui-burst 2026-10-25T11:10:59
+   0.015 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.015 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.105 [xq-feed] 已連上 127.0.0.1:47631
+   0.127 BENCH first-frame
+   0.127 BENCH first-quote
+  40.365 MARK vmmap-begin
+  41.076 MARK vmmap-end

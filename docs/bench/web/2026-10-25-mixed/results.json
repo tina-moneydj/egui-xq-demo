@@ -1,0 +1,540 @@
+{
+  "browser": "153.0.8010.12",
+  "when": "2026-10-25T16:09:53.602Z",
+  "extra": "",
+  "framework": "egui",
+  "mixed": {
+    "boot": {
+      "readyMs": 192.4000000001397,
+      "framework": "egui"
+    },
+    "alive": {
+      "webA": {
+        "before": 147,
+        "after": 248,
+        "moving": true
+      },
+      "webB": {
+        "before": 147,
+        "after": 248,
+        "moving": true
+      },
+      "table": {
+        "before": 113,
+        "after": 210,
+        "moving": true
+      },
+      "chart": {
+        "before": 109,
+        "after": 203,
+        "moving": true
+      }
+    },
+    "consoleBad": [],
+    "typed": "已送出（模擬）：2330 × 1 張",
+    "aliveAfterInput": {
+      "webA": {
+        "before": 301,
+        "after": 410,
+        "moving": true
+      },
+      "webB": {
+        "before": 301,
+        "after": 410,
+        "moving": true
+      },
+      "table": {
+        "before": 256,
+        "after": 357,
+        "moving": true
+      },
+      "chart": {
+        "before": 250,
+        "after": 352,
+        "moving": true
+      }
+    },
+    "afterRemoveWebB": {
+      "webA": {
+        "before": 410,
+        "after": 515,
+        "moving": true
+      },
+      "webB": {
+        "before": 410,
+        "after": 410,
+        "moving": false
+      },
+      "table": {
+        "before": 357,
+        "after": 455,
+        "moving": true
+      },
+      "chart": {
+        "before": 352,
+        "after": 453,
+        "moving": true
+      }
+    },
+    "afterPanicTable": {
+      "webA": {
+        "before": 538,
+        "after": 718,
+        "moving": true
+      },
+      "webB": {
+        "before": 410,
+        "after": 410,
+        "moving": false
+      },
+      "table": {
+        "before": 455,
+        "after": 455,
+        "moving": false
+      },
+      "chart": {
+        "before": 471,
+        "after": 591,
+        "moving": true
+      }
+    },
+    "consoleAfterPanic": [
+      "[error] PANIC（只停這個元件）: panicked at src/lib.rs:218:13:\n[table] 驗證用：故意 panic",
+      "[pageerror] unreachable"
+    ]
+  },
+  "canvas4": {
+    "boot": {
+      "readyMs": 260.60000000009313,
+      "framework": "egui"
+    },
+    "alive": {
+      "table": {
+        "before": 80,
+        "after": 148,
+        "moving": true
+      },
+      "chart": {
+        "before": 80,
+        "after": 148,
+        "moving": true
+      },
+      "c1": {
+        "before": 93,
+        "after": 161,
+        "moving": true
+      },
+      "c2": {
+        "before": 93,
+        "after": 161,
+        "moving": true
+      }
+    },
+    "consoleBad": [],
+    "afterRemoveC2": {
+      "table": {
+        "before": 148,
+        "after": 231,
+        "moving": true
+      },
+      "chart": {
+        "before": 148,
+        "after": 231,
+        "moving": true
+      },
+      "c1": {
+        "before": 161,
+        "after": 247,
+        "moving": true
+      },
+      "c2": {
+        "before": 161,
+        "after": 161,
+        "moving": false
+      }
+    },
+    "afterPanicC1": {
+      "table": {
+        "before": 249,
+        "after": 360,
+        "moving": true
+      },
+      "chart": {
+        "before": 250,
+        "after": 365,
+        "moving": true
+      },
+      "c1": {
+        "before": 247,
+        "after": 247,
+        "moving": false
+      },
+      "c2": {
+        "before": 161,
+        "after": 161,
+        "moving": false
+      }
+    },
+    "afterSecondPanicTable": {
+      "table": {
+        "before": 360,
+        "after": 360,
+        "moving": false
+      },
+      "chart": {
+        "before": 385,
+        "after": 505,
+        "moving": true
+      },
+      "c1": {
+        "before": 247,
+        "after": 247,
+        "moving": false
+      },
+      "c2": {
+        "before": 161,
+        "after": 161,
+        "moving": false
+      }
+    },
+    "consoleAfterPanic": [
+      "[error] PANIC（只停這個元件）: panicked at src/lib.rs:218:13:\n[counter] 驗證用：故意 panic",
+      "[pageerror] unreachable",
+      "[error] PANIC（只停這個元件）: panicked at src/lib.rs:218:13:\n[table] 驗證用：故意 panic",
+      "[pageerror] unreachable"
+    ]
+  },
+  "removeNoDestroy": {
+    "boot": {
+      "readyMs": 240.39999999990687,
+      "framework": "egui"
+    },
+    "after": {
+      "table": {
+        "before": 47,
+        "after": 158,
+        "moving": true
+      },
+      "chart": {
+        "before": 48,
+        "after": 150,
+        "moving": true
+      },
+      "c1": {
+        "before": 59,
+        "after": 175,
+        "moving": true
+      },
+      "c2": {
+        "before": 59,
+        "after": 175,
+        "moving": true
+      }
+    },
+    "consoleBad": []
+  },
+  "noIsolate": {
+    "boot": {
+      "readyMs": 216.5,
+      "framework": "egui"
+    },
+    "before": {
+      "table": {
+        "before": 49,
+        "after": 121,
+        "moving": true
+      },
+      "chart": {
+        "before": 49,
+        "after": 121,
+        "moving": true
+      },
+      "c1": {
+        "before": 63,
+        "after": 135,
+        "moving": true
+      },
+      "c2": {
+        "before": 63,
+        "after": 135,
+        "moving": true
+      }
+    },
+    "afterPanicC1": {
+      "table": {
+        "before": 122,
+        "after": 122,
+        "moving": false
+      },
+      "chart": {
+        "before": 122,
+        "after": 122,
+        "moving": false
+      },
+      "c1": {
+        "before": 135,
+        "after": 135,
+        "moving": false
+      },
+      "c2": {
+        "before": 135,
+        "after": 135,
+        "moving": false
+      }
+    },
+    "panickedAfter": {
+      "table": true,
+      "chart": true,
+      "c1": true,
+      "c2": true
+    },
+    "consoleAfterPanicCount": 5
+  },
+  "separate": {
+    "boot": {
+      "readyMs": 289.30000000004657,
+      "framework": "egui"
+    },
+    "alive": {
+      "table": {
+        "before": 66,
+        "after": 137,
+        "moving": true
+      },
+      "chart": {
+        "before": 65,
+        "after": 136,
+        "moving": true
+      },
+      "c1": {
+        "before": 78,
+        "after": 149,
+        "moving": true
+      },
+      "c2": {
+        "before": 78,
+        "after": 149,
+        "moving": true
+      }
+    },
+    "consoleBad": [],
+    "afterPanicC1": {
+      "table": {
+        "before": 152,
+        "after": 238,
+        "moving": true
+      },
+      "chart": {
+        "before": 151,
+        "after": 237,
+        "moving": true
+      },
+      "c1": {
+        "before": 149,
+        "after": 149,
+        "moving": false
+      },
+      "c2": {
+        "before": 165,
+        "after": 252,
+        "moving": true
+      }
+    }
+  },
+  "download": {
+    "1 個元件（報價表）": {
+      "totalBytes": 4220918,
+      "requests": [
+        {
+          "url": "/index.html?only=table",
+          "bytes": 2315
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi.js",
+          "bytes": 13745
+        },
+        {
+          "url": "/xq_web_multi_bg.wasm",
+          "bytes": 4200996
+        }
+      ]
+    },
+    "穿插版面（2 個元件＋2 個網頁格）": {
+      "totalBytes": 4220918,
+      "requests": [
+        {
+          "url": "/index.html",
+          "bytes": 2315
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi.js",
+          "bytes": 13745
+        },
+        {
+          "url": "/xq_web_multi_bg.wasm",
+          "bytes": 4200996
+        }
+      ]
+    },
+    "4 個元件": {
+      "totalBytes": 4220918,
+      "requests": [
+        {
+          "url": "/index.html?layout=canvas4",
+          "bytes": 2315
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi.js",
+          "bytes": 13745
+        },
+        {
+          "url": "/xq_web_multi_bg.wasm",
+          "bytes": 4200996
+        }
+      ]
+    },
+    "4 個元件，各自 instance": {
+      "totalBytes": 4262153,
+      "requests": [
+        {
+          "url": "/index.html?layout=canvas4&mode=separate",
+          "bytes": 2315
+        },
+        {
+          "url": "/page.js",
+          "bytes": 3862
+        },
+        {
+          "url": "/xq_web_multi_bg.wasm",
+          "bytes": 4200996
+        },
+        {
+          "url": "/xq_web_multi.js?inst=table",
+          "bytes": 13745
+        },
+        {
+          "url": "/xq_web_multi.js?inst=chart",
+          "bytes": 13745
+        },
+        {
+          "url": "/xq_web_multi.js?inst=c1",
+          "bytes": 13745
+        },
+        {
+          "url": "/xq_web_multi.js?inst=c2",
+          "bytes": 13745
+        }
+      ]
+    }
+  },
+  "memory": {
+    "1 個元件（報價表）": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 1.8,
+          "jsHeapTotalMB": 2.6,
+          "wasmMemoryMB": 7.4
+        },
+        {
+          "jsHeapUsedMB": 1.8,
+          "jsHeapTotalMB": 2.8,
+          "wasmMemoryMB": 7.4
+        },
+        {
+          "jsHeapUsedMB": 1.8,
+          "jsHeapTotalMB": 2.8,
+          "wasmMemoryMB": 7.4
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 1.8,
+        "jsHeapTotalMB": 2.8,
+        "wasmMemoryMB": 7.4
+      }
+    },
+    "穿插版面（2 個元件＋2 個網頁格）": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 1.9,
+          "jsHeapTotalMB": 2.8,
+          "wasmMemoryMB": 8.9
+        },
+        {
+          "jsHeapUsedMB": 1.9,
+          "jsHeapTotalMB": 2.8,
+          "wasmMemoryMB": 8.9
+        },
+        {
+          "jsHeapUsedMB": 1.9,
+          "jsHeapTotalMB": 2.8,
+          "wasmMemoryMB": 8.9
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 1.9,
+        "jsHeapTotalMB": 2.8,
+        "wasmMemoryMB": 8.9
+      }
+    },
+    "4 個元件": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 1.9,
+          "jsHeapTotalMB": 3.1,
+          "wasmMemoryMB": 15.1
+        },
+        {
+          "jsHeapUsedMB": 1.9,
+          "jsHeapTotalMB": 2.6,
+          "wasmMemoryMB": 15.1
+        },
+        {
+          "jsHeapUsedMB": 1.9,
+          "jsHeapTotalMB": 3.1,
+          "wasmMemoryMB": 15.1
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 1.9,
+        "jsHeapTotalMB": 3.1,
+        "wasmMemoryMB": 15.1
+      }
+    },
+    "4 個元件，各自 instance": {
+      "runs": [
+        {
+          "jsHeapUsedMB": 2.9,
+          "jsHeapTotalMB": 4.1,
+          "wasmMemoryMB": 35.8
+        },
+        {
+          "jsHeapUsedMB": 2.9,
+          "jsHeapTotalMB": 3.6,
+          "wasmMemoryMB": 35.8
+        },
+        {
+          "jsHeapUsedMB": 2.9,
+          "jsHeapTotalMB": 3.3,
+          "wasmMemoryMB": 35.8
+        }
+      ],
+      "median": {
+        "jsHeapUsedMB": 2.9,
+        "jsHeapTotalMB": 3.6,
+        "wasmMemoryMB": 35.8
+      }
+    }
+  }
+}

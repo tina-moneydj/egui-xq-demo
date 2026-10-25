@@ -1,0 +1,34 @@
+==== stress 2026-10-25T10:16:07
+   0.017 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.018 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.112 [xq-feed] 已連上 127.0.0.1:47631
+   0.136 BENCH first-frame
+   0.188 BENCH first-quote
+   1.545 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.571 GROUPPERF|{"phase":"tick-end","elapsedMs":30025,"fps":47.1,"paints":1009,"avgPaintMs":0.061,"avgCellsPerPaint":84,"cellUpdates":84756}
+  41.579 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":47.1,"scrollFps":60.1,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":60.1,"paints":601,"avgPaintMs":0.056,"avgCellsPerPaint":84,"cellUpdates":50484}
+  41.630 MARK vmmap-begin
+  42.364 MARK vmmap-end
+==== stress 2026-10-25T10:41:13
+   0.018 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.018 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.125 [xq-feed] 已連上 127.0.0.1:47631
+   0.142 BENCH first-frame
+   0.203 BENCH first-quote
+   1.551 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.584 GROUPPERF|{"phase":"tick-end","elapsedMs":30033,"fps":44.4,"paints":941,"avgPaintMs":0.062,"avgCellsPerPaint":84,"cellUpdates":79044}
+  41.593 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":44.5,"scrollFps":60.0,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":60.0,"paints":600,"avgPaintMs":0.061,"avgCellsPerPaint":84,"cellUpdates":50400}
+  41.653 MARK vmmap-begin
+  42.373 LONGFRAME|{"win":0,"kind":"wake","ms":551.9,"t":42.356,"gapMs":570.3,"frames":1989,"n":1}
+  42.375 MARK vmmap-end
+==== stress 2026-10-25T11:06:18
+   0.016 [macos] beginActivity: latency-critical（App Nap／計時器合併關閉）
+   0.016 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.107 [xq-feed] 已連上 127.0.0.1:47631
+   0.119 BENCH first-frame
+   0.184 BENCH first-quote
+   1.523 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.548 GROUPPERF|{"phase":"tick-end","elapsedMs":30025,"fps":44.7,"paints":947,"avgPaintMs":0.059,"avgCellsPerPaint":84,"cellUpdates":79548}
+  41.558 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":44.7,"scrollFps":59.1,"scrollJankCount":9,"scrollJankAvgMs":33.6,"fps":59.1,"paints":589,"avgPaintMs":0.059,"avgCellsPerPaint":84,"cellUpdates":49476}
+  41.624 MARK vmmap-begin
+  42.337 MARK vmmap-end

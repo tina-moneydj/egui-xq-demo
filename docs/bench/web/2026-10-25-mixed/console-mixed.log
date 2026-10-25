@@ -1,0 +1,3 @@
+[error] PANIC（只停這個元件）: panicked at src/lib.rs:218:13:
+[table] 驗證用：故意 panic
+[pageerror] unreachable

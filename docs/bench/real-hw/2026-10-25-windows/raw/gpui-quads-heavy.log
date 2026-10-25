@@ -1,0 +1,99 @@
+﻿==== heavy 2026-10-25T11:27:36
+   0.032 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.164 GPUILOG|0.132|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.165 GPUILOG|0.133|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.245 [xq-feed] 已連上 127.0.0.1:47631
+   0.259 BENCH first-frame
+   0.277 BENCH first-quote
+   0.667 CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":0.48}
+   0.680 BENCH heavy-frame
+   0.680 CHARTPERF|{"phase":"setup","cssW":1166,"cssH":505,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":193,"drawVertices":10076,"drawPaths":67,"bars":1200,"sinceStartMs":435,"rebuildMs":1.98,"paintMsTotal":16.05,"rssMb":122.1}
+   0.680 CHARTPHASE|warm|start
+   3.692 CHARTPHASE|ticks|start
+  13.700 CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.296,"plotPaints":600,"plotMs":0.603,"drawPaints":600,"drawMs":0.932,"livePaints":600,"liveMs":0.761,"selPaints":600,"selMs":0.000,"abovePaints":600,"aboveMs":0.000,"drawRebuilds":597,"rebuildMsTotal":317.13,"rssMb":299.6}
+  13.700 CHARTPHASE|ticks|end
+  13.700 CHARTPHASE|crosshair|start
+  23.708 CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.392,"plotPaints":599,"plotMs":0.617,"drawPaints":599,"drawMs":0.933,"livePaints":599,"liveMs":0.846,"selPaints":599,"selMs":0.000,"abovePaints":599,"aboveMs":0.000,"drawRebuilds":598,"rebuildMsTotal":313.60,"rssMb":299.9}
+  23.708 CHARTPHASE|crosshair|end
+  23.708 CHARTPHASE|pan|start
+  33.717 CHARTPERF|{"phase":"pan","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":1.766,"plotPaints":600,"plotMs":0.725,"drawPaints":600,"drawMs":0.332,"livePaints":600,"liveMs":0.710,"selPaints":600,"selMs":0.000,"abovePaints":600,"aboveMs":0.000,"drawRebuilds":1,"rebuildMsTotal":0.45,"rssMb":306.9}
+  33.717 CHARTPHASE|pan|end
+  33.717 CHARTPHASE|drag|start
+  43.725 CHARTPERF|{"phase":"drag","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":1.526,"plotPaints":600,"plotMs":0.759,"drawPaints":600,"drawMs":0.159,"livePaints":600,"liveMs":0.438,"selPaints":600,"selMs":0.007,"abovePaints":600,"aboveMs":0.163,"drawRebuilds":1,"rebuildMsTotal":1.73,"rssMb":300.0,"layers":100,"drawingsTotal":1000,"pick":500}
+  43.725 CHARTPHASE|drag|end
+  43.725 CHARTPHASE|select|start
+  53.733 CHARTPERF|{"phase":"select","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.237,"plotPaints":600,"plotMs":0.680,"drawPaints":600,"drawMs":0.960,"livePaints":600,"liveMs":0.530,"selPaints":600,"selMs":0.005,"abovePaints":600,"aboveMs":0.062,"drawRebuilds":600,"rebuildMsTotal":330.12,"rssMb":314.5,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":599,"allRebuildP50":0.527,"allRebuildP99":0.797,"allTtfP50":16.682,"allTtfP99":17.754,"selectOps":300,"selectRebuildP50":0.538,"selectRebuildP99":0.807,"selectTtfP50":16.688,"selectTtfP99":17.830,"deselectOps":299,"deselectRebuildP50":0.516,"deselectRebuildP99":0.764,"deselectTtfP50":16.675,"deselectTtfP99":17.662}
+  53.733 CHARTPHASE|select|end
+  53.733 CHARTPHASE|reorder|start
+  63.741 CHARTPERF|{"phase":"reorder","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.257,"plotPaints":600,"plotMs":0.684,"drawPaints":600,"drawMs":0.910,"livePaints":600,"liveMs":0.541,"selPaints":600,"selMs":0.004,"abovePaints":600,"aboveMs":0.119,"drawRebuilds":600,"rebuildMsTotal":333.37,"rssMb":301.4,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":599,"allRebuildP50":0.534,"allRebuildP99":0.813,"allTtfP50":16.677,"allTtfP99":17.811,"zopOps":300,"zopRebuildP50":0.530,"zopRebuildP99":0.791,"zopTtfP50":16.678,"zopTtfP99":17.633,"layerVisOps":150,"layerVisRebuildP50":0.535,"layerVisRebuildP99":0.814,"layerVisTtfP50":16.674,"layerVisTtfP99":17.448,"layerMoveOps":149,"layerMoveRebuildP50":0.539,"layerMoveRebuildP99":0.790,"layerMoveTtfP50":16.669,"layerMoveTtfP99":17.940}
+  63.741 CHARTPHASE|reorder|end
+  63.741 CHARTPHASE|zshot|start
+  66.745 CHARTPERF|{"phase":"zshot","seconds":3.00,"frames":180,"fps":59.9,"steps":179,"avgPaintMs":0.379,"plotPaints":180,"plotMs":0.156,"drawPaints":180,"drawMs":0.011,"livePaints":180,"liveMs":0.149,"selPaints":180,"selMs":0.016,"abovePaints":180,"aboveMs":0.047,"drawRebuilds":1,"rebuildMsTotal":0.19,"rssMb":289.1,"layers":3,"drawingsTotal":7,"pick":500}
+  66.745 CHARTPHASE|zshot|end
+  66.745 CHARTPERF|{"phase":"done","sinceStartMs":66501}
+==== heavy 2026-10-25T11:32:26
+   0.033 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.165 GPUILOG|0.131|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.165 GPUILOG|0.132|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.248 [xq-feed] 已連上 127.0.0.1:47631
+   0.260 BENCH first-frame
+   0.275 BENCH first-quote
+   0.676 CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":0.62}
+   0.691 BENCH heavy-frame
+   0.691 CHARTPERF|{"phase":"setup","cssW":1166,"cssH":505,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":193,"drawVertices":10076,"drawPaths":67,"bars":1200,"sinceStartMs":444,"rebuildMs":2.05,"paintMsTotal":14.75,"rssMb":161.4}
+   0.691 CHARTPHASE|warm|start
+   3.693 CHARTPHASE|ticks|start
+  13.701 CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.373,"plotPaints":600,"plotMs":0.656,"drawPaints":600,"drawMs":0.982,"livePaints":600,"liveMs":0.735,"selPaints":600,"selMs":0.000,"abovePaints":600,"aboveMs":0.000,"drawRebuilds":597,"rebuildMsTotal":325.87,"rssMb":300.1}
+  13.701 CHARTPHASE|ticks|end
+  13.701 CHARTPHASE|crosshair|start
+  23.709 CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.439,"plotPaints":599,"plotMs":0.645,"drawPaints":599,"drawMs":0.962,"livePaints":599,"liveMs":0.835,"selPaints":599,"selMs":0.000,"abovePaints":599,"aboveMs":0.000,"drawRebuilds":595,"rebuildMsTotal":319.75,"rssMb":300.0}
+  23.709 CHARTPHASE|crosshair|end
+  23.709 CHARTPHASE|pan|start
+  33.718 CHARTPERF|{"phase":"pan","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":1.756,"plotPaints":600,"plotMs":0.709,"drawPaints":600,"drawMs":0.332,"livePaints":600,"liveMs":0.715,"selPaints":600,"selMs":0.000,"abovePaints":600,"aboveMs":0.000,"drawRebuilds":0,"rebuildMsTotal":0.00,"rssMb":306.4}
+  33.718 CHARTPHASE|pan|end
+  33.718 CHARTPHASE|drag|start
+  43.726 CHARTPERF|{"phase":"drag","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":1.464,"plotPaints":600,"plotMs":0.708,"drawPaints":600,"drawMs":0.165,"livePaints":600,"liveMs":0.423,"selPaints":600,"selMs":0.007,"abovePaints":600,"aboveMs":0.162,"drawRebuilds":1,"rebuildMsTotal":1.82,"rssMb":303.1,"layers":100,"drawingsTotal":1000,"pick":500}
+  43.726 CHARTPHASE|drag|end
+  43.726 CHARTPHASE|select|start
+  53.734 CHARTPERF|{"phase":"select","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.247,"plotPaints":600,"plotMs":0.681,"drawPaints":600,"drawMs":0.969,"livePaints":600,"liveMs":0.529,"selPaints":600,"selMs":0.004,"abovePaints":600,"aboveMs":0.064,"drawRebuilds":600,"rebuildMsTotal":328.86,"rssMb":313.7,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":599,"allRebuildP50":0.523,"allRebuildP99":0.808,"allTtfP50":16.679,"allTtfP99":17.644,"selectOps":300,"selectRebuildP50":0.532,"selectRebuildP99":0.803,"selectTtfP50":16.689,"selectTtfP99":17.641,"deselectOps":299,"deselectRebuildP50":0.513,"deselectRebuildP99":0.808,"deselectTtfP50":16.668,"deselectTtfP99":17.827}
+  53.734 CHARTPHASE|select|end
+  53.734 CHARTPHASE|reorder|start
+  63.742 CHARTPERF|{"phase":"reorder","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.230,"plotPaints":600,"plotMs":0.666,"drawPaints":600,"drawMs":0.906,"livePaints":600,"liveMs":0.532,"selPaints":600,"selMs":0.004,"abovePaints":600,"aboveMs":0.121,"drawRebuilds":600,"rebuildMsTotal":333.13,"rssMb":301.2,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":599,"allRebuildP50":0.532,"allRebuildP99":0.819,"allTtfP50":16.683,"allTtfP99":17.717,"zopOps":300,"zopRebuildP50":0.543,"zopRebuildP99":0.824,"zopTtfP50":16.683,"zopTtfP99":17.810,"layerVisOps":150,"layerVisRebuildP50":0.518,"layerVisRebuildP99":0.819,"layerVisTtfP50":16.670,"layerVisTtfP99":17.717,"layerMoveOps":149,"layerMoveRebuildP50":0.520,"layerMoveRebuildP99":0.791,"layerMoveTtfP50":16.691,"layerMoveTtfP99":17.256}
+  63.742 CHARTPHASE|reorder|end
+  63.742 CHARTPHASE|zshot|start
+  66.746 CHARTPERF|{"phase":"zshot","seconds":3.00,"frames":180,"fps":59.9,"steps":179,"avgPaintMs":0.423,"plotPaints":180,"plotMs":0.173,"drawPaints":180,"drawMs":0.013,"livePaints":180,"liveMs":0.166,"selPaints":180,"selMs":0.019,"abovePaints":180,"aboveMs":0.054,"drawRebuilds":1,"rebuildMsTotal":0.13,"rssMb":289.3,"layers":3,"drawingsTotal":7,"pick":500}
+  66.746 CHARTPHASE|zshot|end
+  66.746 CHARTPERF|{"phase":"done","sinceStartMs":66499}
+==== heavy 2026-10-25T11:37:16
+   0.032 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.159 GPUILOG|0.128|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.159 GPUILOG|0.128|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.240 [xq-feed] 已連上 127.0.0.1:47631
+   0.258 BENCH first-frame
+   0.262 BENCH first-quote
+   0.664 CHARTPERF|{"phase":"setup-begin","indicatorSetupMs":1.68}
+   0.676 BENCH heavy-frame
+   0.676 CHARTPERF|{"phase":"setup","cssW":750,"cssH":378,"overlays":20,"subs":8,"drawings":1000,"layers":100,"visibleDrawings":152,"drawVertices":5530,"drawPaths":45,"bars":1200,"sinceStartMs":437,"rebuildMs":1.68,"paintMsTotal":14.40,"rssMb":100.7}
+   0.676 CHARTPHASE|warm|start
+   3.679 CHARTPHASE|ticks|start
+  13.687 CHARTPERF|{"phase":"ticks","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.378,"plotPaints":600,"plotMs":0.662,"drawPaints":600,"drawMs":0.980,"livePaints":600,"liveMs":0.736,"selPaints":600,"selMs":0.000,"abovePaints":600,"aboveMs":0.000,"drawRebuilds":596,"rebuildMsTotal":329.67,"rssMb":300.8}
+  13.687 CHARTPHASE|ticks|end
+  13.687 CHARTPHASE|crosshair|start
+  23.696 CHARTPERF|{"phase":"crosshair","seconds":10.01,"frames":599,"fps":59.9,"steps":599,"avgPaintMs":2.460,"plotPaints":599,"plotMs":0.622,"drawPaints":599,"drawMs":0.959,"livePaints":599,"liveMs":0.879,"selPaints":599,"selMs":0.000,"abovePaints":599,"aboveMs":0.000,"drawRebuilds":597,"rebuildMsTotal":324.26,"rssMb":301.5}
+  23.696 CHARTPHASE|crosshair|end
+  23.696 CHARTPHASE|pan|start
+  33.705 CHARTPERF|{"phase":"pan","seconds":10.01,"frames":600,"fps":59.9,"steps":599,"avgPaintMs":1.907,"plotPaints":600,"plotMs":0.757,"drawPaints":600,"drawMs":0.326,"livePaints":600,"liveMs":0.823,"selPaints":600,"selMs":0.000,"abovePaints":600,"aboveMs":0.000,"drawRebuilds":1,"rebuildMsTotal":0.50,"rssMb":311.7}
+  33.705 CHARTPHASE|pan|end
+  33.705 CHARTPHASE|drag|start
+  43.712 CHARTPERF|{"phase":"drag","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":1.499,"plotPaints":600,"plotMs":0.711,"drawPaints":600,"drawMs":0.152,"livePaints":600,"liveMs":0.467,"selPaints":600,"selMs":0.007,"abovePaints":600,"aboveMs":0.161,"drawRebuilds":1,"rebuildMsTotal":2.15,"rssMb":301.1,"layers":100,"drawingsTotal":1000,"pick":500}
+  43.712 CHARTPHASE|drag|end
+  43.712 CHARTPHASE|select|start
+  53.720 CHARTPERF|{"phase":"select","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.213,"plotPaints":600,"plotMs":0.666,"drawPaints":600,"drawMs":0.957,"livePaints":600,"liveMs":0.524,"selPaints":600,"selMs":0.004,"abovePaints":600,"aboveMs":0.062,"drawRebuilds":600,"rebuildMsTotal":324.92,"rssMb":314.8,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":599,"allRebuildP50":0.515,"allRebuildP99":0.827,"allTtfP50":16.684,"allTtfP99":17.781,"selectOps":300,"selectRebuildP50":0.520,"selectRebuildP99":0.830,"selectTtfP50":16.676,"selectTtfP99":17.056,"deselectOps":299,"deselectRebuildP50":0.511,"deselectRebuildP99":0.781,"deselectTtfP50":16.688,"deselectTtfP99":17.836}
+  53.720 CHARTPHASE|select|end
+  53.720 CHARTPHASE|reorder|start
+  63.728 CHARTPERF|{"phase":"reorder","seconds":10.01,"frames":600,"fps":60.0,"steps":599,"avgPaintMs":2.247,"plotPaints":600,"plotMs":0.683,"drawPaints":600,"drawMs":0.910,"livePaints":600,"liveMs":0.532,"selPaints":600,"selMs":0.004,"abovePaints":600,"aboveMs":0.118,"drawRebuilds":600,"rebuildMsTotal":332.65,"rssMb":296.1,"layers":100,"drawingsTotal":1000,"pick":500,"allOps":599,"allRebuildP50":0.531,"allRebuildP99":0.835,"allTtfP50":16.686,"allTtfP99":17.738,"zopOps":300,"zopRebuildP50":0.535,"zopRebuildP99":0.805,"zopTtfP50":16.682,"zopTtfP99":17.728,"layerVisOps":150,"layerVisRebuildP50":0.516,"layerVisRebuildP99":0.877,"layerVisTtfP50":16.675,"layerVisTtfP99":17.115,"layerMoveOps":149,"layerMoveRebuildP50":0.533,"layerMoveRebuildP99":0.865,"layerMoveTtfP50":16.691,"layerMoveTtfP99":17.838}
+  63.728 CHARTPHASE|reorder|end
+  63.728 CHARTPHASE|zshot|start
+  66.732 CHARTPERF|{"phase":"zshot","seconds":3.00,"frames":180,"fps":59.9,"steps":179,"avgPaintMs":0.385,"plotPaints":180,"plotMs":0.168,"drawPaints":180,"drawMs":0.012,"livePaints":180,"liveMs":0.144,"selPaints":180,"selMs":0.015,"abovePaints":180,"aboveMs":0.046,"drawRebuilds":1,"rebuildMsTotal":0.42,"rssMb":289.8,"layers":3,"drawingsTotal":7,"pick":500}
+  66.732 CHARTPHASE|zshot|end
+  66.732 CHARTPERF|{"phase":"done","sinceStartMs":66493}
