@@ -237,6 +237,7 @@ gpui_web 目前**做不到**的（原始碼 `gpui_web/src/platform.rs`）：第�
 
 **有條件可行**：同一個 html 頁面放 4 個 `<canvas>`、各一個 `eframe::WebRunner`（報價表、K 線、兩個計數器），四格都會畫、都會動，共用同一份 wasm 時總下載量和一個元件一樣（gzip 約 4.2 MB）。
 條件：eframe 的全域 panic hook 會讓「一格 panic 全部停」，要在全部啟動後換掉 hook；移除元件要呼叫 `destroy()`。細節、數字、沒驗的事：[docs/web-multi.md](docs/web-multi.md)；範例：[`examples/web-multi/`](examples/web-multi/)。
+也可以和一般 HTML 穿插（預設版面：左上報價、右上／左下網頁、右下 K 線）；同樣的頁面 GPUI 也做了（每個元件各自一份 wasm instance，穿插版面記憶體 24.8 MB 對 egui 8.9 MB），並放進 Mac／Windows 實機壓測包的 `web` 情境。
 
 ### 網頁版做不到、或跟原生不一樣的地方（兩版共通）
 
