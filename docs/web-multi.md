@@ -1,6 +1,25 @@
 # web：一頁嵌 4 個 egui 元件可行性（2026-10-25）
 
-範例：[`examples/web-multi/`](../examples/web-multi/)｜原始數據與截圖：[`docs/bench/web/2026-10-25-multi/`](bench/web/2026-10-25-multi/)
+範例：[`examples/web-multi/`](../examples/web-multi/)｜原始數據與截圖：[`docs/bench/web/2026-10-25-multi/`](bench/web/2026-10-25-multi/)（4 個元件）、[`docs/bench/web/2026-10-25-mixed/`](bench/web/2026-10-25-mixed/)（穿插版面＋壓測包）
+
+## 更新（2026-10-25 晚上）：穿插版面、GPUI 對照、放進實機壓測包
+
+- **版面改成穿插**（預設）：左上報價組合（egui）、右上公告（一般 HTML）、左下下單匣（一般 HTML，有輸入框和按鈕）、右下技術分析（egui K 線）。原本的 4 個元件改用 `?layout=canvas4`。
+  實測 canvas 元件和一般 HTML 混排沒問題：四格都在動；在下單匣輸入「2330」按送出正常（鍵盤沒有被 egui 吃掉）；移除下單匣、讓報價表 panic，K 線和公告照跑。截圖：`egui-1-mixed.png`～`egui-3-…png`。
+- **GPUI 也做了同一頁**（gpui-xq-demo 的 `examples/web-multi/`，頁面邏輯 `page.js` 兩邊同一份）。差別在 GPUI 一個 wasm instance 只能開一張 canvas，所以**每個元件各自一個 instance**（同一份 wasm 只下載一次）：
+
+| 雲端無頭 Chromium（軟體繪圖，只看相對大小） | egui | GPUI |
+|---|---:|---:|
+| 穿插版面（2 個元件）wasm 記憶體 | **8.9 MB**（一份） | 24.8 MB（兩份） |
+| 4 個元件 wasm 記憶體 | 15.1 MB | 40.4 MB |
+| 1 個元件（報價表） | 7.4 MB | 11.4 MB |
+| 頁面總下載量（gzip） | 4.2 MB | 6.5 MB |
+| 啟動到元件都在動（穿插） | 0.19 秒 | 1.2 秒 |
+| 一格 panic | 要換 hook 才不會全停（範例已處理） | 天生只停那格（各自 instance） |
+
+  幀數在軟體繪圖下 egui 約 24、GPUI 約 5 fps，不代表真實電腦。
+
+- **放進實機壓測包**（Mac `xq_bench_mac.py`、Windows `bench-windows.ps1` 的 `web` 情境；工具包在 gpui-xq-demo 的 `mac-bench`／`windows-bench-ci` 分支）：用 Chrome（沒有就 Edge）開全新設定檔，頁面加 `?bench=1` 自己照固定流程量（暖機 3 秒 → 5 秒幀數 → 記憶體 → 移除一格 → 報價表 panic），結果 POST 回壓測包內建的小伺服器；壓測包另外量下載量、整個瀏覽器的記憶體與 CPU。雲端用 Linux 跑過一輪：`bench-pack-cloud.md`。
 
 ## 結論先看
 
@@ -74,13 +93,14 @@ wasm 已經包含報價表、走勢圖、指標、畫線的程式碼，加上**�
 - `examples/web-multi/` 是獨立 crate（同 `mobile/` 的做法，不加進根目錄建置）：報價表、走勢圖用 `#[path]` 直接引用 `src/table.rs`、`src/chart.rs` 等，**沒改任何 `src/` 程式碼**。
 - wasm 匯出 `start(canvas, kind)` → `Widget`（`frames()`、`destroy()`、`has_panicked()`、`panic_next_frame()`），還有 `isolate_panics()`、`wasm_memory_bytes()`。JS 端在 `index.html` 呼叫 4 次。
 - 行情：每個元件在自己裡面跑一份合成行情，規則與 `WryFeedHost --demo-ticks`／`xq-demofeed` 相同（每 25 ms 每檔 ±0.15% 隨機走、量加 10～400）；UI 每幀最多套用一次（累積的 25 ms 步合併成一包）。**不是真實行情，也沒接 WebSocket**。
-- 網址參數：`?mode=separate`（各自 instance）、`?isolate=0`（不換 hook，重現 eframe 原本行為）、`?only=table,c1`（只啟動部分元件）。
+- 網址參數：`?layout=canvas4`（4 個元件；預設是穿插版面）、`?mode=separate`（各自 instance）、`?isolate=0`（不換 hook，重現 eframe 原本行為）、`?only=table,c1`（只啟動部分元件）、`?bench=1`（自動壓測，壓測包用）。
+- 頁面邏輯（版面、一般網頁格、移除／panic、幀數、自動壓測）在 `page.js`，跟 gpui-xq-demo 的同名檔案內容相同；`index.html` 只有 egui 的啟動方式。
 
 ```bash
 # 工具同根目錄網頁版：rustup target add wasm32-unknown-unknown；cargo install wasm-bindgen-cli --version 0.2.129；wasm-opt 可省略
 WASM_OPT=/path/to/wasm-opt ./examples/web-multi/build.sh        # 輸出到 dist/web-multi/
 python3 -m http.server -d dist/web-multi 8080                     # 瀏覽器開 http://127.0.0.1:8080/
-node examples/web-multi/verify.js dist/web-multi 輸出資料夾       # 無頭 Chromium 驗證（需要 Playwright）
+node examples/web-multi/verify.js dist/web-multi 輸出資料夾       # 無頭 Chromium 驗證（需要 Playwright；兩個 repo 同一支）
 ```
 
 ## 遇到的問題和繞法
@@ -95,6 +115,7 @@ node examples/web-multi/verify.js dist/web-multi 輸出資料夾       # 無頭 
 
 ## 沒驗的事
 
+- **實機數字**：壓測包的 `web` 情境還沒在實機上跑過（這次只在雲端 Linux 跑通）；Mac 的 Chrome 視窗會不會被其他視窗蓋住而降速、Windows 防火牆提示會不會卡住，要等實機跑過才知道。
 - **效能**：雲端沒有顯卡，沒做正式效能量測。無頭 SwiftShader 下 4 格都約 30 幀／秒，不代表真實電腦。
 - **真的瀏覽器／顯卡**：只跑了 Chromium 153 無頭版；沒試 Edge、Firefox、Safari、手機瀏覽器，也沒試有 GPU 的電腦。
 - **WebGL context 上限**：每格各自一個 WebGL2 context；瀏覽器每頁有上限（Chromium 一般說法是 16 個，超過會把最舊的丟掉），這次只開 4 個，沒測上限。

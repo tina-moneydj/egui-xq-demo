@@ -14,7 +14,7 @@ if [ -n "$WASM_OPT" ]; then
   "$WASM_OPT" -O3 --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue \
     "$OUT/xq_web_multi_bg.wasm" -o "$OUT/xq_web_multi_bg.wasm"
 fi
-cp index.html "$OUT/"
+cp index.html page.js "$OUT/"
 ls -la "$OUT"
 for f in xq_web_multi_bg.noopt.wasm xq_web_multi_bg.wasm xq_web_multi.js index.html; do
   echo "$f：原始 $(wc -c < "$OUT/$f") bytes，gzip -9 後 $(gzip -9 -c "$OUT/$f" | wc -c) bytes"
