@@ -233,6 +233,11 @@
 gpui_web 目前**做不到**的（原始碼 `gpui_web/src/platform.rs`）：第二個視窗／彈出視窗／浮動視窗（回 `WebWindowError`）、原生選單（`set_menus` 空實作）、
 檔案對話框（`prompt_for_paths` 回「not supported on the web」）、`reveal_path`、防休眠、結束程式。輸入法走隱藏 `<textarea>`（`ime_mirror.rs`）。
 
+### 一頁嵌多個 egui 元件（2026-10-25 可行性）
+
+**有條件可行**：同一個 html 頁面放 4 個 `<canvas>`、各一個 `eframe::WebRunner`（報價表、K 線、兩個計數器），四格都會畫、都會動，共用同一份 wasm 時總下載量和一個元件一樣（gzip 約 4.2 MB）。
+條件：eframe 的全域 panic hook 會讓「一格 panic 全部停」，要在全部啟動後換掉 hook；移除元件要呼叫 `destroy()`。細節、數字、沒驗的事：[docs/web-multi.md](docs/web-multi.md)；範例：[`examples/web-multi/`](examples/web-multi/)。
+
 ### 網頁版做不到、或跟原生不一樣的地方（兩版共通）
 
 | 原生有 | 網頁版 |
