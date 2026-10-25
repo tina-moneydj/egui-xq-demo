@@ -1,5 +1,6 @@
 # Windows 預先編譯版：egui-xq-demo.exe，並組成完整的 Windows 壓測包（本 repo 公開；release 不用登入就能下載）
 # 完整包 = gpui-xq-demo 公開 release windows-bench-latest 的 xq-bench-windows-gpui.zip（工具包＋GPUI＋行情產生器）＋ 這裡編的 egui-xq-demo.exe
+# 網頁情境（web）：GPUI 包裡已有 web\gpui；這裡從 main 分支的 examples/web-multi 編 egui 網頁版放進 web\egui。
 name: windows
 
 on:
@@ -17,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - name: Rust toolchain
@@ -39,6 +40,23 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item target/release/egui-xq-demo.exe dist/
           "egui-xq-demo $env:GITHUB_SHA ($env:GITHUB_REF_NAME) $(Get-Date -Format o)" | Set-Content dist/egui-build.txt
+      - name: 網頁版範例原始碼（main 分支的 examples/web-multi）
+        uses: actions/checkout@v4
+        with: { ref: main, path: webmain }
+      - name: 編 egui 網頁版（一頁嵌多個元件；失敗就不放，壓測包的 web 情境會自動略過 egui）
+        continue-on-error: true
+        shell: bash
+        run: |
+          [ -f webmain/examples/web-multi/page.js ] || { echo "main 還沒有新版 examples/web-multi（page.js）"; exit 1; }
+          rustup target add wasm32-unknown-unknown
+          V=$(grep -A1 '^name = "wasm-bindgen"$' webmain/examples/web-multi/Cargo.lock | sed -n 's/^version = "\(.*\)"/\1/p')
+          echo "wasm-bindgen $V"
+          wasm-bindgen --version 2>/dev/null | grep -q " $V$" || cargo install wasm-bindgen-cli --version "$V" --locked
+          curl -sSL -o binaryen.tgz https://github.com/WebAssembly/binaryen/releases/download/version_124/binaryen-version_124-x86_64-windows.tar.gz \
+            && tar xzf binaryen.tgz && export WASM_OPT="$PWD/binaryen-version_124/bin/wasm-opt.exe" || echo "沒有 wasm-opt，略過最佳化"
+          (cd webmain/examples/web-multi && ./build.sh)
+          mkdir -p web-egui && cp webmain/dist/web-multi/index.html webmain/dist/web-multi/page.js webmain/dist/web-multi/xq_web_multi.js webmain/dist/web-multi/xq_web_multi_bg.wasm web-egui/
+          ls -la web-egui
       - name: 組完整壓測包（下載 gpui-xq-demo 公開 release 的 GPUI 工具包，加進 egui）
         shell: pwsh
         env:
@@ -53,6 +71,8 @@ jobs:
           $global:LASTEXITCODE = 0
           Expand-Archive xq-bench-windows-gpui.zip -DestinationPath kit -Force
           Copy-Item dist/egui-xq-demo.exe, dist/egui-build.txt kit/xq-bench-windows/bin/
+          if (Test-Path web-egui) { New-Item -ItemType Directory -Force kit/xq-bench-windows/web | Out-Null; Remove-Item kit/xq-bench-windows/web/egui -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item web-egui kit/xq-bench-windows/web/egui -Recurse }
+          if (Test-Path kit/xq-bench-windows/web) { Get-ChildItem kit/xq-bench-windows/web -Recurse | Format-Table FullName, Length } else { "（沒有網頁版）" }
           Get-ChildItem kit/xq-bench-windows/bin | Format-Table Name, Length
           Compress-Archive -Path kit/xq-bench-windows -DestinationPath dist/xq-bench-windows.zip -Force
           Get-ChildItem dist | Format-Table Name, Length
