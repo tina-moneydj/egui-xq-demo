@@ -2,6 +2,7 @@
 # 本 repo 是公開的：release 不用登入 GitHub 就能下載。
 # 完整包 = gpui-xq-demo 公開 release mac-bench-latest 的 xq-bench-mac-gpui.zip（工具包＋GPUI＋行情產生器）＋ 這裡編的 egui 執行檔。
 # 為了省 macOS 建置時間，預設只編 arm64；Intel Mac 要測請手動執行並勾 universal。
+# 網頁情境（web）：GPUI 包裡已有 web/gpui；這裡從 main 分支的 examples/web-multi 編 egui 網頁版放進 web/egui。
 name: macos
 on:
   push:
@@ -20,7 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Rust
@@ -42,6 +43,21 @@ jobs:
           codesign --force -s - out/egui-xq-demo
           file out/egui-xq-demo
           ditto -c -k out/egui-xq-demo egui-xq-demo-macos.zip
+      - name: 網頁版範例原始碼（main 分支的 examples/web-multi）
+        uses: actions/checkout@v4
+        with: { ref: main, path: webmain }
+      - name: 編 egui 網頁版（一頁嵌多個元件；失敗就不放，壓測包的 web 情境會自動略過 egui）
+        continue-on-error: true
+        run: |
+          [ -f webmain/examples/web-multi/page.js ] || { echo "main 還沒有新版 examples/web-multi（page.js）"; exit 1; }
+          rustup target add wasm32-unknown-unknown
+          V=$(grep -A1 '^name = "wasm-bindgen"$' webmain/examples/web-multi/Cargo.lock | sed -n 's/^version = "\(.*\)"/\1/p')
+          echo "wasm-bindgen $V"
+          wasm-bindgen --version 2>/dev/null | grep -q " $V$" || cargo install wasm-bindgen-cli --version "$V" --locked
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install binaryen || true
+          (cd webmain/examples/web-multi && ./build.sh)
+          mkdir -p web-egui && cp webmain/dist/web-multi/index.html webmain/dist/web-multi/page.js webmain/dist/web-multi/xq_web_multi.js webmain/dist/web-multi/xq_web_multi_bg.wasm web-egui/
+          ls -la web-egui
       - name: 組完整壓測包（下載 gpui-xq-demo 公開 release 的 GPUI 工具包，加進 egui）
         env:
           GH_TOKEN: ${{ github.token }}
@@ -53,6 +69,8 @@ jobs:
           test -f xq-bench-mac-gpui.zip
           ditto -x -k xq-bench-mac-gpui.zip .
           cp out/egui-xq-demo xq-bench-mac/bin/egui-xq-demo
+          if [ -d web-egui ]; then mkdir -p xq-bench-mac/web && rm -rf xq-bench-mac/web/egui && cp -R web-egui xq-bench-mac/web/egui; fi
+          ls xq-bench-mac/web 2>/dev/null || echo "（沒有網頁版）"
           python3 - <<PY
           import json
           p = "xq-bench-mac/bin/build-info.json"
@@ -62,12 +80,12 @@ jobs:
           PY
           ditto -c -k --keepParent xq-bench-mac xq-bench-mac.zip
           ls -la *.zip
-      - name: 實際跑一輪（egui wgpu／glow 主視窗；CI 虛擬機的數字不具參考性，只確認 Mac 版真的能開視窗、收行情）
+      - name: 實際跑一輪（egui wgpu／glow 主視窗＋網頁；CI 虛擬機的數字不具參考性，只確認 Mac 版真的能開視窗、收行情）
         continue-on-error: true
         timeout-minutes: 10
         run: |
           cd xq-bench-mac
-          python3 xq_bench_mac.py --apps egui-wgpu,egui --scenarios main --runs 1 --no-zip --no-footprint --out "$GITHUB_WORKSPACE/smoke"
+          python3 xq_bench_mac.py --apps egui-wgpu,egui --scenarios main,web --runs 1 --no-zip --no-footprint --out "$GITHUB_WORKSPACE/smoke"
           ls -la "$GITHUB_WORKSPACE/smoke"; head -60 "$GITHUB_WORKSPACE/smoke/summary.md" || true
       - uses: actions/upload-artifact@v4
         if: always()
