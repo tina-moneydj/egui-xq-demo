@@ -1,0 +1,75 @@
+﻿==== tick-egui-wgpu-s1k 2026-10-25T02:01:30
+   0.014 [egui] renderer=Wgpu
+   0.430 [xq-feed] 已連上 127.0.0.1:47631
+   0.472 BENCH first-frame
+   0.477 BENCH first-quote
+==== tick-egui-wgpu-s1k 2026-10-25T02:03:39
+   0.014 [egui] renderer=Wgpu
+   0.463 [xq-feed] 已連上 127.0.0.1:47631
+   0.502 BENCH first-frame
+   0.509 BENCH first-quote
+==== tick-egui-wgpu-s1k 2026-10-25T02:05:48
+   0.013 [egui] renderer=Wgpu
+   0.428 [xq-feed] 已連上 127.0.0.1:47631
+   0.466 BENCH first-frame
+   0.472 BENCH first-quote
+==== tick-egui-wgpu-s10k 2026-10-25T02:07:56
+   0.013 [egui] renderer=Wgpu
+   0.451 [xq-feed] 已連上 127.0.0.1:47631
+   0.492 BENCH first-frame
+   0.498 BENCH first-quote
+==== tick-egui-wgpu-s10k 2026-10-25T02:10:05
+   0.014 [egui] renderer=Wgpu
+   0.458 [xq-feed] 已連上 127.0.0.1:47631
+   0.495 BENCH first-frame
+   0.502 BENCH first-quote
+==== tick-egui-wgpu-s10k 2026-10-25T02:12:14
+   0.013 [egui] renderer=Wgpu
+   0.449 [xq-feed] 已連上 127.0.0.1:47631
+   0.487 BENCH first-frame
+   0.492 BENCH first-quote
+==== tick-egui-wgpu-s50k 2026-10-25T02:14:23
+   0.013 [egui] renderer=Wgpu
+   0.413 [xq-feed] 已連上 127.0.0.1:47631
+   0.453 BENCH first-frame
+   0.458 BENCH first-quote
+==== tick-egui-wgpu-s50k 2026-10-25T02:16:32
+   0.014 [egui] renderer=Wgpu
+   0.456 [xq-feed] 已連上 127.0.0.1:47631
+   0.495 BENCH first-frame
+   0.500 BENCH first-quote
+==== tick-egui-wgpu-s50k 2026-10-25T02:18:41
+   0.013 [egui] renderer=Wgpu
+   0.455 [xq-feed] 已連上 127.0.0.1:47631
+   0.496 BENCH first-frame
+   0.501 BENCH first-quote
+==== tick-egui-wgpu-s100k 2026-10-25T02:20:50
+   0.013 [egui] renderer=Wgpu
+   0.470 [xq-feed] 已連上 127.0.0.1:47631
+   0.507 BENCH first-frame
+   0.512 BENCH first-quote
+==== tick-egui-wgpu-s100k 2026-10-25T02:22:59
+   0.015 [egui] renderer=Wgpu
+   0.462 [xq-feed] 已連上 127.0.0.1:47631
+   0.501 BENCH first-frame
+   0.507 BENCH first-quote
+==== tick-egui-wgpu-s100k 2026-10-25T02:25:08
+   0.013 [egui] renderer=Wgpu
+   0.453 [xq-feed] 已連上 127.0.0.1:47631
+   0.491 BENCH first-frame
+   0.497 BENCH first-quote
+==== tick-egui-wgpu-burst 2026-10-25T02:27:17
+   0.014 [egui] renderer=Wgpu
+   0.445 [xq-feed] 已連上 127.0.0.1:47631
+   0.483 BENCH first-frame
+   0.488 BENCH first-quote
+==== tick-egui-wgpu-burst 2026-10-25T02:29:26
+   0.012 [egui] renderer=Wgpu
+   0.453 [xq-feed] 已連上 127.0.0.1:47631
+   0.491 BENCH first-frame
+   0.496 BENCH first-quote
+==== tick-egui-wgpu-burst 2026-10-25T02:31:35
+   0.013 [egui] renderer=Wgpu
+   0.453 [xq-feed] 已連上 127.0.0.1:47631
+   0.495 BENCH first-frame
+   0.501 BENCH first-quote

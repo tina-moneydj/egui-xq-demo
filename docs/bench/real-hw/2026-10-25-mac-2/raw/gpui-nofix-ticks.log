@@ -1,0 +1,21 @@
+==== tick-gpui-nofix-s10k 2026-10-25T10:22:57
+   0.011 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.101 [xq-feed] 已連上 127.0.0.1:47631
+   0.117 BENCH first-frame
+   0.117 BENCH first-quote
+  40.313 MARK vmmap-begin
+  41.044 MARK vmmap-end
+==== tick-gpui-nofix-s10k 2026-10-25T10:48:03
+   0.016 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.118 [xq-feed] 已連上 127.0.0.1:47631
+   0.134 BENCH first-frame
+   0.134 BENCH first-quote
+  40.388 MARK vmmap-begin
+  41.109 MARK vmmap-end
+==== tick-gpui-nofix-s10k 2026-10-25T11:13:07
+   0.015 GPUILOG|0.000|WARN|gpui_macos::platform|gpui_macos was compiled without the `font-kit` feature, so no text will be rendered.
+   0.120 [xq-feed] 已連上 127.0.0.1:47631
+   0.137 BENCH first-frame
+   0.137 BENCH first-quote
+  40.373 MARK vmmap-begin
+  41.087 MARK vmmap-end

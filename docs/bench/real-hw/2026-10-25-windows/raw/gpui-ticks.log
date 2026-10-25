@@ -1,0 +1,105 @@
+﻿==== tick-gpui-s1k 2026-10-25T11:40:25
+   0.032 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.167 GPUILOG|0.134|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.167 GPUILOG|0.135|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.249 [xq-feed] 已連上 127.0.0.1:47631
+   0.266 BENCH first-frame
+   0.266 BENCH first-quote
+==== tick-gpui-s1k 2026-10-25T11:42:34
+   0.034 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.178 GPUILOG|0.145|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.179 GPUILOG|0.145|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.261 [xq-feed] 已連上 127.0.0.1:47631
+   0.275 BENCH first-frame
+   0.275 BENCH first-quote
+==== tick-gpui-s1k 2026-10-25T11:44:43
+   0.035 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.165 GPUILOG|0.130|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.165 GPUILOG|0.130|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.246 [xq-feed] 已連上 127.0.0.1:47631
+   0.260 BENCH first-frame
+   0.260 BENCH first-quote
+==== tick-gpui-s10k 2026-10-25T11:46:52
+   0.048 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.181 GPUILOG|0.133|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.182 GPUILOG|0.133|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.266 [xq-feed] 已連上 127.0.0.1:47631
+   0.289 BENCH first-frame
+   0.290 BENCH first-quote
+==== tick-gpui-s10k 2026-10-25T11:49:00
+   0.037 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.172 GPUILOG|0.135|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.172 GPUILOG|0.135|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.256 [xq-feed] 已連上 127.0.0.1:47631
+   0.271 BENCH first-frame
+   0.271 BENCH first-quote
+==== tick-gpui-s10k 2026-10-25T11:51:09
+   0.032 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.162 GPUILOG|0.130|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.162 GPUILOG|0.130|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.243 [xq-feed] 已連上 127.0.0.1:47631
+   0.258 BENCH first-frame
+   0.258 BENCH first-quote
+==== tick-gpui-s50k 2026-10-25T11:53:18
+   0.029 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.164 GPUILOG|0.135|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.165 GPUILOG|0.135|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.244 [xq-feed] 已連上 127.0.0.1:47631
+   0.258 BENCH first-frame
+   0.258 BENCH first-quote
+==== tick-gpui-s50k 2026-10-25T11:55:27
+   0.035 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.165 GPUILOG|0.130|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.165 GPUILOG|0.131|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.247 [xq-feed] 已連上 127.0.0.1:47631
+   0.262 BENCH first-frame
+   0.262 BENCH first-quote
+==== tick-gpui-s50k 2026-10-25T11:57:36
+   0.032 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.163 GPUILOG|0.131|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.163 GPUILOG|0.132|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.244 [xq-feed] 已連上 127.0.0.1:47631
+   0.264 BENCH first-frame
+   0.264 BENCH first-quote
+==== tick-gpui-s100k 2026-10-25T11:59:45
+   0.035 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.170 GPUILOG|0.134|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.170 GPUILOG|0.135|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.255 [xq-feed] 已連上 127.0.0.1:47631
+   0.274 BENCH first-frame
+   0.274 BENCH first-quote
+==== tick-gpui-s100k 2026-10-25T12:01:54
+   0.034 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.168 GPUILOG|0.134|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.168 GPUILOG|0.134|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.251 [xq-feed] 已連上 127.0.0.1:47631
+   0.275 BENCH first-frame
+   0.275 BENCH first-quote
+==== tick-gpui-s100k 2026-10-25T12:04:03
+   0.041 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.177 GPUILOG|0.137|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.178 GPUILOG|0.137|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.259 [xq-feed] 已連上 127.0.0.1:47631
+   0.275 BENCH first-frame
+   0.275 BENCH first-quote
+==== tick-gpui-burst 2026-10-25T12:06:12
+   0.045 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.176 GPUILOG|0.131|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.176 GPUILOG|0.131|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.257 [xq-feed] 已連上 127.0.0.1:47631
+   0.274 BENCH first-frame
+   0.274 BENCH first-quote
+==== tick-gpui-burst 2026-10-25T12:08:21
+   0.035 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.173 GPUILOG|0.137|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.173 GPUILOG|0.138|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.254 [xq-feed] 已連上 127.0.0.1:47631
+   0.268 BENCH first-frame
+   0.268 BENCH first-quote
+==== tick-gpui-burst 2026-10-25T12:10:30
+   0.033 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.168 GPUILOG|0.134|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.168 GPUILOG|0.135|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.251 [xq-feed] 已連上 127.0.0.1:47631
+   0.280 BENCH first-frame
+   0.280 BENCH first-quote

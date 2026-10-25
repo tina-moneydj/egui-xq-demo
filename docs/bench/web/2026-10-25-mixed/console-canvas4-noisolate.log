@@ -1,0 +1,65 @@
+[error] panicked at src/lib.rs:218:13:
+[counter] 驗證用：故意 panic
+
+Stack:
+
+Error
+    at __wbg_new_b5f7d6e100c3090b (http://127.0.0.1:41973/xq_web_multi.js:1031:25)
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x2266b4
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1849]:0x2e8568
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[2416]:0x31167d
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[341]:0x22614
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[800]:0x220c7f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[356]:0xabf93
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1148]:0x29032f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1752]:0x2e10b1
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[2060]:0x2f4d61
+[error] panicked at src/lib.rs:218:13:
+[counter] 驗證用：故意 panic
+
+Stack:
+
+Error
+    at __wbg_new_b5f7d6e100c3090b (http://127.0.0.1:41973/xq_web_multi.js:1031:25)
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x2266b4
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x226a1f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1849]:0x2e8568
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[2416]:0x31167d
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[341]:0x22614
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[800]:0x220c7f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[356]:0xabf93
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1148]:0x29032f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1752]:0x2e10b1
+[error] panicked at src/lib.rs:218:13:
+[counter] 驗證用：故意 panic
+
+Stack:
+
+Error
+    at __wbg_new_b5f7d6e100c3090b (http://127.0.0.1:41973/xq_web_multi.js:1031:25)
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x2266b4
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x226a1f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x226a1f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1849]:0x2e8568
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[2416]:0x31167d
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[341]:0x22614
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[800]:0x220c7f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[356]:0xabf93
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1148]:0x29032f
+[error] panicked at src/lib.rs:218:13:
+[counter] 驗證用：故意 panic
+
+Stack:
+
+Error
+    at __wbg_new_b5f7d6e100c3090b (http://127.0.0.1:41973/xq_web_multi.js:1031:25)
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x2266b4
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x226a1f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x226a1f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[816]:0x226a1f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[1849]:0x2e8568
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[2416]:0x31167d
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[341]:0x22614
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[800]:0x220c7f
+    at http://127.0.0.1:41973/xq_web_multi_bg.wasm:wasm-function[356]:0xabf93
+[pageerror] unreachable

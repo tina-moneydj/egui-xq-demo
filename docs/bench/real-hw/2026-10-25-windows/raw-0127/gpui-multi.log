@@ -1,0 +1,46 @@
+﻿==== multi-gpui-1w 2026-10-25T02:32:18
+   0.256 [xq-feed] 已連上 127.0.0.1:47631
+   0.281 BENCH first-frame
+   0.281 BENCH first-quote
+==== multi-gpui-1w 2026-10-25T02:34:27
+   0.246 [xq-feed] 已連上 127.0.0.1:47631
+   0.261 BENCH first-frame
+   0.261 BENCH first-quote
+==== multi-gpui-1w 2026-10-25T02:36:35
+   0.251 [xq-feed] 已連上 127.0.0.1:47631
+   0.266 BENCH first-frame
+   0.266 BENCH first-quote
+==== multi-gpui-4w 2026-10-25T02:38:44
+   0.257 [xq-feed] 已連上 127.0.0.1:47631
+   0.314 BENCH first-frame
+   0.320 BENCH first-frame
+   0.323 BENCH first-frame
+   0.326 BENCH first-frame
+   0.326 BENCH first-quote
+   3.379 BENCH first-quote
+   3.394 BENCH first-quote
+   3.394 BENCH first-quote
+   6.591 LONGFRAME|{"win":1,"kind":"wake","ms":135.1,"t":0.000,"gapMs":148.0,"frames":12,"n":1}
+   6.593 LONGFRAME|{"win":0,"kind":"wake","ms":220.2,"t":0.002,"gapMs":223.0,"frames":11,"n":1}
+==== multi-gpui-4w 2026-10-25T02:40:54
+   0.263 [xq-feed] 已連上 127.0.0.1:47631
+   0.316 BENCH first-frame
+   0.325 BENCH first-frame
+   0.332 BENCH first-frame
+   0.347 BENCH first-frame
+   0.347 BENCH first-quote
+   3.378 BENCH first-quote
+   3.396 BENCH first-quote
+   3.411 BENCH first-quote
+   6.546 LONGFRAME|{"win":0,"kind":"wake","ms":132.2,"t":0.000,"gapMs":148.8,"frames":11,"n":1}
+==== multi-gpui-4w 2026-10-25T02:43:04
+   0.246 [xq-feed] 已連上 127.0.0.1:47631
+   0.303 BENCH first-frame
+   0.309 BENCH first-frame
+   0.312 BENCH first-frame
+   0.314 BENCH first-frame
+   0.314 BENCH first-quote
+   3.342 BENCH first-quote
+   3.358 BENCH first-quote
+   3.374 BENCH first-quote
+   6.583 LONGFRAME|{"win":0,"kind":"wake","ms":230.4,"t":0.000,"gapMs":235.0,"frames":9,"n":1}

@@ -1,0 +1,62 @@
+# egui 弱項驗證小程式（examples/probe.rs）：在 Windows、Mac 編好，放到「probe-latest」預發行版，實機驗證直接下載執行。
+# 說明與實機步驟見 docs/egui-weakness-check.md。PR 只建置；probe-latest 只由 main 更新。
+name: probe
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/probe.yml", "examples/probe.rs", "Cargo.lock"]
+  pull_request:
+    paths: [".github/workflows/probe.yml", "examples/probe.rs"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: probe-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            exe: probe.exe
+            zip: egui-probe-windows.zip
+          - os: macos-latest
+            exe: probe
+            zip: egui-probe-mac-arm64.zip
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    env:
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: probe-${{ matrix.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: probe-${{ matrix.os }}-
+      - name: 建置 probe
+        run: cargo build --release --example probe
+      - name: 打包
+        shell: bash
+        run: |
+          mkdir -p out
+          cp "target/release/examples/${{ matrix.exe }}" out/
+          cd out && 7z a "../${{ matrix.zip }}" "${{ matrix.exe }}" >/dev/null 2>&1 || zip "../${{ matrix.zip }}" "${{ matrix.exe }}"
+          ls -l ..//${{ matrix.zip }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.zip }}
+          path: ${{ matrix.zip }}
+      - name: 更新 probe-latest 預發行版（只有 main）
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view probe-latest >/dev/null 2>&1 || gh release create probe-latest --prerelease --target "$GITHUB_SHA" --title "egui 弱項驗證小程式（最新）" --notes "main 分支自動產生。實機步驟見 docs/egui-weakness-check.md。"
+          gh release upload probe-latest "${{ matrix.zip }}" --clobber

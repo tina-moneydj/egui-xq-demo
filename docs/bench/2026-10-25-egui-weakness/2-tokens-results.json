@@ -1,0 +1,38 @@
+{
+  "tokens": {
+    "rowH": 22,
+    "headH": 26,
+    "colH": 22,
+    "header": "#171c26",
+    "selected": "#1e3a5f",
+    "panel": "#10141c"
+  },
+  "spots": {
+    "header": {
+      "egui": "#171c26",
+      "html": "#171c26",
+      "same": true
+    },
+    "selectedRow": {
+      "egui": "#1e3a5f",
+      "html": "#1e3a5f",
+      "same": true
+    },
+    "panel": {
+      "egui": "#10141c",
+      "html": "#10141c",
+      "same": true
+    }
+  },
+  "html": {
+    "headHeight": 26,
+    "colHeaderHeight": 22,
+    "rowPitch": 22,
+    "font": {
+      "family": "\"XQ TC\", sans-serif",
+      "size": "12px"
+    },
+    "fontsLoaded": true
+  },
+  "console": []
+}

@@ -1,0 +1,75 @@
+﻿==== tick-egui-s1k 2026-10-25T11:41:08
+   0.013 [egui] renderer=Glow
+   0.169 [xq-feed] 已連上 127.0.0.1:47631
+   0.202 BENCH first-frame
+   0.213 BENCH first-quote
+==== tick-egui-s1k 2026-10-25T11:43:17
+   0.013 [egui] renderer=Glow
+   0.154 [xq-feed] 已連上 127.0.0.1:47631
+   0.189 BENCH first-frame
+   0.207 BENCH first-quote
+==== tick-egui-s1k 2026-10-25T11:45:26
+   0.013 [egui] renderer=Glow
+   0.170 [xq-feed] 已連上 127.0.0.1:47631
+   0.204 BENCH first-frame
+   0.205 BENCH first-quote
+==== tick-egui-s10k 2026-10-25T11:47:34
+   0.012 [egui] renderer=Glow
+   0.160 [xq-feed] 已連上 127.0.0.1:47631
+   0.196 BENCH first-frame
+   0.197 BENCH first-quote
+==== tick-egui-s10k 2026-10-25T11:49:43
+   0.013 [egui] renderer=Glow
+   0.137 [xq-feed] 已連上 127.0.0.1:47631
+   0.170 BENCH first-frame
+   0.181 BENCH first-quote
+==== tick-egui-s10k 2026-10-25T11:51:52
+   0.016 [egui] renderer=Glow
+   0.162 [xq-feed] 已連上 127.0.0.1:47631
+   0.197 BENCH first-frame
+   0.197 BENCH first-quote
+==== tick-egui-s50k 2026-10-25T11:54:01
+   0.014 [egui] renderer=Glow
+   0.158 [xq-feed] 已連上 127.0.0.1:47631
+   0.196 BENCH first-frame
+   0.197 BENCH first-quote
+==== tick-egui-s50k 2026-10-25T11:56:10
+   0.016 [egui] renderer=Glow
+   0.160 [xq-feed] 已連上 127.0.0.1:47631
+   0.196 BENCH first-frame
+   0.203 BENCH first-quote
+==== tick-egui-s50k 2026-10-25T11:58:19
+   0.014 [egui] renderer=Glow
+   0.161 [xq-feed] 已連上 127.0.0.1:47631
+   0.194 BENCH first-frame
+   0.195 BENCH first-quote
+==== tick-egui-s100k 2026-10-25T12:00:28
+   0.014 [egui] renderer=Glow
+   0.164 [xq-feed] 已連上 127.0.0.1:47631
+   0.200 BENCH first-frame
+   0.208 BENCH first-quote
+==== tick-egui-s100k 2026-10-25T12:02:37
+   0.016 [egui] renderer=Glow
+   0.164 [xq-feed] 已連上 127.0.0.1:47631
+   0.200 BENCH first-frame
+   0.205 BENCH first-quote
+==== tick-egui-s100k 2026-10-25T12:04:46
+   0.013 [egui] renderer=Glow
+   0.131 [xq-feed] 已連上 127.0.0.1:47631
+   0.166 BENCH first-frame
+   0.169 BENCH first-quote
+==== tick-egui-burst 2026-10-25T12:06:55
+   0.014 [egui] renderer=Glow
+   0.159 [xq-feed] 已連上 127.0.0.1:47631
+   0.196 BENCH first-frame
+   0.199 BENCH first-quote
+==== tick-egui-burst 2026-10-25T12:09:03
+   0.012 [egui] renderer=Glow
+   0.150 [xq-feed] 已連上 127.0.0.1:47631
+   0.184 BENCH first-frame
+   0.193 BENCH first-quote
+==== tick-egui-burst 2026-10-25T12:11:12
+   0.012 [egui] renderer=Glow
+   0.150 [xq-feed] 已連上 127.0.0.1:47631
+   0.184 BENCH first-frame
+   0.190 BENCH first-quote

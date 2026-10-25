@@ -209,7 +209,12 @@ impl Terminal {
                 Peer {
                     id: egui::ViewportId::from_hash_of(("xq-window", k)),
                     title: format!("XQ 風格測試（egui） #{}", k + 1),
-                    chart: ChartView::new(sym, name, period),
+                    chart: {
+                        // 其他視窗也跑走勢圖壓測（XQ_CHART_STRESS＋XQ_WINDOWS＝技術分析情境），事件只由主視窗印
+                        let mut c = ChartView::new(sym, name, period);
+                        c.stress_quiet = true;
+                        c
+                    },
                     info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
                     top_frac: crate::plat::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
                     left_w: 470.0,
@@ -521,6 +526,11 @@ impl eframe::App for Terminal {
         let mut want = |d: Duration| wake = Some(wake.map_or(d, |w: Duration| w.min(d)));
         if self.chart.stress_on() {
             self.chart.stress_frame(self.total_frames);
+        }
+        for p in self.peers.iter_mut() {
+            if p.chart.stress_on() {
+                p.chart.stress_frame(self.total_frames);
+            }
         }
         if let Some(d) = self.group_step(now) {
             want(d);

@@ -1,0 +1,33 @@
+==== stress 2026-10-25T10:33:20
+   0.016 [egui] renderer=Glow
+   0.116 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.117 [xq-feed] 已連上 127.0.0.1:47631
+   0.161 BENCH first-frame
+   0.200 BENCH first-quote
+   1.473 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.475 GROUPPERF|{"phase":"tick-end","elapsedMs":30001,"fps":54.5,"paints":1581,"avgPaintMs":0.364,"avgCellsPerPaint":72,"cellUpdates":113832}
+  41.484 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":54.5,"scrollFps":88.3,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":88.3,"paints":875,"avgPaintMs":0.141,"avgCellsPerPaint":71,"cellUpdates":62772}
+  41.521 MARK vmmap-begin
+  42.244 MARK vmmap-end
+==== stress 2026-10-25T10:58:25
+   0.018 [egui] renderer=Glow
+   0.135 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.136 [xq-feed] 已連上 127.0.0.1:47631
+   0.174 BENCH first-frame
+   0.212 BENCH first-quote
+   1.495 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.500 GROUPPERF|{"phase":"tick-end","elapsedMs":30005,"fps":61.1,"paints":1788,"avgPaintMs":0.344,"avgCellsPerPaint":72,"cellUpdates":128736}
+  41.512 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":61.1,"scrollFps":90.4,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":90.4,"paints":892,"avgPaintMs":0.153,"avgCellsPerPaint":71,"cellUpdates":64002}
+  41.558 MARK vmmap-begin
+  42.274 MARK vmmap-end
+==== stress 2026-10-25T11:23:30
+   0.017 [egui] renderer=Glow
+   0.119 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.119 [xq-feed] 已連上 127.0.0.1:47631
+   0.157 BENCH first-frame
+   0.197 BENCH first-quote
+   1.476 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.477 GROUPPERF|{"phase":"tick-end","elapsedMs":30001,"fps":55.2,"paints":1607,"avgPaintMs":0.349,"avgCellsPerPaint":72,"cellUpdates":115704}
+  41.486 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":55.2,"scrollFps":88.4,"scrollJankCount":0,"scrollJankAvgMs":0.0,"fps":88.4,"paints":875,"avgPaintMs":0.123,"avgCellsPerPaint":71,"cellUpdates":62754}
+  41.518 MARK vmmap-begin
+  42.233 MARK vmmap-end

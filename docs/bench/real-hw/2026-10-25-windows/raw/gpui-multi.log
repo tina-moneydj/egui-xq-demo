@@ -1,0 +1,65 @@
+﻿==== multi-gpui-1w 2026-10-25T12:12:39
+   0.041 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.169 GPUILOG|0.128|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.169 GPUILOG|0.128|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.250 [xq-feed] 已連上 127.0.0.1:47631
+   0.266 BENCH first-frame
+   0.267 BENCH first-quote
+==== multi-gpui-1w 2026-10-25T12:14:47
+   0.032 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.160 GPUILOG|0.128|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.160 GPUILOG|0.128|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.240 [xq-feed] 已連上 127.0.0.1:47631
+   0.259 BENCH first-frame
+   0.259 BENCH first-quote
+==== multi-gpui-1w 2026-10-25T12:16:56
+   0.029 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.142 GPUILOG|0.113|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.142 GPUILOG|0.113|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.222 [xq-feed] 已連上 127.0.0.1:47631
+   0.242 BENCH first-frame
+   0.242 BENCH first-quote
+==== multi-gpui-4w 2026-10-25T12:19:05
+   0.031 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.147 GPUILOG|0.116|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.148 GPUILOG|0.117|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.228 [xq-feed] 已連上 127.0.0.1:47631
+   0.276 BENCH first-frame
+   0.282 BENCH first-frame
+   0.285 BENCH first-frame
+   0.290 BENCH first-frame
+   0.290 BENCH first-quote
+   3.324 BENCH first-quote
+   3.328 BENCH first-quote
+   3.328 BENCH first-quote
+   6.509 LONGFRAME|{"win":1,"kind":"wake","ms":116.2,"t":6.478,"gapMs":137.4,"frames":13,"n":1}
+   6.571 LONGFRAME|{"win":0,"kind":"wake","ms":249.2,"t":6.541,"gapMs":253.0,"frames":11,"n":1}
+==== multi-gpui-4w 2026-10-25T12:21:15
+   0.033 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.164 GPUILOG|0.131|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.164 GPUILOG|0.132|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.246 [xq-feed] 已連上 127.0.0.1:47631
+   0.297 BENCH first-frame
+   0.304 BENCH first-frame
+   0.307 BENCH first-frame
+   0.310 BENCH first-frame
+   0.310 BENCH first-quote
+   3.342 BENCH first-quote
+   3.345 BENCH first-quote
+   3.355 BENCH first-quote
+   6.438 LONGFRAME|{"win":1,"kind":"wake","ms":102.7,"t":6.405,"gapMs":107.2,"frames":11,"n":1}
+   6.590 LONGFRAME|{"win":0,"kind":"wake","ms":240.5,"t":6.557,"gapMs":249.3,"frames":13,"n":1}
+==== multi-gpui-4w 2026-10-25T12:23:25
+   0.033 GPUILOG|0.000|INFO|gpui_windows::directx_devices|Using GPU: NVIDIA GeForce GTX 1650
+   0.165 GPUILOG|0.132|INFO|gpui_windows::directx_devices|Created device with Direct3D 11.1 feature level.
+   0.165 GPUILOG|0.132|INFO|gpui_windows::direct_write|Use Microsoft JhengHei UI as UI font.
+   0.245 [xq-feed] 已連上 127.0.0.1:47631
+   0.294 BENCH first-frame
+   0.300 BENCH first-frame
+   0.303 BENCH first-frame
+   0.305 BENCH first-frame
+   0.305 BENCH first-quote
+   3.348 BENCH first-quote
+   3.349 BENCH first-quote
+   3.349 BENCH first-quote
+   6.632 LONGFRAME|{"win":0,"kind":"wake","ms":284.6,"t":6.599,"gapMs":287.1,"frames":12,"n":1}
