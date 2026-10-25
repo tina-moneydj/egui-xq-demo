@@ -1,0 +1,120 @@
+==== tick-egui-s1k 2026-10-25T10:35:11
+   0.017 [egui] renderer=Glow
+   0.118 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.119 [xq-feed] 已連上 127.0.0.1:47631
+   0.172 BENCH first-frame
+   0.172 BENCH first-quote
+  40.380 MARK vmmap-begin
+  41.103 MARK vmmap-end
+==== tick-egui-s10k 2026-10-25T10:35:53
+   0.015 [egui] renderer=Glow
+   0.123 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.124 [xq-feed] 已連上 127.0.0.1:47631
+   0.167 BENCH first-frame
+   0.167 BENCH first-quote
+  40.316 MARK vmmap-begin
+  41.048 MARK vmmap-end
+==== tick-egui-s50k 2026-10-25T10:36:36
+   0.015 [egui] renderer=Glow
+   0.116 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.116 [xq-feed] 已連上 127.0.0.1:47631
+   0.161 BENCH first-frame
+   0.161 BENCH first-quote
+  40.394 MARK vmmap-begin
+  41.118 MARK vmmap-end
+==== tick-egui-s100k 2026-10-25T10:37:19
+   0.008 [egui] renderer=Glow
+   0.102 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.103 [xq-feed] 已連上 127.0.0.1:47631
+   0.147 BENCH first-frame
+   0.147 BENCH first-quote
+  40.351 MARK vmmap-begin
+  41.080 MARK vmmap-end
+==== tick-egui-burst 2026-10-25T10:38:01
+   0.011 [egui] renderer=Glow
+   0.111 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.112 [xq-feed] 已連上 127.0.0.1:47631
+   0.153 BENCH first-frame
+   0.153 BENCH first-quote
+  40.320 MARK vmmap-begin
+  41.044 MARK vmmap-end
+==== tick-egui-s1k 2026-10-25T11:00:16
+   0.011 [egui] renderer=Glow
+   0.108 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.108 [xq-feed] 已連上 127.0.0.1:47631
+   0.161 BENCH first-frame
+   0.161 BENCH first-quote
+  40.289 MARK vmmap-begin
+  41.007 MARK vmmap-end
+==== tick-egui-s10k 2026-10-25T11:00:58
+   0.011 [egui] renderer=Glow
+   0.109 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.110 [xq-feed] 已連上 127.0.0.1:47631
+   0.151 BENCH first-frame
+   0.151 BENCH first-quote
+  40.310 MARK vmmap-begin
+  41.032 MARK vmmap-end
+==== tick-egui-s50k 2026-10-25T11:01:41
+   0.013 [egui] renderer=Glow
+   0.111 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.111 [xq-feed] 已連上 127.0.0.1:47631
+   0.155 BENCH first-frame
+   0.155 BENCH first-quote
+  40.348 MARK vmmap-begin
+  41.067 MARK vmmap-end
+==== tick-egui-s100k 2026-10-25T11:02:23
+   0.014 [egui] renderer=Glow
+   0.114 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.115 [xq-feed] 已連上 127.0.0.1:47631
+   0.162 BENCH first-frame
+   0.162 BENCH first-quote
+  40.381 MARK vmmap-begin
+  41.099 MARK vmmap-end
+==== tick-egui-burst 2026-10-25T11:03:06
+   0.011 [egui] renderer=Glow
+   0.108 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.108 [xq-feed] 已連上 127.0.0.1:47631
+   0.149 BENCH first-frame
+   0.149 BENCH first-quote
+  40.330 MARK vmmap-begin
+  41.052 MARK vmmap-end
+==== tick-egui-s1k 2026-10-25T11:25:21
+   0.012 [egui] renderer=Glow
+   0.112 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.112 [xq-feed] 已連上 127.0.0.1:47631
+   0.158 BENCH first-frame
+   0.158 BENCH first-quote
+  40.312 MARK vmmap-begin
+  41.036 MARK vmmap-end
+==== tick-egui-s10k 2026-10-25T11:26:03
+   0.010 [egui] renderer=Glow
+   0.113 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.114 [xq-feed] 已連上 127.0.0.1:47631
+   0.159 BENCH first-frame
+   0.159 BENCH first-quote
+  40.323 MARK vmmap-begin
+  41.043 MARK vmmap-end
+==== tick-egui-s50k 2026-10-25T11:26:46
+   0.010 [egui] renderer=Glow
+   0.107 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.107 [xq-feed] 已連上 127.0.0.1:47631
+   0.166 BENCH first-frame
+   0.166 BENCH first-quote
+  40.297 MARK vmmap-begin
+  41.017 MARK vmmap-end
+==== tick-egui-s100k 2026-10-25T11:27:28
+   0.010 [egui] renderer=Glow
+   0.111 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.111 [xq-feed] 已連上 127.0.0.1:47631
+   0.153 BENCH first-frame
+   0.153 BENCH first-quote
+  40.330 MARK vmmap-begin
+  41.055 MARK vmmap-end
+==== tick-egui-burst 2026-10-25T11:28:11
+   0.008 [egui] renderer=Glow
+   0.103 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.103 [xq-feed] 已連上 127.0.0.1:47631
+   0.146 BENCH first-frame
+   0.146 BENCH first-quote
+  40.318 MARK vmmap-begin
+  41.035 MARK vmmap-end

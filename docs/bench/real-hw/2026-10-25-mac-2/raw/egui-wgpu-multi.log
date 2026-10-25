@@ -1,0 +1,48 @@
+==== multi-egui-wgpu-1w 2026-10-25T10:30:51
+   0.011 [egui] renderer=Wgpu
+   0.098 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.098 [xq-feed] 已連上 127.0.0.1:47631
+   0.139 BENCH first-frame
+   0.139 BENCH first-quote
+  40.354 MARK vmmap-begin
+  41.080 MARK vmmap-end
+==== multi-egui-wgpu-4w 2026-10-25T10:31:33
+   0.010 [egui] renderer=Wgpu
+   0.103 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.104 [xq-feed] 已連上 127.0.0.1:47631
+   0.167 BENCH first-frame
+   0.167 BENCH first-quote
+  40.348 MARK vmmap-begin
+  41.080 MARK vmmap-end
+==== multi-egui-wgpu-1w 2026-10-25T10:55:56
+   0.010 [egui] renderer=Wgpu
+   0.098 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.099 [xq-feed] 已連上 127.0.0.1:47631
+   0.137 BENCH first-frame
+   0.137 BENCH first-quote
+  40.341 MARK vmmap-begin
+  41.058 MARK vmmap-end
+==== multi-egui-wgpu-4w 2026-10-25T10:56:38
+   0.010 [egui] renderer=Wgpu
+   0.096 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.097 [xq-feed] 已連上 127.0.0.1:47631
+   0.158 BENCH first-frame
+   0.158 BENCH first-quote
+  40.306 MARK vmmap-begin
+  41.027 MARK vmmap-end
+==== multi-egui-wgpu-1w 2026-10-25T11:21:01
+   0.010 [egui] renderer=Wgpu
+   0.097 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.097 [xq-feed] 已連上 127.0.0.1:47631
+   0.138 BENCH first-frame
+   0.138 BENCH first-quote
+  40.353 MARK vmmap-begin
+  41.072 MARK vmmap-end
+==== multi-egui-wgpu-4w 2026-10-25T11:21:43
+   0.014 [egui] renderer=Wgpu
+   0.112 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.113 [xq-feed] 已連上 127.0.0.1:47631
+   0.171 BENCH first-frame
+   0.171 BENCH first-quote
+  40.379 MARK vmmap-begin
+  41.103 MARK vmmap-end

@@ -1,0 +1,48 @@
+==== multi-egui-1w 2026-10-25T10:38:44
+   0.011 [egui] renderer=Glow
+   0.111 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.112 [xq-feed] 已連上 127.0.0.1:47631
+   0.160 BENCH first-frame
+   0.160 BENCH first-quote
+  40.312 MARK vmmap-begin
+  41.045 MARK vmmap-end
+==== multi-egui-4w 2026-10-25T10:39:26
+   0.015 [egui] renderer=Glow
+   0.113 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.113 [xq-feed] 已連上 127.0.0.1:47631
+   0.190 BENCH first-frame
+   0.190 BENCH first-quote
+  40.300 MARK vmmap-begin
+  41.028 MARK vmmap-end
+==== multi-egui-1w 2026-10-25T11:03:49
+   0.010 [egui] renderer=Glow
+   0.115 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.116 [xq-feed] 已連上 127.0.0.1:47631
+   0.158 BENCH first-frame
+   0.158 BENCH first-quote
+  40.332 MARK vmmap-begin
+  41.057 MARK vmmap-end
+==== multi-egui-4w 2026-10-25T11:04:31
+   0.010 [egui] renderer=Glow
+   0.112 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.113 [xq-feed] 已連上 127.0.0.1:47631
+   0.186 BENCH first-frame
+   0.186 BENCH first-quote
+  40.331 MARK vmmap-begin
+  41.063 MARK vmmap-end
+==== multi-egui-1w 2026-10-25T11:28:54
+   0.010 [egui] renderer=Glow
+   0.109 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.110 [xq-feed] 已連上 127.0.0.1:47631
+   0.152 BENCH first-frame
+   0.152 BENCH first-quote
+  40.310 MARK vmmap-begin
+  41.034 MARK vmmap-end
+==== multi-egui-4w 2026-10-25T11:29:36
+   0.010 [egui] renderer=Glow
+   0.111 [fonts] /System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc index=2（PingFangTC-Regular）
+   0.111 [xq-feed] 已連上 127.0.0.1:47631
+   0.183 BENCH first-frame
+   0.183 BENCH first-quote
+  40.340 MARK vmmap-begin
+  41.065 MARK vmmap-end

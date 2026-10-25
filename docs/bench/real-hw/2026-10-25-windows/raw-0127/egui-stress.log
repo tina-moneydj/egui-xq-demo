@@ -1,0 +1,24 @@
+﻿==== stress 2026-10-25T01:39:19
+   0.017 [egui] renderer=Glow
+   0.158 [xq-feed] 已連上 127.0.0.1:47631
+   0.185 BENCH first-frame
+   0.186 BENCH first-quote
+   1.521 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.585 GROUPPERF|{"phase":"tick-end","elapsedMs":30064,"fps":52.7,"paints":1566,"avgPaintMs":0.224,"avgCellsPerPaint":72,"cellUpdates":112752}
+  41.660 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":52.8,"scrollFps":11.5,"scrollJankCount":112,"scrollJankAvgMs":88.6,"fps":11.5,"paints":116,"avgPaintMs":0.506,"avgCellsPerPaint":71,"cellUpdates":8304}
+==== stress 2026-10-25T01:41:41
+   0.013 [egui] renderer=Glow
+   0.169 [xq-feed] 已連上 127.0.0.1:47631
+   0.196 BENCH first-frame
+   0.202 BENCH first-quote
+   1.522 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.588 GROUPPERF|{"phase":"tick-end","elapsedMs":30067,"fps":46.6,"paints":1388,"avgPaintMs":0.232,"avgCellsPerPaint":72,"cellUpdates":99936}
+  41.661 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":46.7,"scrollFps":12.0,"scrollJankCount":114,"scrollJankAvgMs":86.6,"fps":12.0,"paints":121,"avgPaintMs":0.551,"avgCellsPerPaint":71,"cellUpdates":8664}
+==== stress 2026-10-25T01:44:02
+   0.015 [egui] renderer=Glow
+   0.164 [xq-feed] 已連上 127.0.0.1:47631
+   0.190 BENCH first-frame
+   0.199 BENCH first-quote
+   1.519 GROUPPERF|{"phase":"tick-start","rows":50033,"cols":6,"tickHz":3000}
+  31.562 GROUPPERF|{"phase":"tick-end","elapsedMs":30043,"fps":24.8,"paints":736,"avgPaintMs":0.290,"avgCellsPerPaint":72,"cellUpdates":52992}
+  41.605 GROUPPERF|{"phase":"done","rows":50033,"cols":6,"tickFps":24.8,"scrollFps":11.8,"scrollJankCount":112,"scrollJankAvgMs":88.1,"fps":11.8,"paints":119,"avgPaintMs":0.425,"avgCellsPerPaint":72,"cellUpdates":8568}

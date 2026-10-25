@@ -1,0 +1,30 @@
+﻿==== multi-egui-1w 2026-10-25T02:33:01
+   0.013 [egui] renderer=Glow
+   0.158 [xq-feed] 已連上 127.0.0.1:47631
+   0.197 BENCH first-frame
+   0.198 BENCH first-quote
+==== multi-egui-1w 2026-10-25T02:35:09
+   0.012 [egui] renderer=Glow
+   0.156 [xq-feed] 已連上 127.0.0.1:47631
+   0.191 BENCH first-frame
+   0.201 BENCH first-quote
+==== multi-egui-1w 2026-10-25T02:37:18
+   0.013 [egui] renderer=Glow
+   0.151 [xq-feed] 已連上 127.0.0.1:47631
+   0.185 BENCH first-frame
+   0.189 BENCH first-quote
+==== multi-egui-4w 2026-10-25T02:39:27
+   0.012 [egui] renderer=Glow
+   0.135 [xq-feed] 已連上 127.0.0.1:47631
+   0.200 BENCH first-frame
+   0.204 BENCH first-quote
+==== multi-egui-4w 2026-10-25T02:41:37
+   0.012 [egui] renderer=Glow
+   0.151 [xq-feed] 已連上 127.0.0.1:47631
+   0.216 BENCH first-frame
+   0.219 BENCH first-quote
+==== multi-egui-4w 2026-10-25T02:43:47
+   0.012 [egui] renderer=Glow
+   0.157 [xq-feed] 已連上 127.0.0.1:47631
+   0.226 BENCH first-frame
+   0.230 BENCH first-quote
