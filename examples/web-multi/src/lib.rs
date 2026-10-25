@@ -326,3 +326,54 @@ pub fn isolate_panics() {
 pub fn wasm_memory_bytes() -> f64 {
     plat::wasm_heap_mb() * 1048576.0
 }
+
+/// 設計 token → CSS 變數（`:root { --xq-…: … }`）。值直接來自 egui 元件用的同一份 `xq_tokens::t()`，
+/// 網頁格（包含 PM／用戶用 AI 寫的 html 面板）只要用 `var(--xq-…)`，顏色、字級、列高就和 egui 元件一致。
+/// 範例頁：tokens.html。
+#[wasm_bindgen]
+pub fn tokens_css() -> String {
+    use std::fmt::Write;
+    let t = xq_tokens::t();
+    let hex = |c: u32| format!("#{c:06x}");
+    let rgba = |c: xq_tokens::Rgba| format!("rgba({}, {}, {}, {:.3})", c.rgb >> 16, (c.rgb >> 8) & 0xff, c.rgb & 0xff, c.a);
+    let px = |v: f32| format!("{v}px");
+    let vars: Vec<(&str, String)> = vec![
+        ("color-ui-bg", hex(t.ui.bg)),
+        ("color-ui-panel", hex(t.ui.panel)),
+        ("color-ui-header", hex(t.ui.header)),
+        ("color-ui-border", hex(t.ui.border)),
+        ("color-ui-text", hex(t.ui.text)),
+        ("color-ui-text-dim", hex(t.ui.text_dim)),
+        ("color-ui-accent", hex(t.ui.accent)),
+        ("color-ui-selected", hex(t.ui.selected)),
+        ("color-market-up", hex(t.market.up)),
+        ("color-market-down", hex(t.market.down)),
+        ("color-market-flat", hex(t.market.flat)),
+        ("color-market-up-flash", rgba(t.market.up_flash)),
+        ("color-market-down-flash", rgba(t.market.down_flash)),
+        ("color-market-volume", hex(t.market.volume)),
+        ("font-size-xs", px(t.font.xs)),
+        ("font-size-sm", px(t.font.sm)),
+        ("font-size-md", px(t.font.md)),
+        ("font-size-lg", px(t.font.lg)),
+        ("font-size-xl", px(t.font.xl)),
+        ("space-xxs", px(t.space.xxs)),
+        ("space-xs", px(t.space.xs)),
+        ("space-sm", px(t.space.sm)),
+        ("space-md", px(t.space.md)),
+        ("space-lg", px(t.space.lg)),
+        ("radius-xs", px(t.radius.xs)),
+        ("radius-sm", px(t.radius.sm)),
+        ("radius-md", px(t.radius.md)),
+        ("stroke-hairline", px(t.stroke.hairline)),
+        ("layout-table-row", px(t.layout.table_row)),
+        ("layout-table-header", px(t.layout.table_header)),
+        ("layout-table-col-header", px(t.layout.table_col_header)),
+    ];
+    let mut s = String::from(":root {\n");
+    for (k, v) in vars {
+        let _ = writeln!(s, "  --xq-{k}: {v};");
+    }
+    s.push_str("}\n");
+    s
+}

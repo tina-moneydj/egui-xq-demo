@@ -1,0 +1,26 @@
+[fonts] 內嵌 Noto Sans TC 子集；粗體 /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
+[mw] open 1
+[mw] open 2
+[mw] open 3
+[mw] open 4
+[mw] open 5
+[mw] open 6
+[mw] open 7
+[mw] open 8
+[mw] first-frame 1 9.7ms
+[mw] first-frame 2 30.6ms
+[mw] first-frame 3 42.9ms
+[mw] first-frame 4 51.2ms
+[mw] first-frame 5 59.9ms
+[mw] first-frame 6 68.6ms
+[mw] first-frame 7 76.7ms
+[mw] first-frame 8 85.4ms
+[mw] ctrl+w 2 focused=true
+[mw] close 2 frames=63
+[mw] ctrl+w 5 focused=true
+[mw] close 5 frames=70
+[mw] ctrl+w 7 focused=true
+[mw] close 7 frames=81
+[mw] close 3 frames=87
+[mw] open 9
+[mw] first-frame 9 15.7ms
