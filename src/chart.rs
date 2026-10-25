@@ -448,6 +448,39 @@ pub struct LayerStats {
     pub rebuild_us: u64,
 }
 
+/// 七段的順序。XQ_CHART_PHASES=ticks,crosshair,pan 只跑列出的段（技術分析情境：多視窗只量跳價／十字線／平移，不動畫線圖層）
+const MODES: [Mode; 7] = [
+    Mode::Ticks,
+    Mode::Crosshair,
+    Mode::Pan,
+    Mode::Z(ZMode::Drag),
+    Mode::Z(ZMode::Select),
+    Mode::Z(ZMode::Reorder),
+    Mode::Z(ZMode::ZShot),
+];
+
+fn phase_on(m: Mode) -> bool {
+    match crate::plat::var("XQ_CHART_PHASES") {
+        Ok(v) if !v.trim().is_empty() => v.split(',').any(|s| s.trim() == m.name()),
+        _ => true,
+    }
+}
+
+/// cur 之後下一段要跑的（cur＝None：第一段）；沒有了回 None
+fn next_mode(cur: Option<Mode>) -> Option<Mode> {
+    let start = cur.and_then(|c| MODES.iter().position(|m| *m == c)).map_or(0, |i| i + 1);
+    MODES.get(start..).and_then(|rest| rest.iter().copied().find(|m| phase_on(*m)))
+}
+
+/// 壓測輸出：XQ_WINDOWS 的其他視窗也跑同樣的壓測，但不印（量測腳本只看主視窗的事件）
+macro_rules! say {
+    ($quiet:expr, $($t:tt)*) => {
+        if !$quiet {
+            eprintln!($($t)*);
+        }
+    };
+}
+
 #[derive(Clone, Copy)]
 struct Snap {
     frames: u64,
@@ -504,6 +537,8 @@ pub struct ChartView {
     persist: bool,
     save_at: Option<Instant>,
     stress: Option<(StressCfg, Stage)>,
+    /// 壓測不印事件（XQ_WINDOWS 的其他視窗）
+    pub stress_quiet: bool,
     zs: ZState,
     total_steps: u64,
     focused: bool,
@@ -550,6 +585,7 @@ impl ChartView {
             persist,
             save_at: None,
             stress,
+            stress_quiet: false,
             zs: ZState::new(crate::zstress::env_layers()),
             total_steps: 0,
             focused: false,
@@ -668,12 +704,13 @@ impl ChartView {
     pub fn stress_frame(&mut self, frames: u64) {
         let Some((cfg, stage)) = self.stress.take() else { return };
         let now = Instant::now();
+        let quiet = self.stress_quiet;
         let next = match stage {
             Stage::WaitQuote(t) => {
                 let has = self.m.anchored;
                 if has || now.duration_since(t) >= cfg.wait {
                     if !has {
-                        eprintln!("CHARTPERF|{{\"phase\":\"warn\",\"msg\":\"no quote after {} ms, using synthetic bars\"}}", cfg.wait.as_millis());
+                        say!(quiet, "CHARTPERF|{{\"phase\":\"warn\",\"msg\":\"no quote after {} ms, using synthetic bars\"}}", cfg.wait.as_millis());
                     }
                     Stage::Delay(now)
                 } else {
@@ -686,20 +723,20 @@ impl ChartView {
                 self.zs.pick = self.m.load_perf_drawings(cfg.drawings, cfg.layers);
                 self.m.mouse = None;
                 let setup_ms = t_setup.elapsed().as_secs_f64() * 1000.0;
-                eprintln!("CHARTPERF|{{\"phase\":\"setup-begin\",\"indicatorSetupMs\":{setup_ms:.2}}}");
+                say!(quiet, "CHARTPERF|{{\"phase\":\"setup-begin\",\"indicatorSetupMs\":{setup_ms:.2}}}");
                 self.stats = LayerStats::default();
                 self.refresh(ALL);
                 Stage::HeavyPending
             }
             s @ Stage::Delay(_) => s,
             Stage::HeavyPending => {
-                eprintln!("BENCH heavy-frame");
+                say!(quiet, "BENCH heavy-frame");
                 let b = self.m.bounds.unwrap_or(Rect::NOTHING);
                 let st = self.stats;
                 let vis = self.m.gc.as_ref().map_or(0, |g| g.visible);
                 let verts = self.m.pc.as_ref().map_or(0, |c| c.below.vertex_count() + c.above.vertex_count());
                 let first_paint_ms = st.paint_us.iter().sum::<u64>() as f64 / 1000.0;
-                eprintln!(
+                say!(quiet,
                     "CHARTPERF|{{\"phase\":\"setup\",\"cssW\":{:.0},\"cssH\":{:.0},\"overlays\":{},\"subs\":{},\"drawings\":{},\"layers\":{},\"visibleDrawings\":{},\"drawVertices\":{},\"bars\":{},\"sinceStartMs\":{:.0},\"rebuildMs\":{:.2},\"paintMsTotal\":{:.2},\"rssMb\":{:.1}}}",
                     b.width(),
                     b.height(),
@@ -715,14 +752,14 @@ impl ChartView {
                     first_paint_ms,
                     crate::rss_mb()
                 );
-                eprintln!("CHARTPHASE|warm|start");
+                say!(quiet, "CHARTPHASE|warm|start");
                 Stage::Warm(now)
             }
             Stage::Warm(t) => {
                 let f = self.stress_step(Mode::Ticks, self.total_steps, 0.0);
                 self.refresh(f);
                 if now.duration_since(t) >= cfg.warm {
-                    self.begin_phase(Mode::Ticks, frames)
+                    self.next_phase(None, &cfg, frames)
                 } else {
                     Stage::Warm(t)
                 }
@@ -740,7 +777,7 @@ impl ChartView {
                     let lu: Vec<u64> = (0..4).map(|k| s1.st.paint_us[k] - s0.st.paint_us[k]).collect();
                     let tot_us: u64 = lu.iter().sum();
                     let per = |k: usize| if lp[k] > 0 { lu[k] as f64 / lp[k] as f64 / 1000.0 } else { 0.0 };
-                    eprintln!(
+                    say!(quiet,
                         "CHARTPERF|{{\"phase\":\"{}\",\"seconds\":{:.2},\"frames\":{},\"fps\":{:.1},\"steps\":{},\"avgPaintMs\":{:.3},\"plotPaints\":{},\"plotMs\":{:.3},\"drawPaints\":{},\"drawMs\":{:.3},\"livePaints\":{},\"liveMs\":{:.3},\"selPaints\":{},\"selMs\":{:.3},\"drawRebuilds\":{},\"rebuildMsTotal\":{:.2},\"rssMb\":{:.1}{}}}",
                         mode.name(),
                         secs,
@@ -761,7 +798,7 @@ impl ChartView {
                         crate::rss_mb(),
                         if let Mode::Z(_) = mode { self.zs.report(&self.m) } else { String::new() }
                     );
-                    eprintln!("CHARTPHASE|{}|end", mode.name());
+                    say!(quiet, "CHARTPHASE|{}|end", mode.name());
                     if mode == Mode::Pan {
                         self.m.set_right(base_right);
                         self.m.set_busy(false);
@@ -775,18 +812,7 @@ impl ChartView {
                         let f = self.zs.end(&mut self.m, z);
                         self.refresh(f & !HEAD);
                     }
-                    match mode {
-                        Mode::Ticks => self.begin_phase(Mode::Crosshair, frames),
-                        Mode::Crosshair => self.begin_phase(Mode::Pan, frames),
-                        Mode::Pan => self.begin_phase(Mode::Z(ZMode::Drag), frames),
-                        Mode::Z(ZMode::Drag) => self.begin_phase(Mode::Z(ZMode::Select), frames),
-                        Mode::Z(ZMode::Select) => self.begin_phase(Mode::Z(ZMode::Reorder), frames),
-                        Mode::Z(ZMode::Reorder) => self.begin_phase(Mode::Z(ZMode::ZShot), frames),
-                        Mode::Z(ZMode::ZShot) => {
-                            eprintln!("CHARTPERF|{{\"phase\":\"done\",\"sinceStartMs\":{:.0}}}", cfg.t0.elapsed().as_secs_f64() * 1000.0);
-                            Stage::Done
-                        }
-                    }
+                    self.next_phase(Some(mode), &cfg, frames)
                 } else {
                     let f = self.stress_step(mode, steps, base_right);
                     self.refresh(f);
@@ -806,12 +832,23 @@ impl ChartView {
         self.stress.is_some()
     }
 
+    /// 跑下一段；全部跑完印 done
+    fn next_phase(&mut self, cur: Option<Mode>, cfg: &StressCfg, frames: u64) -> Stage {
+        match next_mode(cur) {
+            Some(m) => self.begin_phase(m, frames),
+            None => {
+                say!(self.stress_quiet, "CHARTPERF|{{\"phase\":\"done\",\"sinceStartMs\":{:.0}}}", cfg.t0.elapsed().as_secs_f64() * 1000.0);
+                Stage::Done
+            }
+        }
+    }
+
     fn begin_phase(&mut self, mode: Mode, frames: u64) -> Stage {
         if let Mode::Z(z) = mode {
             let f = self.zs.begin(&mut self.m, z);
             self.refresh(f & !HEAD);
         }
-        eprintln!("CHARTPHASE|{}|start", mode.name());
+        say!(self.stress_quiet, "CHARTPHASE|{}|start", mode.name());
         if mode == Mode::Pan {
             self.m.set_busy(true);
         }
