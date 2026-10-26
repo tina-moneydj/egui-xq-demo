@@ -35,3 +35,6 @@ strip = true
 debug = false
 lto = "thin"
 codegen-units = 4
+
+# 自己就是一個 workspace：Mac CI 把 main 另外 checkout 到 webmain/ 再編，沒有這行 cargo 會往上找到外層 repo 的 Cargo.toml 而失敗
+[workspace]
