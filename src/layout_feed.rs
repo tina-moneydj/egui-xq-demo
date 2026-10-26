@@ -1,0 +1,145 @@
+//! 伺服器下發版面：背景執行緒抓版面 JSON（`XQ_LAYOUT_URL`＝http://… 或本機檔案路徑），內容有變才解析，
+//! 解析也在背景做；UI 每幀只 `take()` 一次（O(1)，鎖裡只做 take）。
+//!
+//! 樣品用輪詢（預設每秒，`XQ_LAYOUT_POLL_MS`）＋只支援 http（不加 TLS 依賴）。正式版應該由伺服器主動推
+//! （例如行情連線上多一種訊息），這裡先不改 xq-feed 協議。
+
+use std::sync::Arc;
+
+use parking_lot::Mutex;
+use xq_layout::Screen;
+
+/// 背景抓到的最新結果：Ok＝新版面、Err＝抓取或解析失敗（UI 沿用上一份好的版面，只顯示錯誤）
+pub type Update = Result<Screen, String>;
+
+pub struct LayoutFeed {
+    slot: Arc<Mutex<Option<Update>>>,
+    /// 顯示用（狀態列）
+    pub source: String,
+}
+
+impl LayoutFeed {
+    /// UI 每幀呼叫一次；沒有新東西回 None
+    pub fn take(&self) -> Option<Update> {
+        self.slot.lock().take()
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn start(source: String, ctx: egui::Context) -> LayoutFeed {
+    let slot: Arc<Mutex<Option<Update>>> = Arc::new(Mutex::new(None));
+    let out = slot.clone();
+    let src = source.clone();
+    let poll = crate::plat::var("XQ_LAYOUT_POLL_MS").ok().and_then(|v| v.parse().ok()).unwrap_or(1000u64).clamp(100, 60_000);
+    let spawned = std::thread::Builder::new().name("xq-layout".into()).spawn(move || {
+        // 上一次的原始內容／錯誤：一樣就不解析、不叫醒 UI
+        let mut last: Option<Vec<u8>> = None;
+        let mut last_err: Option<String> = None;
+        loop {
+            let got = fetch(&src);
+            let update = match got {
+                Ok(body) if last.as_deref() == Some(body.as_slice()) => None,
+                Ok(body) => {
+                    let u = xq_layout::parse(&body);
+                    last = Some(body);
+                    last_err = None;
+                    Some(u)
+                }
+                Err(e) if last_err.as_deref() == Some(e.as_str()) => None,
+                Err(e) => {
+                    last_err = Some(e.clone());
+                    // 伺服器恢復後就算內容沒變也要重新套用（清掉狀態列的錯誤）
+                    last = None;
+                    Some(Err(e))
+                }
+            };
+            if let Some(u) = update {
+                *out.lock() = Some(u);
+                ctx.request_repaint();
+            }
+            std::thread::sleep(std::time::Duration::from_millis(poll));
+        }
+    });
+    if let Err(e) = spawned {
+        *slot.lock() = Some(Err(format!("版面執行緒開不起來：{e}")));
+    }
+    LayoutFeed { slot, source }
+}
+
+/// 網頁版先不支援（要用瀏覽器 fetch，需要多開 web-sys 功能）；回一個永遠沒有更新的 feed
+#[cfg(target_arch = "wasm32")]
+pub fn start(source: String, _ctx: egui::Context) -> LayoutFeed {
+    let slot = Arc::new(Mutex::new(Some(Err("網頁版尚未支援伺服器下發版面".to_string()))));
+    LayoutFeed { slot, source }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn fetch(src: &str) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+    if let Some(rest) = src.strip_prefix("http://") {
+        return http_get(rest);
+    }
+    if src.starts_with("https://") {
+        return Err("樣品只支援 http://（不加 TLS 依賴）".into());
+    }
+    let path = src.strip_prefix("file://").unwrap_or(src);
+    let f = std::fs::File::open(path).map_err(|e| format!("讀不到 {path}：{e}"))?;
+    let mut buf = Vec::new();
+    f.take(xq_layout::MAX_BYTES as u64 + 1).read_to_end(&mut buf).map_err(|e| format!("讀 {path} 失敗：{e}"))?;
+    Ok(buf)
+}
+
+/// 最小的 HTTP/1.0 GET（Connection: close，不處理 chunked／轉址）；`rest` = host[:port]/path
+#[cfg(not(target_arch = "wasm32"))]
+fn http_get(rest: &str) -> Result<Vec<u8>, String> {
+    use std::io::{Read, Write};
+    use std::net::{TcpStream, ToSocketAddrs};
+    use std::time::Duration;
+    let (hostport, path) = match rest.find('/') {
+        Some(i) => (&rest[..i], &rest[i..]),
+        None => (rest, "/"),
+    };
+    let addr_s = if hostport.contains(':') { hostport.to_string() } else { format!("{hostport}:80") };
+    let addr = addr_s
+        .to_socket_addrs()
+        .map_err(|e| format!("解析 {hostport} 失敗：{e}"))?
+        .next()
+        .ok_or_else(|| format!("解析 {hostport} 沒有位址"))?;
+    let mut s = TcpStream::connect_timeout(&addr, Duration::from_secs(2)).map_err(|e| format!("連不上版面伺服器 {hostport}：{e}"))?;
+    let _ = s.set_read_timeout(Some(Duration::from_secs(3)));
+    let _ = s.set_write_timeout(Some(Duration::from_secs(3)));
+    write!(s, "GET {path} HTTP/1.0\r\nHost: {hostport}\r\nConnection: close\r\n\r\n").map_err(|e| format!("送出請求失敗：{e}"))?;
+    let mut buf = Vec::new();
+    // 標頭最多預留 16 KB；超過 MAX_BYTES 的 body 交給 parse 回錯
+    s.take(xq_layout::MAX_BYTES as u64 + 16 * 1024 + 1).read_to_end(&mut buf).map_err(|e| format!("讀取回應失敗：{e}"))?;
+    let split = buf.windows(4).position(|w| w == b"\r\n\r\n").ok_or("回應沒有 HTTP 標頭")?;
+    let status = buf[..split].split(|b| *b == b'\n').next().map(String::from_utf8_lossy).unwrap_or_default().trim().to_string();
+    if status.split_whitespace().nth(1) != Some("200") {
+        return Err(format!("版面伺服器回 {status}"));
+    }
+    Ok(buf.split_off(split + 4))
+}
+
+/// 選單的網址（第 1 層：低頻頁面交給網頁）：用系統瀏覽器開，背景執行緒呼叫，不卡 UI
+#[cfg(not(target_arch = "wasm32"))]
+pub fn open_url(url: &str) {
+    let url = url.to_string();
+    let _ = std::thread::Builder::new().name("xq-open-url".into()).spawn(move || {
+        #[cfg(target_os = "windows")]
+        let r = std::process::Command::new("rundll32").args(["url.dll,FileProtocolHandler", &url]).status();
+        #[cfg(target_os = "macos")]
+        let r = std::process::Command::new("open").arg(&url).status();
+        #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+        let r = std::process::Command::new("xdg-open").arg(&url).status();
+        if let Err(e) = r {
+            eprintln!("[layout] 開網址失敗 {url}: {e}");
+        }
+    });
+}
+
+#[cfg(target_arch = "wasm32")]
+pub fn open_url(url: &str) {
+    if let Some(w) = web_sys::window() {
+        let _ = w.open_with_url_and_target(url, "_blank");
+    }
+}

@@ -1,0 +1,15 @@
+{
+  "version": 9,
+  "start": "nope",
+  "menu": [
+    { "label": "壞連結", "page": "missing" },
+    { "label": "危險網址", "url": "file:///etc/passwd" },
+    { "label": "沒動作" },
+    { "label": "L1", "items": [ { "label": "L2", "items": [ { "label": "L3", "items": [ { "label": "x", "symbol": "2330" } ] } ] } ] }
+  ],
+  "pages": [
+    { "id": "a", "root": { "split": "diagonal", "sizes": [-1, "bad"], "children": [ { "widget": "chart", "period": "Q" }, {} ] } },
+    { "id": "a", "root": { "widget": "info" } },
+    { "id": "noroot" }
+  ]
+}

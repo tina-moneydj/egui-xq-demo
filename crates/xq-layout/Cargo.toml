@@ -1,0 +1,10 @@
+[package]
+name = "xq-layout"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "伺服器下發版面：JSON 版面／頂部選單的解析、驗證（上限＋降級）與分割計算；不依賴 egui，可單獨測試"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

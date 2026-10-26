@@ -555,8 +555,17 @@ pub struct ChartView {
 
 impl ChartView {
     pub fn new(symbol: &str, name: &str, period: Period) -> Self {
+        Self::new_with(symbol, name, period, true)
+    }
+
+    /// 伺服器下發版面用：不讀不寫存檔（多張圖不搶同一個檔，換頁建圖也不在 UI 執行緒讀檔）
+    pub fn new_ephemeral(symbol: &str, name: &str, period: Period) -> Self {
+        Self::new_with(symbol, name, period, false)
+    }
+
+    fn new_with(symbol: &str, name: &str, period: Period, persist_ok: bool) -> Self {
         let stress_on = crate::plat::var_os("XQ_CHART_STRESS").is_some_and(|v| v != "0");
-        let persist = !stress_on && !crate::plat::var_os("XQ_BENCH").is_some_and(|v| v != "0");
+        let persist = persist_ok && !stress_on && !crate::plat::var_os("XQ_BENCH").is_some_and(|v| v != "0");
         let store = if persist { Store::load() } else { Store::default() };
         let stress = stress_on.then(|| {
             let now = Instant::now();

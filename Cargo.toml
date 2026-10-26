@@ -6,7 +6,14 @@ rust-version = "1.95"
 publish = false
 description = "XQ 風格看盤 demo（Rust + egui/eframe 立即模式），與 wry-xq-demo／gpui-xq-demo 同一套行情與壓測"
 
+[workspace]
+# 純邏輯 crate 放 crates/（不依賴 egui，可單獨測）；mobile、examples/web-multi 是各自獨立的套件
+members = ["crates/*"]
+exclude = ["mobile", "examples/web-multi"]
+
 [dependencies]
+# 伺服器下發版面（JSON 版面／頂部選單的解析與驗證）
+xq-layout = { path = "crates/xq-layout" }
 # 共用行情協議（WryFeedHost 二進位封包＋壓測時間戳），固定在 gpui-xq-demo 的版本
 xq-feed = { git = "https://github.com/tina-moneydj/gpui-xq-demo", rev = "c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea" }
 # 成交明細純邏輯（推導成交、Ring、格式化），與 gpui 版同一份

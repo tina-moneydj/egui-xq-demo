@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "title": "伺服器下發版面範例",
+  "start": "tw",
+  "menu": [
+    {
+      "label": "看盤",
+      "items": [
+        { "label": "台股主力", "page": "tw" },
+        { "label": "雙圖比較", "page": "compare" },
+        { "label": "精簡報價", "page": "lite" },
+        { "separator": true },
+        {
+          "label": "權值股",
+          "items": [
+            { "label": "台積電", "symbol": "2330" },
+            { "label": "鴻海", "symbol": "2317" },
+            { "label": "聯發科", "symbol": "2454" }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "金融股",
+      "items": [
+        { "label": "富邦金", "symbol": "2881" },
+        { "label": "國泰金", "symbol": "2882" },
+        { "label": "中信金", "symbol": "2891" }
+      ]
+    },
+    {
+      "label": "說明",
+      "items": [
+        { "label": "XQ 官網（網頁）", "url": "https://www.xq.com.tw" }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "tw",
+      "title": "台股主力",
+      "root": {
+        "split": "col",
+        "sizes": [0.56, 0.44],
+        "children": [
+          { "widget": "chart", "symbol": "2330", "period": "T" },
+          {
+            "split": "row",
+            "sizes": [0.42, 0.58],
+            "children": [
+              {
+                "widget": "quotes",
+                "title": "權值股",
+                "symbols": ["2330", "2317", "2454", "2308", "2382", "2412", "3711", "2303"],
+                "columns": ["symbol", "name", "price", "change", "pct", "volume"]
+              },
+              { "widget": "info" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "compare",
+      "title": "雙圖比較",
+      "root": {
+        "split": "row",
+        "sizes": [0.3, 0.7],
+        "children": [
+          {
+            "widget": "quotes",
+            "title": "金融",
+            "symbols": ["2881", "2882", "2891", "2886"],
+            "columns": ["name", "price", "pct"]
+          },
+          {
+            "split": "col",
+            "children": [
+              { "widget": "chart", "symbol": "2881", "period": "D" },
+              { "widget": "chart", "symbol": "2330", "period": "W", "link": false }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "lite",
+      "title": "精簡報價",
+      "root": {
+        "split": "row",
+        "children": [
+          { "widget": "quotes", "title": "電子", "symbols": ["2330", "2317", "2454", "2303", "2382"], "columns": ["name", "price", "pct"] },
+          { "widget": "quotes", "title": "傳產", "symbols": ["1301", "1303", "2002"], "columns": ["name", "price", "volume"] },
+          { "widget": "news", "title": "新聞（新版元件）" }
+        ]
+      }
+    }
+  ]
+}

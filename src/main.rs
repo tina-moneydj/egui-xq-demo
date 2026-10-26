@@ -18,6 +18,8 @@ mod drawings;
 mod gfx;
 mod indicators;
 mod layers;
+mod layout_feed;
+mod layout_view;
 mod model;
 mod names;
 mod series;
@@ -142,6 +144,8 @@ struct Terminal {
     info: Info,
     /// 成交明細範例面板（XQ_TAPE=1 才開；預設 None，版面與壓測不變）
     tape: Option<TickTape>,
+    /// 伺服器下發版面（XQ_LAYOUT_URL 才開；預設 None，版面與壓測不變）
+    layout: Option<layout_view::LayoutScreen>,
     conn: Conn,
     top_frac: f32,
     left_w: f32,
@@ -223,6 +227,14 @@ impl Terminal {
                 }
             })
             .collect();
+        // 壓測模式不開（不影響既有壓測版面）
+        let stress_mode = ["XQ_BENCH", "XQ_TICK_BENCH", "XQ_CHART_STRESS", "XQ_GROUP_STRESS"]
+            .iter()
+            .any(|k| crate::plat::var_os(k).is_some_and(|v| v != "0"));
+        let layout = crate::plat::var("XQ_LAYOUT_URL")
+            .ok()
+            .filter(|v| !v.trim().is_empty() && !stress_mode)
+            .map(|src| layout_view::LayoutScreen::new(layout_feed::start(src.trim().to_string(), cc.egui_ctx.clone()), sym, name));
         let mut t = Terminal {
             tok_gen: xq_tokens::generation(),
             tok_rebuild: false,
@@ -234,6 +246,7 @@ impl Terminal {
             chart,
             info: Info { symbol: sym.into(), name: name.into(), price: 0.0, change: 0.0, volume: 0 },
             tape,
+            layout,
             conn: Conn::Connecting,
             top_frac: crate::plat::var("XQ_TOP_FRAC").ok().and_then(|v| v.parse().ok()).unwrap_or(0.56),
             left_w: 470.0,
@@ -264,6 +277,10 @@ impl Terminal {
     }
 
     fn resubscribe(&mut self) {
+        if let Some(l) = self.layout.as_ref().filter(|l| l.ready()) {
+            self.bridge.subscribe(l.subscription());
+            return;
+        }
         let sub = xq_feed::Subscribe { symbols: self.table.symbols(), chart: self.chart.symbol(), period: self.chart.period().feed_code().into() };
         self.bridge.subscribe(sub);
     }
@@ -311,6 +328,9 @@ impl Terminal {
         }
         for (sym, bar) in &ib.minutes {
             self.chart.apply_minute(sym, bar);
+        }
+        if let Some(l) = self.layout.as_mut() {
+            l.apply(&ib);
         }
         if let Some(t) = self.tape.as_mut() {
             // 和報價表同一個節奏（每幀最多一次）；沒有新成交就不讓快取失效
@@ -483,6 +503,9 @@ impl eframe::App for Terminal {
             if let Some(t) = self.tape.as_mut() {
                 t.tokens_changed();
             }
+            if let Some(l) = self.layout.as_mut() {
+                l.tokens_changed();
+            }
             for p in &mut self.peers {
                 p.chart.tokens_changed();
             }
@@ -550,6 +573,19 @@ impl eframe::App for Terminal {
         want(Duration::from_secs(1).saturating_sub(now.duration_since(self.last_sample)));
 
         // ── 版面 ──
+        if let Some(l) = self.layout.as_mut() {
+            // 伺服器下發版面：新版面在背景解析好，這裡只 take；換頁／換代號後重新訂閱
+            let mut resub = l.poll();
+            resub |= l.show(ui, &self.stats, self.conn);
+            if resub {
+                self.resubscribe();
+                ctx.request_repaint_after(ONE_US);
+            }
+            if let Some(d) = wake {
+                ctx.request_repaint_after(d.max(ONE_US));
+            }
+            return;
+        }
         let (period, pick) = draw(
             ui,
             View {

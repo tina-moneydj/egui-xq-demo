@@ -502,6 +502,7 @@ dependencies = [
  "web-sys",
  "web-time",
  "xq-feed",
+ "xq-layout",
  "xq-tape",
  "xq-tokens",
 ]
@@ -2869,6 +2870,14 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 name = "xq-feed"
 version = "0.1.0"
 source = "git+https://github.com/tina-moneydj/gpui-xq-demo?rev=c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea#c7ac53640b2a9e28a3e7bafc4fa9eb398232b1ea"
+
+[[package]]
+name = "xq-layout"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "xq-tape"

@@ -63,6 +63,12 @@ pub struct QuoteTable {
     composing: bool,
     /// 自動化測試用：XQ_IME_LOG=1 時把 IME 事件印到 stderr
     ime_log: bool,
+    /// 標頭標題（預設「報價」；伺服器下發版面可改）
+    title: String,
+    /// 顯示哪些欄、什麼順序（`COLS` 的索引；預設全部 6 欄）
+    cols: Vec<usize>,
+    /// 精簡模式（伺服器下發版面用）：標頭不放壓力按鈕與搜尋框
+    compact: bool,
 }
 
 impl QuoteTable {
@@ -72,10 +78,22 @@ impl QuoteTable {
     }
 
     pub fn new(watch: &[(&str, &str)]) -> Self {
-        let rows: Vec<Row> = watch
-            .iter()
-            .map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0 })
-            .collect();
+        Self::from_rows(watch.iter().map(|(s, n)| Row { symbol: (*s).into(), name: (*n).into(), price: 0.0, change: 0.0, volume: 0, tick: 0 }).collect())
+    }
+
+    /// 伺服器下發版面用：自訂代號、標題、欄位（`cols` 是 `COLS` 的索引，越界的略過；空＝全部），精簡標頭
+    pub fn with_layout(watch: Vec<(String, String)>, title: &str, cols: &[usize]) -> Self {
+        let mut t = Self::from_rows(watch.into_iter().map(|(symbol, name)| Row { symbol, name, price: 0.0, change: 0.0, volume: 0, tick: 0 }).collect());
+        t.title = title.into();
+        t.cols = cols.iter().copied().filter(|&c| c < COLS.len()).collect();
+        if t.cols.is_empty() {
+            t.cols = (0..COLS.len()).collect();
+        }
+        t.compact = true;
+        t
+    }
+
+    fn from_rows(rows: Vec<Row>) -> Self {
         let index = rows.iter().enumerate().map(|(i, r)| (r.symbol.clone(), i)).collect();
         QuoteTable {
             real_len: rows.len(),
@@ -96,6 +114,9 @@ impl QuoteTable {
             match_sel: 0,
             composing: false,
             ime_log: crate::plat::var("XQ_IME_LOG").is_ok_and(|v| v == "1"),
+            title: "報價".into(),
+            cols: (0..COLS.len()).collect(),
+            compact: false,
         }
     }
 
@@ -329,28 +350,31 @@ impl QuoteTable {
         painter.rect_filled(hr, 0.0, header());
         painter.hline(hr.x_range(), hr.max.y - 0.5, (1.0, border()));
         let f12 = egui::FontId::proportional(tk().font.md);
-        let tw = painter.text(pos2(hr.min.x + 8.0, hr.center().y), egui::Align2::LEFT_CENTER, "報價", f12.clone(), text()).width();
+        let tw = painter.text(pos2(hr.min.x + 8.0, hr.center().y), egui::Align2::LEFT_CENTER, self.title.as_str(), f12.clone(), text()).width();
         painter.text(pos2(hr.min.x + 16.0 + tw, hr.center().y), egui::Align2::LEFT_CENTER, format!("{} 檔", fmt_int(self.rows.len() as i64)), f12.clone(), dim());
-        let br = Rect::from_min_size(pos2(hr.max.x - 80.0, hr.min.y + 4.0), vec2(72.0, head_h() - 8.0));
-        let bresp = ui.interact(br, ui.scope_id().with("stress-btn"), Sense::click());
-        let on = self.stress;
-        painter.rect(br, 2.0, if bresp.hovered() { selected() } else { Color32::TRANSPARENT }, (1.0, if on { accent() } else { border() }), egui::StrokeKind::Inside);
-        painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { accent() } else { dim() });
-        if bresp.clicked() {
-            self.toggle_stress();
-        }
-        // 搜尋框（egui 內建 TextEdit；IME 由 egui-winit 處理）
-        let sx = hr.min.x + 24.0 + tw + 60.0;
-        let sr = Rect::from_min_max(pos2(sx, hr.min.y + 3.0), pos2((sx + 150.0).min(br.min.x - 8.0), hr.max.y - 3.0));
         let mut search_pick = None;
-        if sr.width() > 40.0 && crate::plat::search_enabled() {
-            search_pick = self.show_search(ui, sr);
+        if !self.compact {
+            let br = Rect::from_min_size(pos2(hr.max.x - 80.0, hr.min.y + 4.0), vec2(72.0, head_h() - 8.0));
+            let bresp = ui.interact(br, ui.scope_id().with("stress-btn"), Sense::click());
+            let on = self.stress;
+            painter.rect(br, 2.0, if bresp.hovered() { selected() } else { Color32::TRANSPARENT }, (1.0, if on { accent() } else { border() }), egui::StrokeKind::Inside);
+            painter.text(br.center(), egui::Align2::CENTER_CENTER, "壓力 5 萬", f12.clone(), if on { accent() } else { dim() });
+            if bresp.clicked() {
+                self.toggle_stress();
+            }
+            // 搜尋框（egui 內建 TextEdit；IME 由 egui-winit 處理）
+            let sx = hr.min.x + 24.0 + tw + 60.0;
+            let sr = Rect::from_min_max(pos2(sx, hr.min.y + 3.0), pos2((sx + 150.0).min(br.min.x - 8.0), hr.max.y - 3.0));
+            if sr.width() > 40.0 && crate::plat::search_enabled() {
+                search_pick = self.show_search(ui, sr);
+            }
         }
         // 欄位標頭
         let cr = Rect::from_min_size(pos2(rect.min.x, hr.max.y), vec2(rect.width(), colhead_h()));
         painter.hline(cr.x_range(), cr.max.y - 0.5, (1.0, border()));
         let mut x = cr.min.x;
-        for (i, (label, w)) in COLS.iter().enumerate() {
+        for &i in &self.cols {
+            let (label, w) = &COLS[i];
             let (px, al) = if i >= 2 { (x + w - 4.0, egui::Align2::RIGHT_CENTER) } else { (x + 4.0, egui::Align2::LEFT_CENTER) };
             painter.text(pos2(px, cr.center().y), al, *label, f12.clone(), dim());
             x += w;
@@ -411,7 +435,7 @@ impl QuoteTable {
                 if i1 > i0 {
                     self.paints += 1;
                 }
-                self.cells += ((i1 - i0) * COLS.len()) as u64;
+                self.cells += ((i1 - i0) * self.cols.len()) as u64;
                 self.paint_us += t0.elapsed().as_micros() as u64;
                 self.cache = Some((key, Arc::new(mesh)));
             }
@@ -435,26 +459,17 @@ impl QuoteTable {
             let color = dir_color(r.change);
             let has = r.price > 0.0;
             let mut x = x0;
-            let cells: [(String, Color32); 6] = if has {
-                [
-                    (r.symbol.clone(), text()),
-                    (r.name.clone(), text()),
-                    (format!("{:.2}", r.price), color),
-                    (fmt_change(r.change), color),
-                    (format!("{:+.2}%", pct(r.price, r.change)), color),
-                    (fmt_int(r.volume), vol()),
-                ]
-            } else {
-                [
-                    (r.symbol.clone(), text()),
-                    (r.name.clone(), text()),
-                    ("--".into(), color),
-                    ("--".into(), color),
-                    ("--".into(), color),
-                    ("--".into(), vol()),
-                ]
-            };
-            for (i, (txt, c)) in cells.into_iter().enumerate() {
+            // 只格式化要顯示的欄
+            for &i in &self.cols {
+                let (txt, c): (String, Color32) = match i {
+                    0 => (r.symbol.clone(), text()),
+                    1 => (r.name.clone(), text()),
+                    _ if !has => ("--".into(), if i == 5 { vol() } else { color }),
+                    2 => (format!("{:.2}", r.price), color),
+                    3 => (fmt_change(r.change), color),
+                    4 => (format!("{:+.2}%", pct(r.price, r.change)), color),
+                    _ => (fmt_int(r.volume), vol()),
+                };
                 let cw = COLS[i].1;
                 if i == 2 {
                     match r.tick {
