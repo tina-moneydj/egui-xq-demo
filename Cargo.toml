@@ -39,6 +39,12 @@ js-sys = "0.3"
 web-time = "1"
 web-sys = { version = "0.3", features = ["Window", "Document", "Location", "UrlSearchParams", "Performance", "console", "HtmlCanvasElement", "WebSocket", "MessageEvent", "BinaryType", "Response"] }
 
+# macOS：用 CoreText 找蘋方-繁的檔案、ttf-parser 找 .ttc 裡的字面；libc 讀自身記憶體
+[target.'cfg(target_os = "macos")'.dependencies]
+core-text = "21"
+ttf-parser = "0.25"
+libc = "0.2"
+
 [profile.release]
 strip = true
 debug = false
