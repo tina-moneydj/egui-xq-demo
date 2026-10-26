@@ -37,7 +37,7 @@ wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 web-time = "1"
-web-sys = { version = "0.3", features = ["Window", "Document", "Location", "UrlSearchParams", "Performance", "console", "HtmlCanvasElement", "WebSocket", "MessageEvent", "BinaryType"] }
+web-sys = { version = "0.3", features = ["Window", "Document", "Location", "UrlSearchParams", "Performance", "console", "HtmlCanvasElement", "WebSocket", "MessageEvent", "BinaryType", "Response"] }
 
 [profile.release]
 strip = true

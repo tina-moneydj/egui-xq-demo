@@ -13,6 +13,10 @@ cargo run --release --example layout-server -- layouts/demo.json --port 47700
 # 3. app 開版面模式（不設 XQ_LAYOUT_URL＝原本的版面，什麼都不變）
 XQ_LAYOUT_URL=http://127.0.0.1:47700/layout.json ./target/release/egui-xq-demo
 # 也可以直接讀本機檔：XQ_LAYOUT_URL=layouts/demo.json
+
+# 網頁版（wasm）：同一份 JSON，網址參數帶 XQ_LAYOUT_URL（瀏覽器 fetch，範例伺服器已回 CORS 標頭）
+bash web/build.sh && xq-ws-bridge --www dist/web
+# 開 http://127.0.0.1:47632/index.html?XQ_LAYOUT_URL=http://127.0.0.1:47700/layout.json
 ```
 
 | 環境變數 | 說明 |
@@ -71,6 +75,29 @@ XQ_LAYOUT_URL=http://127.0.0.1:47700/layout.json ./target/release/egui-xq-demo
 - 點報價表一列 → 所有連動的走勢圖、資訊格換代號（和原本版面一樣）。
 - 狀態列顯示版面來源、第幾版、警告數（滑過看全文）或錯誤。
 
+## 同一份 JSON 給桌面、網頁、手機
+
+格式本身不分平台；各平台要不一樣的地方用兩個欄位寫在同一份檔案裡：
+
+```jsonc
+{ "id": "tw", "title": "台股主力",
+  "root":  { /* 桌面、網頁的擺法 */ },
+  "roots": { "mobile": { "split": "col", "children": [ /* 手機單欄：上圖下表 */ ] } } },   // 某平台另給擺法，沒寫就用 root
+{ "id": "compare", "platforms": ["desktop", "web"], ... }                                  // 只給某些平台（空＝全部）
+{ "label": "某選單項目", "symbol": "2330", "platforms": ["mobile"] }                        // 選單項目也可以限定
+```
+
+- 平台名稱：`desktop`、`web`、`mobile`。指向「這個平台沒有的頁」的選單項目會安靜略過；分組裡全部被略過就不顯示該分組。
+- 程式端：`xq_layout::parse_for(json, Platform::Mobile)`（桌面版用 `parse`＝Desktop、網頁版用 Web）。
+
+| 平台 | 現況 |
+|---|---|
+| 桌面（Windows／Mac／Linux） | ✅ 可用 |
+| 網頁（wasm） | ✅ 可用（Chromium 實測：載入版面、選單切頁都正常，截圖如下） |
+| 手機 App（iOS／Android） | 格式與解析已支援（`roots.mobile`、測試涵蓋）；**畫面還沒接**：手機版 `mobile/` 是自己的單畫面導覽，要把版面畫面接進去，下一步做 |
+
+![網頁版吃同一份 JSON](server-layout/5-網頁版.png)
+
 ## 容錯與上限（舊版程式收到新版 JSON 也不當掉）
 
 | 狀況 | 行為 |
@@ -98,5 +125,5 @@ XQ_LAYOUT_URL=http://127.0.0.1:47700/layout.json ./target/release/egui-xq-demo
 - **推送**：樣品用輪詢；正式版應該由伺服器主動推（例如行情連線多一種訊息，要改 xq-feed 協議，需和 WryFeedHost 一起改）。
 - **https／簽章**：樣品只收 http（不加 TLS 依賴）；正式版走公司既有連線，版面 JSON 應該簽章或至少驗來源。
 - **使用者自訂**：分隔線目前固定照 JSON 比例，不能拖；之後可把使用者調整存在本機、蓋在伺服器版面上。
-- **網頁版（wasm）**：還沒接（要用瀏覽器 fetch）。
+- **手機 App**：把版面畫面接進 `mobile/`（解析已支援 `roots.mobile`）。
 - 更多內建元件（成交明細、新聞等）：元件做進程式後，JSON 就能擺；舊版程式看到會顯示佔位格。
