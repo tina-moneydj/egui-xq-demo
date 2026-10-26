@@ -19,7 +19,7 @@
 
   幀數在軟體繪圖下 egui 約 24、GPUI 約 5 fps，不代表真實電腦。
 
-- **放進實機壓測包**（Mac `xq_bench_mac.py`、Windows `bench-windows.ps1` 的 `web` 情境；工具包在 gpui-xq-demo 的 `mac-bench`／`windows-bench-ci` 分支）：用 Chrome（沒有就 Edge）開全新設定檔，頁面加 `?bench=1` 自己照固定流程量（暖機 3 秒 → 5 秒幀數 → 記憶體 → 移除一格 → 報價表 panic），結果 POST 回壓測包內建的小伺服器；壓測包另外量下載量、整個瀏覽器的記憶體與 CPU。雲端用 Linux 跑過一輪：`bench-pack-cloud.md`。
+- **放進實機壓測包**（Mac `xq_bench_mac.py`、Windows `bench-windows.ps1` 的 `web` 情境；Mac 工具包在 gpui-xq-demo 的 `main`、Windows 在 `windows-bench-ci` 分支）：用 Chrome（沒有就 Edge）開全新設定檔，頁面加 `?bench=1` 自己照固定流程量（暖機 3 秒 → 5 秒幀數 → 記憶體 → 移除一格 → 報價表 panic），結果 POST 回壓測包內建的小伺服器；壓測包另外量下載量、整個瀏覽器的記憶體與 CPU。雲端用 Linux 跑過一輪：`bench-pack-cloud.md`。
 
 ## 更新（2026-10-25 深夜）：egui 元件和網頁元件共用 token
 
