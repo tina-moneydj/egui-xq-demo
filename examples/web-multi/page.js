@@ -100,7 +100,7 @@ function webCell(id) {
 
 async function post(obj) {
   const body = JSON.stringify({ url: location.search, userAgent: navigator.userAgent, ...obj });
-  console.log("XQWEB " + body);
+  if (!obj.mark) console.log("XQWEB " + body);
   try {
     await fetch("/__bench", { method: "POST", body, headers: { "Content-Type": "application/json" } });
   } catch (e) {
@@ -134,7 +134,9 @@ async function bench(xq) {
   const dbg = gl && gl.getExtension("WEBGL_debug_renderer_info");
   r.webglRenderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : null;
   await sleep(3000);
+  await post({ mark: "fps-start" }); // 壓測包在這兩個時間點量瀏覽器的 CPU
   r.fps = await rates(xq, 5000);
+  await post({ mark: "fps-end" });
   r.memory = memory(xq);
   if (q.get("steps") !== "basic" && xq.ids.length > 2) {
     const victim = xq.layout === "mixed" ? "webB" : "c2";
