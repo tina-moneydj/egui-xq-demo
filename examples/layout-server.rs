@@ -61,6 +61,6 @@ fn serve(mut s: TcpStream, file: &str) -> std::io::Result<()> {
             Err(e) => ("500 Internal Server Error", format!("讀不到 {file}：{e}").into_bytes()),
         }
     };
-    write!(s, "HTTP/1.0 {status}\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n", body.len())?;
+    write!(s, "HTTP/1.0 {status}\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nCache-Control: no-store\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n", body.len())?;
     s.write_all(&body)
 }

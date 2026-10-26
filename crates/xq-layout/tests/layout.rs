@@ -73,10 +73,7 @@ fn bad_fields_degrade_not_fail() {
     assert_eq!(s.pages[0].panes[0], Pane::Chart { symbol: String::new(), period: "T".into(), link: true });
     assert!(matches!(s.pages[0].panes[1], Pane::Unsupported(_)));
     // 選單：壞連結、危險網址、沒動作都略過；第 3 層以下的子選單略過
-    assert_eq!(s.menu.len(), 1);
-    let MenuEntry::Group { items, .. } = &s.menu[0] else { panic!() };
-    let MenuEntry::Group { items: l2, .. } = &items[0] else { panic!() };
-    assert!(l2.is_empty());
+    assert!(s.menu.is_empty(), "空的分組不顯示");
     let w = s.warnings.join("\n");
     for k in ["版本 9", "起始頁", "missing", "http(s)", "沒有 page", "超過 3 層", "diagonal", "週期", "重複", "沒有 root"] {
         assert!(w.contains(k), "警告少了「{k}」：\n{w}");
@@ -154,4 +151,37 @@ fn solve_tiny_area_never_negative() {
         solve(&p.root, Rect::new(0.0, 0.0, 3.0, 2.0), 1.0, &mut panes, &mut gaps);
         assert!(panes.iter().all(|r| r.w >= 0.0 && r.h >= 0.0));
     }
+}
+
+#[test]
+fn platform_variants() {
+    let raw = include_bytes!("../../../layouts/demo.json");
+    let d = parse_for(raw, Platform::Desktop).unwrap();
+    let m = parse_for(raw, Platform::Mobile).unwrap();
+    let w = parse_for(raw, Platform::Web).unwrap();
+    assert_eq!(d, parse(raw).unwrap());
+    assert_eq!(d.pages.len(), 3);
+    // 手機：雙圖比較只給桌面／網頁；台股主力用 roots.mobile 的單欄擺法
+    assert_eq!(m.pages.len(), 2);
+    assert!(m.pages.iter().all(|p| p.id != "compare"));
+    let Node::Split { dir, children, .. } = &m.pages[0].root else { panic!() };
+    assert_eq!((*dir, children.len()), (Dir::Col, 2));
+    assert!(matches!(&m.pages[0].panes[1], Pane::Quotes { columns, .. } if columns == &vec![1, 2, 4]));
+    // 指向被略過頁的選單項目安靜消失，不算警告
+    let MenuEntry::Group { items, .. } = &m.menu[0] else { panic!() };
+    assert!(items.iter().all(|e| !matches!(e, MenuEntry::Item { label, .. } if label == "雙圖比較")));
+    assert_eq!(m.warnings.len(), d.warnings.len());
+    // 網頁版沒有自己的 roots → 跟桌面同一個擺法
+    assert_eq!(w.pages[0].root, d.pages[0].root);
+}
+
+#[test]
+fn menu_platform_filter_drops_empty_group() {
+    let j = r#"{"pages":[{"id":"a","root":{"widget":"info"}}],
+      "menu":[{"label":"只給桌面","items":[{"label":"x","symbol":"2330","platforms":["desktop"]}]},
+              {"label":"全平台","items":[{"label":"y","symbol":"2317"}]}]}"#.as_bytes();
+    assert_eq!(parse_for(j, Platform::Desktop).unwrap().menu.len(), 2);
+    let m = parse_for(j, Platform::Mobile).unwrap();
+    assert_eq!(m.menu.len(), 1);
+    assert!(matches!(&m.menu[0], MenuEntry::Group { label, .. } if label == "全平台"));
 }

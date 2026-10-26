@@ -8,6 +8,8 @@
 //!
 //! 格式說明見 `docs/server-layout.md`，範例 `layouts/demo.json`。
 
+use std::collections::HashMap;
+
 use serde::Deserialize;
 
 /// 目前支援的格式版本；比這新的版本照樣盡量解析（認不得的欄位忽略），並警告
@@ -32,6 +34,29 @@ pub const MAX_LABEL: usize = 40;
 
 /// 報價表可選欄位（順序＝預設順序）；`Pane::Quotes::columns` 存的是這裡的索引
 pub const COLUMNS: [&str; 6] = ["symbol", "name", "price", "change", "pct", "volume"];
+
+/// 同一份 JSON 給桌面、網頁、手機吃：頁和選單項目可用 `platforms` 限定平台，頁可用 `roots` 給各平台不同擺法
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Platform {
+    Desktop,
+    Web,
+    Mobile,
+}
+
+impl Platform {
+    pub fn name(self) -> &'static str {
+        match self {
+            Platform::Desktop => "desktop",
+            Platform::Web => "web",
+            Platform::Mobile => "mobile",
+        }
+    }
+}
+
+/// 空清單＝所有平台
+fn for_platform(list: &[String], p: Platform) -> bool {
+    list.is_empty() || list.iter().any(|x| x.trim().eq_ignore_ascii_case(p.name()))
+}
 
 // ───────────────────────── 驗證後的結果 ─────────────────────────
 
@@ -120,6 +145,7 @@ struct RawMenu {
     url: Option<String>,
     separator: bool,
     items: Vec<RawMenu>,
+    platforms: Vec<String>,
 }
 
 #[derive(Deserialize, Default)]
@@ -128,6 +154,9 @@ struct RawPage {
     id: String,
     title: String,
     root: Option<RawNode>,
+    /// 各平台各自的擺法（"desktop"／"web"／"mobile"），沒有就用 `root`
+    roots: HashMap<String, RawNode>,
+    platforms: Vec<String>,
 }
 
 #[derive(Deserialize, Default)]
@@ -162,8 +191,13 @@ fn label(s: &str) -> String {
     s.trim().chars().take(MAX_LABEL).collect()
 }
 
-/// 解析並驗證一份版面 JSON。壞檔回 `Err`（呼叫端沿用上一份）；其他問題降級並寫進 `warnings`。
+/// 解析並驗證一份版面 JSON（桌面版）。壞檔回 `Err`（呼叫端沿用上一份）；其他問題降級並寫進 `warnings`。
 pub fn parse(json: &[u8]) -> Result<Screen, String> {
+    parse_for(json, Platform::Desktop)
+}
+
+/// 同 `parse`，但挑出某個平台的頁、選單與擺法
+pub fn parse_for(json: &[u8], platform: Platform) -> Result<Screen, String> {
     if json.len() > MAX_BYTES {
         return Err(format!("版面 JSON 太大（{} KB，上限 {} KB）", json.len() / 1024, MAX_BYTES / 1024));
     }
@@ -175,7 +209,13 @@ pub fn parse(json: &[u8]) -> Result<Screen, String> {
 
     // 頁：先收 id（選單要用），重複 id 只留第一個
     let mut pages: Vec<Page> = Vec::new();
-    for (k, rp) in raw.pages.into_iter().enumerate() {
+    // 刻意不給這個平台的頁：指向它們的選單項目安靜略過，不算錯
+    let mut other: Vec<String> = Vec::new();
+    for (k, mut rp) in raw.pages.into_iter().enumerate() {
+        if !for_platform(&rp.platforms, platform) {
+            other.push(rp.id.trim().to_string());
+            continue;
+        }
         if pages.len() >= MAX_PAGES {
             w.push(format!("頁數超過 {MAX_PAGES}，後面的頁已略過"));
             break;
@@ -186,7 +226,7 @@ pub fn parse(json: &[u8]) -> Result<Screen, String> {
             continue;
         }
         let title = if rp.title.trim().is_empty() { id.clone() } else { label(&rp.title) };
-        let Some(root) = rp.root else {
+        let Some(root) = rp.roots.remove(platform.name()).or(rp.root) else {
             w.push(format!("頁「{id}」沒有 root，已略過"));
             continue;
         };
@@ -206,7 +246,7 @@ pub fn parse(json: &[u8]) -> Result<Screen, String> {
         }),
     };
     let mut count = 0;
-    let menu = menu(raw.menu, 1, &pages, &mut count, &mut w);
+    let menu = menu(raw.menu, 1, &pages, &other, platform, &mut count, &mut w);
     Ok(Screen {
         version: raw.version,
         title: label(&raw.title),
@@ -328,9 +368,12 @@ fn norm_sizes(raw: &[f32], n: usize) -> Vec<f32> {
     s
 }
 
-fn menu(raw: Vec<RawMenu>, depth: usize, pages: &[Page], count: &mut usize, w: &mut Vec<String>) -> Vec<MenuEntry> {
+fn menu(raw: Vec<RawMenu>, depth: usize, pages: &[Page], other: &[String], platform: Platform, count: &mut usize, w: &mut Vec<String>) -> Vec<MenuEntry> {
     let mut out = Vec::new();
     for m in raw {
+        if !for_platform(&m.platforms, platform) || m.page.as_deref().is_some_and(|p| other.iter().any(|o| o == p.trim())) {
+            continue;
+        }
         if *count >= MAX_MENU_ITEMS {
             w.push(format!("選單項目超過 {MAX_MENU_ITEMS} 個，後面的已略過"));
             break;
@@ -346,7 +389,11 @@ fn menu(raw: Vec<RawMenu>, depth: usize, pages: &[Page], count: &mut usize, w: &
                 w.push(format!("選單「{lb}」超過 {MAX_MENU_DEPTH} 層，子選單已略過"));
                 continue;
             }
-            let items = menu(m.items, depth + 1, pages, count, w);
+            let items = menu(m.items, depth + 1, pages, other, platform, count, w);
+            // 子項目全被略過（例如都不給這個平台）就不顯示空的分組
+            if items.is_empty() {
+                continue;
+            }
             out.push(MenuEntry::Group { label: lb, items });
             continue;
         }
